@@ -5,10 +5,14 @@ import About from "./pages/About"
 import Test from "./pages/Test"
 import Login from "./pages/Login"
 import NotFound from "./pages/NotFound"
+import ForgotPassword from "./pages/ForgotPassword"
+import Register from "./pages/Register"
+import { sileo, Toaster } from "sileo";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <>
+   <BrowserRouter>
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
@@ -17,7 +21,12 @@ export default function App() {
            <Route path="/*" element={<NotFound />} />
         </Route>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </BrowserRouter>
+    <Toaster position="top-right" className="z-50" />
+ 
+    </>
   )
 }

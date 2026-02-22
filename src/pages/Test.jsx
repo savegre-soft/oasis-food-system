@@ -8,22 +8,20 @@ import {
 } from "lucide-react";
 
 import { useApp } from "../context/AppContext";
+import { sileo } from "sileo";
 
 const Test = () => {
-
-     const { supabase } = useApp();
+  const { supabase } = useApp();
 
   const [recipes, setRecipes] = useState([]);
 
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchRecipes = async () => {
-        setLoading(true);
-      const { data, error } = await supabase
-        .from("Recipes")
-        .select("*");
+      setLoading(true);
+      const { data, error } = await supabase.from("Recipes").select("*");
 
       if (!error) {
         setRecipes(data);
@@ -36,13 +34,31 @@ const Test = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
-        <BookOpen className="text-green-700" size={28} />
-        <h3 className="text-2xl font-bold text-gray-800">
-          Recetas Registradas
-        </h3>
+      <div className="flex items-center justify-between mb-8">
+        {/* Lado izquierdo */}
+        <div className="flex items-center gap-3">
+          <div className="bg-emerald-100 p-2 rounded-xl">
+            <BookOpen className="text-emerald-700" size={24} />
+          </div>
+
+          <h3 className="text-2xl font-bold text-gray-800">
+            Recetas Registradas
+          </h3>
+        </div>
+
+        {/* Botón */}
+        <button
+          onClick={() =>
+            sileo.error({
+              title: "Something went wrong",
+              description: "Please try again later.",
+            })
+          }
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition-all duration-200 hover:scale-105"
+        >
+          Agregar Pedido
+        </button>
       </div>
 
       {/* Loading */}
@@ -81,7 +97,9 @@ const Test = () => {
 
             {/* Button */}
             <div className="mt-5">
-              <button className="flex items-center gap-2 text-sm bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-all duration-200">
+              <button className="flex items-center gap-2 text-sm bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-all duration-200"
+              onClick={()=> sileo.warning({ title: "Aún no se ha implementado" })}
+              >
                 Ver receta
                 <ArrowRight size={16} />
               </button>
