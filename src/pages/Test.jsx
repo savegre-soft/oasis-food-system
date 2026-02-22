@@ -11,7 +11,6 @@ const Test = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-<<<<<<< HEAD
   useEffect(() => {
     const fetchRecipes = async () => {
       const { data, error } = await supabase
@@ -48,16 +47,5 @@ const Test = () => {
     </div>
   );
 };
-=======
-const Test = ()=>{
-    return <>
-    
-        <h3>
-            test data
-            Hola, soy Daniel
-        </h3>
-    </>
-}
->>>>>>> f8b74cfaa291ee822fe9c9021c7d4f4aadff9502
 
 export default Test;
