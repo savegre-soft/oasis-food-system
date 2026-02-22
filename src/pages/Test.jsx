@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import {
   BookOpen,
   Calendar,
@@ -8,31 +7,32 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-);
+import { useApp } from "../context/AppContext";
 
 const Test = () => {
+
+     const { supabase } = useApp();
+
   const [recipes, setRecipes] = useState([]);
+
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+   useEffect(() => {
     const fetchRecipes = async () => {
-      const { data, error } = await supabase.from("Recipes").select("*");
+        setLoading(true);
+      const { data, error } = await supabase
+        .from("Recipes")
+        .select("*");
 
-      if (error) {
-        setError(error.message);
-      } else {
+      if (!error) {
         setRecipes(data);
       }
-
       setLoading(false);
     };
 
     fetchRecipes();
-  }, []);
+  }, [supabase]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
