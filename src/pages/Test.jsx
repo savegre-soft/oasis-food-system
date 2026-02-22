@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
 );
 
 const Test = () => {
@@ -13,17 +13,15 @@ const Test = () => {
 
   useEffect(() => {
     const fetchRecipes = async () => {
-      const { data, error } = await supabase
-        .from("Recipes")
-        .select("*");
+      const { data, error } = await supabase.from("Recipes").select("*");
 
       if (error) {
+        console.log("Error fetching recipes:", error);
         setError(error.message);
       } else {
+        console.log("Fetched recipes:", data);
         setRecipes(data);
       }
-
-      console.log("Fetched recipes:", data);
       setLoading(false);
     };
 
