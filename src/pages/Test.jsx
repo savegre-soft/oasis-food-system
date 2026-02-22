@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  BookOpen,
+  Calendar,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+} from "lucide-react";
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 );
 
 const Test = () => {
@@ -16,12 +23,11 @@ const Test = () => {
       const { data, error } = await supabase.from("Recipes").select("*");
 
       if (error) {
-        console.log("Error fetching recipes:", error);
         setError(error.message);
       } else {
-        console.log("Fetched recipes:", data);
         setRecipes(data);
       }
+
       setLoading(false);
     };
 
@@ -29,29 +35,55 @@ const Test = () => {
   }, []);
 
   return (
-    <div>
-      <h3>Test data</h3>
+    <div className="min-h-screen bg-gray-50 p-8">
+      
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <BookOpen className="text-green-700" size={28} />
+        <h3 className="text-2xl font-bold text-gray-800">
+          Recetas Registradas
+        </h3>
+      </div>
 
-      {loading && <p>Cargando...</p>}
-      {error && <p>Error: {error}</p>}
+      {/* Loading */}
+      {loading && (
+        <div className="flex items-center gap-2 text-gray-600">
+          <Loader2 className="animate-spin" size={20} />
+          <span>Cargando recetas...</span>
+        </div>
+      )}
 
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 bg-red-100 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <AlertCircle size={20} />
+          <span>Error: {error}</span>
+        </div>
+      )}
+
+      {/* Grid */}
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {recipes.map((recipe) => (
           <li
             key={recipe.id}
-            className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-100"
+            className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 p-6 border border-gray-100 hover:-translate-y-1"
           >
-            <h4 className="text-lg font-semibold text-gray-800 mb-2">
+            {/* Title */}
+            <h4 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-green-700 transition-colors">
               {recipe.Name}
             </h4>
 
-            <p className="text-sm text-gray-500">
+            {/* Date */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Calendar size={16} />
               {new Date(recipe.created_at).toLocaleString()}
-            </p>
+            </div>
 
-            <div className="mt-4">
-              <button className="text-sm bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+            {/* Button */}
+            <div className="mt-5">
+              <button className="flex items-center gap-2 text-sm bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition-all duration-200">
                 Ver receta
+                <ArrowRight size={16} />
               </button>
             </div>
           </li>
