@@ -6,6 +6,7 @@ const Test = ()=>{
     
         <h3>
             test data
+            Hola, soy Daniel
         </h3>
     </>
 }
