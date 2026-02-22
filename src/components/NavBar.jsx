@@ -12,8 +12,8 @@ export default function Navbar() {
     "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2"
 
   return (
-    <nav className="bg-green-800 text-white shadow-lg">
-      <div className="max-w-6xl mx-auto flex items-center justify-between p-3">
+    <nav className="sticky top-0 z-50 bg-green-800/95 backdrop-blur-md text-white shadow-lg h-16 flex items-center">
+      <div className="max-w-6xl mx-auto w-full flex items-center justify-between px-6">
         
         {/* Título */}
         <h1 className="text-lg font-bold tracking-wide">
