@@ -2,8 +2,10 @@ import { motion } from "framer-motion"
 import { Mail, Lock, LogIn, Leaf } from "lucide-react"
 import { Link } from "react-router-dom"
 import { sileo } from "sileo"
+import { useNavigate } from "react-router-dom"
 
 const Login = () => {
+  const navigate = useNavigate();
 
   // 🔹 Función vacía para manejar envío del formulario
   const handleSubmit = (e) => {
@@ -21,6 +23,7 @@ const Login = () => {
   // 🔹 Función vacía para botón login
   const handleLoginClick = () => {
     sileo.success({ title: "Changes saved" })
+    navigate("/main")
   }
 
   return (

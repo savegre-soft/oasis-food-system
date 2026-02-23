@@ -1,15 +1,25 @@
-import { Outlet } from "react-router-dom"
+import { Outlet } from "react-router-dom";
+import PublicNavBar from "../components/PublicNavBar";
 
 export default function PublicLayout() {
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <header className="bg-slate-800 p-4">
-        <h1 className="text-xl font-bold">Mi Sitio Público</h1>
-      </header>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-green-50 to-teal-100 text-slate-800">
+      <PublicNavBar />
 
-      <main className="max-w-6xl mx-auto p-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 md:px-6 py-10">
         <Outlet />
       </main>
+
+      <footer className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white text-center py-6 text-sm shadow-inner">
+        <div className="max-w-6xl mx-auto px-4">
+          <p className="font-medium">
+            © {new Date().getFullYear()} Oasis Food
+          </p>
+          <p className="text-emerald-100 text-xs mt-1">
+            Sabor fresco todos los días 🌿
+          </p>
+        </div>
+      </footer>
     </div>
-  )
+  );
 }
