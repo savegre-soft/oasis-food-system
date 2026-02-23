@@ -10,6 +10,7 @@ import {
   DollarSign,
   User,
   LogOut,
+  HamburgerIcon,
 } from "lucide-react";
 
 const links = [
@@ -18,6 +19,7 @@ const links = [
   { to: "/entregas", label: "Entregas", icon: RouteIcon },
   { to: "/Pedidos", label: "Pedidos", icon: ShoppingCart },
   { to: "/Gastos", label: "Gastos", icon: DollarSign },
+  { to: "/menus", label: "Menus", icon: HamburgerIcon },
 ];
 
 export default function Navbar() {

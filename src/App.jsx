@@ -16,6 +16,7 @@ import Customers from "./pages/customers";
 import Order from "./pages/Order";
 import Deliveries from "./pages/Deliveries";
 import Bills from "./pages/Bills";
+import Menus from "./pages/Menus";
 import { sileo, Toaster } from "sileo";
 
 export default function App() {
@@ -30,7 +31,7 @@ export default function App() {
             <Route path="/main" element={<Main />} />
             <Route path="/entregas" element={<Deliveries />} />
             <Route path="/gastos" element={<Bills />} />
-         
+         <Route path="/menus" element={<Menus />} />
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />
