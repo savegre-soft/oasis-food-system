@@ -9,7 +9,7 @@ export default function MainLayout() {
       <Navbar />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-6xl mx-auto w-full p-6 pt-20 pb-16">
+      <main className="flex-1 max-w-6xl mx-auto w-full p-2 pt-6 pb-6  my-2 ">
         <Outlet />
       </main>
 

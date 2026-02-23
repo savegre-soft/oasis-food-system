@@ -12,6 +12,10 @@ import PublicLayout from "./layout/PublicLayout";
 import Main from "./pages/Main";
 import Contact from "./pages/contact";
 import Promotions from "./pages/Promotions";
+import Customers from "./pages/customers";
+import Order from "./pages/Order";
+import Deliveries from "./pages/Deliveries";
+import Bills from "./pages/Bills";
 import { sileo, Toaster } from "sileo";
 
 export default function App() {
@@ -22,13 +26,18 @@ export default function App() {
           <Route element={<MainLayout />}>
             <Route path="/about" element={<About />} />
             <Route path="/Pedidos" element={<Test />} />
+            <Route path="/Clientes" element={<Customers />} />
             <Route path="/main" element={<Main />} />
+            <Route path="/entregas" element={<Deliveries />} />
+            <Route path="/gastos" element={<Bills />} />
+         
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />
             <Route path="/" element={<Home />} />
             <Route path="/contacto" element={<Contact />} />
             <Route path="/promociones" element={<Promotions />} />
+            <Route path="/ordenar" element={<Order />} />
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

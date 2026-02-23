@@ -7,6 +7,7 @@ import {
   RouteIcon,
   Menu,
   X,
+  DollarSign,
   User,
   LogOut,
 } from "lucide-react";
@@ -14,8 +15,9 @@ import {
 const links = [
   { to: "/Main", label: "Home", icon: Home },
   { to: "/Clientes", label: "Clientes", icon: Users },
-  { to: "/Entregas", label: "Entregas", icon: RouteIcon },
+  { to: "/entregas", label: "Entregas", icon: RouteIcon },
   { to: "/Pedidos", label: "Pedidos", icon: ShoppingCart },
+  { to: "/Gastos", label: "Gastos", icon: DollarSign },
 ];
 
 export default function Navbar() {
