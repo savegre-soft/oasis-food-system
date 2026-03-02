@@ -1,6 +1,7 @@
 
 const CustomerCard = ({ customer, onSelected }) => {
   
+  console.log(customer)
 
   return (
     <div

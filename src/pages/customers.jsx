@@ -29,6 +29,7 @@ export default function Customers() {
   }, [supabase]);
 
   const handleAddCliente = async (nombre) => {
+    setShowModal(false);
     const { data, error } = await supabase
       .schema('operations')
       .from('clients')
