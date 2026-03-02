@@ -38,9 +38,14 @@ export default function Customers() {
    * @param {string} nombre - Nombre del cliente
    */
   const handleAddCliente = (nombre) => {
-    setCustomers([...customers, { id: customers.length + 1, name: nombre }]);
-    setShowModal(false);
-    setShowOffcanvas(false);
+    const GetData = async () => {
+      const { data, error } = await supabase.schema('operations').from('clients').select('*');
+
+      if (data) setCustomers(data);
+      if (error) console.error('Error fetching clientes:', error);
+    };
+    GetData();
+  setShowModal(false);
   };
 
   // Filtrar clientes según término de búsqueda

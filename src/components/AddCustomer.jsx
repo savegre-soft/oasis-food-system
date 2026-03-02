@@ -21,7 +21,7 @@ const Customers = ({ onAdd }) => {
       .from('clients') // usa schema si aplica: .from("operations.clients")
       .insert([
         {
-          id: 0, // Supabase autogenerará el ID, pero lo incluimos para evitar errores de tipo
+         // id: 0, // Supabase autogenerará el ID, pero lo incluimos para evitar errores de tipo
           name: nombre,
           phone,
           address_detail: address,
