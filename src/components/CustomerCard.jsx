@@ -1,9 +1,12 @@
+
 const CustomerCard = ({ customer, onSelected }) => {
+  
+
   return (
-    <div 
-    
-    onClick={() => onSelected(customer)}
-    className="bg-white rounded-xl hover:shadow-2xl hover:border-gray-400 duration-300 transition p-4 shadow-sm border border-slate-200 hover:shadow-md transition">
+    <div
+      onClick={() => onSelected(customer)}
+      className="bg-white rounded-xl hover:shadow-2xl hover:border-gray-400 duration-300 transition p-4 shadow-sm border border-slate-200 hover:shadow-md transition"
+    >
       <h3 className="text-lg font-semibold text-slate-800 mb-2">{customer.name}</h3>
 
       <div className="text-sm text-slate-600 space-y-1">

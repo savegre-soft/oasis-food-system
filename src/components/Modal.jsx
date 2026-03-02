@@ -1,16 +1,9 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, XCircle } from 'lucide-react'; // ícono de cerrar de lucide
+import { XCircle } from 'lucide-react';
 
-/**
- * Componente Modal con animaciones usando framer-motion y fondo oscuro.
- *
- * @param {boolean} isOpen - Indica si el modal está abierto
- * @param {function} onClose - Función para cerrar el modal
- * @param {React.ReactNode} children - Contenido dinámico dentro del modal
- */
 export default function Modal({ isOpen, onClose, children }) {
-  // Bloquea el scroll del body cuando el modal está abierto
+  // Bloquea scroll del body
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : 'auto';
   }, [isOpen]);
@@ -26,33 +19,30 @@ export default function Modal({ isOpen, onClose, children }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25 }}
           />
 
           {/* Contenedor del modal */}
           <motion.div
             className="fixed inset-0 z-50 flex justify-center items-center p-4"
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.25 }}
           >
-            <div className="bg-white rounded-2xl p-6 relative w-full max-w-md shadow-xl">
-              {/* Botón de cerrar usando Lucide */}
+            <div className="bg-white rounded-3xl p-2 sm:p-2 w-full max-w-lg shadow-2xl relative overflow-y-auto max-h-[90vh]">
+              {/* Botón de cerrar */}
               <button
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-600 transition transform hover:rotate-90"
                 onClick={onClose}
               >
-                <XCircle
-                  size={24}
-                  className="text-red-600 hover:rotate-180 hover:text-red-700 transition duration-500"
-                />
+                <XCircle size={28} />
               </button>
 
-           <div className='p-2'>
-               {/* Contenido dinámico */}
-              {children}
-           </div>
+              {/* Contenido dinámico */}
+              <div className="mt-2">
+                {children}
+              </div>
             </div>
           </motion.div>
         </>
