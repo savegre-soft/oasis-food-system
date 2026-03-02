@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { sileo } from 'sileo';
 
 const AddCustomer = ({ onAdd }) => {
   const { supabase } = useApp();
@@ -72,9 +73,6 @@ const AddCustomer = ({ onAdd }) => {
           name: nombre,
           phone,
           address_detail: address,
-          country_id: selectedCountry || null,
-          province_id: selectedProvince || null,
-          canton_id: selectedCanton || null,
           district_id: selectedDistrict || null,
           is_active: true,
           created_at: new Date().toISOString(),
@@ -82,6 +80,8 @@ const AddCustomer = ({ onAdd }) => {
       ])
       .select();
 
+      sileo.success('Cliente agregado exitosamente');
+onAdd();
     if (error) {
       console.error(error);
       setErrorMsg(error.message);
@@ -94,7 +94,7 @@ const AddCustomer = ({ onAdd }) => {
       setSelectedCanton('');
       setSelectedDistrict('');
       setErrorMsg('');
-      if (onAdd) onAdd(data);
+      if (onAdd) onAdd();
     }
   };
 
