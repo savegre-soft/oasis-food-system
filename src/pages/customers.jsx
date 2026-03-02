@@ -1,14 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import Modal from "./../components/Modal";
 import Offcanvas from "./../components/Offcanvas";
 import AddCustomer from "../components/AddCustomer";
+import CustomerCard from "../components/CustomerCard";
+import { useApp } from "../context/AppContext"
 
 export default function Customers() {
-  const [clientes, setClientes] = useState([
-    { id: 1, nombre: "Juan Pérez" },
-    { id: 2, nombre: "María López" },
-  ]);
+  const { supabase } = useApp();
+  const [customers, setCustomers] = useState([]);
+  
+  useEffect(() => {
+    const GetData = async () => {
+
+      const {data, error} = await supabase.schema("operations").from("clients").select("*");
+      if (data) { 
+               setCustomers(data);
+      }
+      if (error) {
+        console.error("Error fetching clientes:", error);
+      }
+    };
+    GetData();
+  }, []);
+
+
+
+
 
   const [showModal, setShowModal] = useState(false);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
@@ -37,13 +55,11 @@ export default function Customers() {
         </button>
       </div>
 
-      <ul className="mb-8">
-        {clientes.map((c) => (
-          <li key={c.id} className="p-2 bg-slate-100 mb-2 rounded">
-            {c.nombre}
-          </li>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {customers.map((c) => (
+          <CustomerCard key={c.id} customer={c} />
         ))}
-      </ul>
+      </div>
 
       {/* Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)}>

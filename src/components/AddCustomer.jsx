@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { sileo } from "sileo";
+import { useApp } from "../context/AppContext";
 
 const Customers = ({ onAdd }) => {
+    const { supabase } = useApp();
   const [nombre, setNombre] = useState("");
   const [clientes, setClientes] = useState([]);
 
