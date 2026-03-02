@@ -12,9 +12,24 @@ import {
 } from "recharts";
 import { useApp } from "../context/AppContext";
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import HeatmapLayer from "../components/HeatmapLayer"; // tu componente personalizado
+import L from "leaflet";
+
+
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Configurar icono por defecto de Leaflet para que se vea
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
 
 const salesData = [
   { name: "Ene", ventas: 400, usuarios: 240 },
@@ -62,11 +77,11 @@ export default function Main() {
         if (districtError) throw districtError;
         setDistricts(districtData || []);
 
-        // Obtener clientes
+        // Obtener clientes con nombre y GPS
         const { data: clientsData, error: clientsError } = await supabase
           .schema("operations")
           .from("clients")
-          .select("district_id, latitude, longitude");
+          .select("id, name, district_id, latitude, longitude");
         if (clientsError) throw clientsError;
 
         // Contar clientes por distrito
@@ -74,10 +89,9 @@ export default function Main() {
         const locations = [];
         clientsData.forEach((c) => {
           if (c.district_id) counts[c.district_id] = (counts[c.district_id] || 0) + 1;
-          if (c.latitude && c.longitude) locations.push([c.latitude, c.longitude, 0.5]);
+          if (c.latitude && c.longitude) locations.push(c);
         });
 
-        // Preparar datos para BarChart
         const chartData = districtData.map((d) => ({
           name: d.name,
           clientes: counts[d.id] || 0,
@@ -143,7 +157,7 @@ export default function Main() {
         </div>
       </div>
 
-      {/* Mapa de Calor */}
+      {/* Mapa con Marcadores */}
       <div className="bg-white p-6 rounded-2xl shadow">
         <h2 className="text-xl font-semibold mb-4">Mapa de Clientes</h2>
         <MapContainer
@@ -152,7 +166,15 @@ export default function Main() {
           style={{ height: "400px", width: "100%" }}
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {clientLocations.length > 0 && <HeatmapLayer points={clientLocations} />}
+          {clientLocations.map((c) => (
+            <Marker key={c.id} position={[c.latitude, c.longitude]}>
+              <Popup>
+                <strong>{c.name}</strong>
+                <br />
+                Distrito ID: {c.district_id}
+              </Popup>
+            </Marker>
+          ))}
         </MapContainer>
       </div>
     </div>
