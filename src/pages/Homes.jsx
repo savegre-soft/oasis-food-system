@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const Homes = () => {
   return (
@@ -21,8 +21,8 @@ const Homes = () => {
           transition={{ duration: 0.8 }}
           className="mt-6 text-lg md:text-xl text-slate-600 max-w-2xl mx-auto"
         >
-          Disfruta comida fresca, saludable y preparada al momento.
-          Calidad, sabor y rapidez en cada pedido.
+          Disfruta comida fresca, saludable y preparada al momento. Calidad, sabor y rapidez en cada
+          pedido.
         </motion.p>
 
         <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
@@ -47,16 +47,16 @@ const Homes = () => {
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
-              title: "Ingredientes Frescos",
-              desc: "Seleccionamos productos naturales y de alta calidad cada día.",
+              title: 'Ingredientes Frescos',
+              desc: 'Seleccionamos productos naturales y de alta calidad cada día.',
             },
             {
-              title: "Entrega Rápida",
-              desc: "Preparamos y enviamos tu pedido en tiempo récord.",
+              title: 'Entrega Rápida',
+              desc: 'Preparamos y enviamos tu pedido en tiempo récord.',
             },
             {
-              title: "Pedidos Online",
-              desc: "Ordena fácilmente desde tu celular o computadora.",
+              title: 'Pedidos Online',
+              desc: 'Ordena fácilmente desde tu celular o computadora.',
             },
           ].map((item, index) => (
             <motion.div
@@ -67,9 +67,7 @@ const Homes = () => {
               viewport={{ once: true }}
               className="bg-white rounded-2xl shadow-md p-8 text-center hover:shadow-xl transition"
             >
-              <h3 className="text-xl font-semibold text-emerald-700 mb-4">
-                {item.title}
-              </h3>
+              <h3 className="text-xl font-semibold text-emerald-700 mb-4">{item.title}</h3>
               <p className="text-slate-600">{item.desc}</p>
             </motion.div>
           ))}
@@ -78,9 +76,7 @@ const Homes = () => {
 
       {/* CALL TO ACTION */}
       <section className="py-20 text-center bg-gradient-to-r from-emerald-600 to-teal-500 rounded-3xl text-white shadow-xl">
-        <h2 className="text-3xl md:text-4xl font-bold">
-          ¿Listo para ordenar?
-        </h2>
+        <h2 className="text-3xl md:text-4xl font-bold">¿Listo para ordenar?</h2>
         <p className="mt-4 text-emerald-100 max-w-xl mx-auto">
           Haz tu pedido ahora y disfruta el mejor sabor fresco en minutos.
         </p>

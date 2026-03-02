@@ -1,45 +1,37 @@
-import { useState } from "react";
-import {
-  Search,
-  CheckCircle,
-  Clock,
-  Calendar,
-  List,
-  Table,
-  MapPin,
-} from "lucide-react";
+import { useState } from 'react';
+import { Search, CheckCircle, Clock, Calendar, List, Table, MapPin } from 'lucide-react';
 
 const Deliveries = () => {
-  const [search, setSearch] = useState("");
-  const [vista, setVista] = useState("lista");
+  const [search, setSearch] = useState('');
+  const [vista, setVista] = useState('lista');
 
   const entregas = [
     {
       id: 1,
-      cliente: "Juan Pérez",
-      ruta: "Ciudad Quesada",
-      tipoPlan: "Almuerzo + Cena",
-      diaEntrega: "Domingo",
-      estado: "Pendiente",
-      fecha: "2026-02-22",
+      cliente: 'Juan Pérez',
+      ruta: 'Ciudad Quesada',
+      tipoPlan: 'Almuerzo + Cena',
+      diaEntrega: 'Domingo',
+      estado: 'Pendiente',
+      fecha: '2026-02-22',
     },
     {
       id: 2,
-      cliente: "María López",
-      ruta: "Fortuna",
-      tipoPlan: "Solo Almuerzo",
-      diaEntrega: "Domingo",
-      estado: "En camino",
-      fecha: "2026-02-22",
+      cliente: 'María López',
+      ruta: 'Fortuna',
+      tipoPlan: 'Solo Almuerzo',
+      diaEntrega: 'Domingo',
+      estado: 'En camino',
+      fecha: '2026-02-22',
     },
     {
       id: 3,
-      cliente: "Carlos Ramírez",
-      ruta: "Ciudad Quesada",
-      tipoPlan: "Almuerzo + Cena",
-      diaEntrega: "Martes",
-      estado: "Entregado",
-      fecha: "2026-02-21",
+      cliente: 'Carlos Ramírez',
+      ruta: 'Ciudad Quesada',
+      tipoPlan: 'Almuerzo + Cena',
+      diaEntrega: 'Martes',
+      estado: 'Entregado',
+      fecha: '2026-02-21',
     },
   ];
 
@@ -47,39 +39,27 @@ const Deliveries = () => {
     e.cliente.toLowerCase().includes(search.toLowerCase())
   );
 
-  const pendientes = entregas.filter(e => e.estado === "Pendiente").length;
-  const entregadas = entregas.filter(e => e.estado === "Entregado").length;
+  const pendientes = entregas.filter((e) => e.estado === 'Pendiente').length;
+  const entregadas = entregas.filter((e) => e.estado === 'Entregado').length;
 
   const estadoColor = (estado) => {
-    if (estado === "Pendiente")
-      return "bg-amber-100 text-amber-700";
-    if (estado === "En camino")
-      return "bg-blue-100 text-blue-700";
-    if (estado === "Entregado")
-      return "bg-emerald-100 text-emerald-700";
+    if (estado === 'Pendiente') return 'bg-amber-100 text-amber-700';
+    if (estado === 'En camino') return 'bg-blue-100 text-blue-700';
+    if (estado === 'Entregado') return 'bg-emerald-100 text-emerald-700';
   };
 
   const rutaColor = (ruta) =>
-    ruta === "Fortuna"
-      ? "bg-violet-100 text-violet-700"
-      : "bg-indigo-100 text-indigo-700";
+    ruta === 'Fortuna' ? 'bg-violet-100 text-violet-700' : 'bg-indigo-100 text-indigo-700';
 
   const planColor = (plan) =>
-    plan === "Solo Almuerzo"
-      ? "bg-orange-100 text-orange-700"
-      : "bg-teal-100 text-teal-700";
+    plan === 'Solo Almuerzo' ? 'bg-orange-100 text-orange-700' : 'bg-teal-100 text-teal-700';
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-slate-800">
-          Ruta Ciudad Quesada / Fortuna
-        </h1>
-        <p className="text-slate-500 mt-2">
-          Gestión de entregas por tipo de plan y día
-        </p>
+        <h1 className="text-3xl font-bold text-slate-800">Ruta Ciudad Quesada / Fortuna</h1>
+        <p className="text-slate-500 mt-2">Gestión de entregas por tipo de plan y día</p>
       </div>
 
       {/* Resumen */}
@@ -88,9 +68,7 @@ const Deliveries = () => {
           <Clock className="text-amber-500" />
           <div>
             <p className="text-sm text-slate-500">Pendientes</p>
-            <p className="text-2xl font-semibold text-slate-800">
-              {pendientes}
-            </p>
+            <p className="text-2xl font-semibold text-slate-800">{pendientes}</p>
           </div>
         </div>
 
@@ -98,9 +76,7 @@ const Deliveries = () => {
           <CheckCircle className="text-emerald-500" />
           <div>
             <p className="text-sm text-slate-500">Entregadas</p>
-            <p className="text-2xl font-semibold text-slate-800">
-              {entregadas}
-            </p>
+            <p className="text-2xl font-semibold text-slate-800">{entregadas}</p>
           </div>
         </div>
       </div>
@@ -108,17 +84,17 @@ const Deliveries = () => {
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-8">
         {[
-          { id: "lista", label: "Lista", icon: List },
-          { id: "tabla", label: "Tabla", icon: Table },
-          { id: "calendario", label: "Calendario", icon: Calendar },
+          { id: 'lista', label: 'Lista', icon: List },
+          { id: 'tabla', label: 'Tabla', icon: Table },
+          { id: 'calendario', label: 'Calendario', icon: Calendar },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setVista(tab.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
               vista === tab.id
-                ? "bg-white shadow text-slate-800"
-                : "text-slate-600 hover:text-slate-800"
+                ? 'bg-white shadow text-slate-800'
+                : 'text-slate-600 hover:text-slate-800'
             }`}
           >
             <tab.icon size={16} />
@@ -140,7 +116,7 @@ const Deliveries = () => {
       </div>
 
       {/* ================= LISTA ================= */}
-      {vista === "lista" && (
+      {vista === 'lista' && (
         <div className="space-y-4">
           {entregasFiltradas.map((e) => (
             <div
@@ -149,17 +125,19 @@ const Deliveries = () => {
             >
               <div className="flex flex-col md:flex-row md:justify-between gap-4">
                 <div>
-                  <h2 className="font-semibold text-slate-800 text-lg">
-                    {e.cliente}
-                  </h2>
+                  <h2 className="font-semibold text-slate-800 text-lg">{e.cliente}</h2>
 
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${rutaColor(e.ruta)}`}>
+                    <span
+                      className={`px-3 py-1 text-xs rounded-full font-medium ${rutaColor(e.ruta)}`}
+                    >
                       <MapPin size={12} className="inline mr-1" />
                       {e.ruta}
                     </span>
 
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${planColor(e.tipoPlan)}`}>
+                    <span
+                      className={`px-3 py-1 text-xs rounded-full font-medium ${planColor(e.tipoPlan)}`}
+                    >
                       {e.tipoPlan}
                     </span>
 
@@ -169,7 +147,9 @@ const Deliveries = () => {
                   </div>
                 </div>
 
-                <span className={`px-4 py-1 h-fit rounded-full text-sm font-medium ${estadoColor(e.estado)}`}>
+                <span
+                  className={`px-4 py-1 h-fit rounded-full text-sm font-medium ${estadoColor(e.estado)}`}
+                >
                   {e.estado}
                 </span>
               </div>
@@ -179,7 +159,7 @@ const Deliveries = () => {
       )}
 
       {/* ================= TABLA ================= */}
-      {vista === "tabla" && (
+      {vista === 'tabla' && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-100 text-slate-600 uppercase text-xs">
@@ -193,18 +173,15 @@ const Deliveries = () => {
             </thead>
             <tbody>
               {entregasFiltradas.map((e) => (
-                <tr
-                  key={e.id}
-                  className="border-t border-slate-100 hover:bg-slate-50 transition"
-                >
-                  <td className="px-6 py-4 font-medium text-slate-800">
-                    {e.cliente}
-                  </td>
+                <tr key={e.id} className="border-t border-slate-100 hover:bg-slate-50 transition">
+                  <td className="px-6 py-4 font-medium text-slate-800">{e.cliente}</td>
                   <td className="px-6 py-4">{e.ruta}</td>
                   <td className="px-6 py-4">{e.tipoPlan}</td>
                   <td className="px-6 py-4">{e.diaEntrega}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${estadoColor(e.estado)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${estadoColor(e.estado)}`}
+                    >
                       {e.estado}
                     </span>
                   </td>
@@ -216,7 +193,7 @@ const Deliveries = () => {
       )}
 
       {/* ================= CALENDARIO ================= */}
-      {vista === "calendario" && (
+      {vista === 'calendario' && (
         <div className="grid grid-cols-7 gap-4">
           {entregasFiltradas.map((e) => (
             <div
@@ -224,12 +201,8 @@ const Deliveries = () => {
               className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition"
             >
               <p className="text-xs text-slate-400">{e.fecha}</p>
-              <p className="font-semibold text-slate-800 mt-1">
-                {e.cliente}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                {e.ruta}
-              </p>
+              <p className="font-semibold text-slate-800 mt-1">{e.cliente}</p>
+              <p className="text-xs text-slate-500 mt-1">{e.ruta}</p>
             </div>
           ))}
         </div>

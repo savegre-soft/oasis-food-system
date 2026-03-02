@@ -1,40 +1,34 @@
-import { useState } from "react";
+import { useState } from 'react';
 
 const Order = () => {
-  const [cliente, setCliente] = useState("");
-  const [direccion, setDireccion] = useState("");
-  const [metodoPago, setMetodoPago] = useState("Efectivo");
-  const [total, setTotal] = useState("");
+  const [cliente, setCliente] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const [total, setTotal] = useState('');
 
   function handleSubmit(e) {
     e.preventDefault();
 
     if (!cliente || !direccion || !total) {
-      alert("Completa todos los campos");
+      alert('Completa todos los campos');
       return;
     }
 
-    alert("Pedido guardado correctamente");
-    setCliente("");
-    setDireccion("");
-    setMetodoPago("Efectivo");
-    setTotal("");
+    alert('Pedido guardado correctamente');
+    setCliente('');
+    setDireccion('');
+    setMetodoPago('Efectivo');
+    setTotal('');
   }
 
   return (
     <div className="min-h-2/3 bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl bg-white p-10 rounded-xl shadow-md">
-        
-        <h1 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">
-          Crear Pedido
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-800 mb-8 border-b pb-3">Crear Pedido</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
-              Cliente
-            </label>
+            <label className="block text-sm text-gray-600 mb-2">Cliente</label>
             <input
               type="text"
               value={cliente}
@@ -44,9 +38,7 @@ const Order = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
-              Dirección
-            </label>
+            <label className="block text-sm text-gray-600 mb-2">Dirección</label>
             <input
               type="text"
               value={direccion}
@@ -56,9 +48,7 @@ const Order = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
-              Método de pago
-            </label>
+            <label className="block text-sm text-gray-600 mb-2">Método de pago</label>
             <select
               value={metodoPago}
               onChange={(e) => setMetodoPago(e.target.value)}
@@ -71,9 +61,7 @@ const Order = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-600 mb-2">
-              Total (₡)
-            </label>
+            <label className="block text-sm text-gray-600 mb-2">Total (₡)</label>
             <input
               type="number"
               value={total}
@@ -90,7 +78,6 @@ const Order = () => {
               Guardar Pedido
             </button>
           </div>
-
         </form>
       </div>
     </div>

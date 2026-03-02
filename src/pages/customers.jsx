@@ -1,32 +1,27 @@
-import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import Modal from "./../components/Modal";
-import Offcanvas from "./../components/Offcanvas";
-import AddCustomer from "../components/AddCustomer";
-import CustomerCard from "../components/CustomerCard";
-import { useApp } from "../context/AppContext"
+import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import Modal from './../components/Modal';
+import Offcanvas from './../components/Offcanvas';
+import AddCustomer from '../components/AddCustomer';
+import CustomerCard from '../components/CustomerCard';
+import { useApp } from '../context/AppContext';
 
 export default function Customers() {
   const { supabase } = useApp();
   const [customers, setCustomers] = useState([]);
-  
+
   useEffect(() => {
     const GetData = async () => {
-
-      const {data, error} = await supabase.schema("operations").from("clients").select("*");
-      if (data) { 
-               setCustomers(data);
+      const { data, error } = await supabase.schema('operations').from('clients').select('*');
+      if (data) {
+        setCustomers(data);
       }
       if (error) {
-        console.error("Error fetching clientes:", error);
+        console.error('Error fetching clientes:', error);
       }
     };
     GetData();
   }, []);
-
-
-
-
 
   const [showModal, setShowModal] = useState(false);
   const [showOffcanvas, setShowOffcanvas] = useState(false);

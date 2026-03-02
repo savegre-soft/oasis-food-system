@@ -1,18 +1,18 @@
-import { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 
-export default function Offcanvas({ isOpen, onClose, children, position = "right" }) {
+export default function Offcanvas({ isOpen, onClose, children, position = 'right' }) {
   // Bloquear scroll cuando está abierto
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "auto";
+    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
   }, [isOpen]);
 
   // Determinar la animación según la posición
   const variants = {
-    hidden: position === "right" ? { x: "100%" } : { x: "-100%" },
+    hidden: position === 'right' ? { x: '100%' } : { x: '-100%' },
     visible: { x: 0 },
-    exit: position === "right" ? { x: "100%" } : { x: "-100%" },
+    exit: position === 'right' ? { x: '100%' } : { x: '-100%' },
   };
 
   return (
@@ -36,7 +36,7 @@ export default function Offcanvas({ isOpen, onClose, children, position = "right
             animate="visible"
             exit="exit"
             variants={variants}
-            transition={{ type: "tween", duration: 0.25 }}
+            transition={{ type: 'tween', duration: 0.25 }}
           >
             <div className="p-6 relative h-full flex flex-col">
               {/* Botón de cerrar */}

@@ -7,16 +7,16 @@ import {
   Tooltip,
   ResponsiveContainer,
   BarChart,
-  Bar
-} from "recharts";
+  Bar,
+} from 'recharts';
 
 const data = [
-  { name: "Ene", ventas: 400, usuarios: 240 },
-  { name: "Feb", ventas: 300, usuarios: 139 },
-  { name: "Mar", ventas: 500, usuarios: 380 },
-  { name: "Abr", ventas: 478, usuarios: 390 },
-  { name: "May", ventas: 589, usuarios: 480 },
-  { name: "Jun", ventas: 439, usuarios: 380 },
+  { name: 'Ene', ventas: 400, usuarios: 240 },
+  { name: 'Feb', ventas: 300, usuarios: 139 },
+  { name: 'Mar', ventas: 500, usuarios: 380 },
+  { name: 'Abr', ventas: 478, usuarios: 390 },
+  { name: 'May', ventas: 589, usuarios: 480 },
+  { name: 'Jun', ventas: 439, usuarios: 380 },
 ];
 
 export default function Main() {
@@ -44,7 +44,6 @@ export default function Main() {
 
       {/* Gráficas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         {/* Line Chart */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Ventas Mensuales</h2>
@@ -72,7 +71,6 @@ export default function Main() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
       </div>
     </div>
   );

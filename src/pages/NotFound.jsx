@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const NotFound = () => {
   return (
@@ -32,8 +32,8 @@ const NotFound = () => {
         transition={{ duration: 1 }}
         className="mt-4 text-slate-500 max-w-md"
       >
-        Parece que la ruta que buscas no existe o fue movida.
-        Pero no te preocupes, tenemos mucha comida deliciosa esperándote.
+        Parece que la ruta que buscas no existe o fue movida. Pero no te preocupes, tenemos mucha
+        comida deliciosa esperándote.
       </motion.p>
 
       <motion.div

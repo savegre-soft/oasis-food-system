@@ -1,27 +1,27 @@
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const promos = [
   {
     id: 1,
-    title: "Combo Almuerzo Oasis",
-    description: "Plato fuerte + bebida natural + postre pequeño.",
-    price: "₡4,500",
-    badge: "Más vendido",
+    title: 'Combo Almuerzo Oasis',
+    description: 'Plato fuerte + bebida natural + postre pequeño.',
+    price: '₡4,500',
+    badge: 'Más vendido',
   },
   {
     id: 2,
-    title: "Promo Pareja",
-    description: "2 bowls + 2 bebidas a precio especial.",
-    price: "₡8,900",
-    badge: "Ahorra ₡1,000",
+    title: 'Promo Pareja',
+    description: '2 bowls + 2 bebidas a precio especial.',
+    price: '₡8,900',
+    badge: 'Ahorra ₡1,000',
   },
   {
     id: 3,
-    title: "Combo Saludable",
-    description: "Ensalada + smoothie energético.",
-    price: "₡3,800",
-    badge: "Nuevo",
+    title: 'Combo Saludable',
+    description: 'Ensalada + smoothie energético.',
+    price: '₡3,800',
+    badge: 'Nuevo',
   },
 ];
 
@@ -30,9 +30,7 @@ const Promotions = () => {
     <div className="py-16">
       {/* Header */}
       <div className="text-center mb-14">
-        <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">
-          Promociones Especiales
-        </h1>
+        <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">Promociones Especiales</h1>
         <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
           Aprovecha nuestras ofertas exclusivas y disfruta más sabor por menos precio.
         </p>
@@ -55,18 +53,12 @@ const Promotions = () => {
             </span>
 
             <div>
-              <h3 className="text-xl font-semibold text-emerald-700 mb-3">
-                {promo.title}
-              </h3>
-              <p className="text-slate-600 text-sm mb-6">
-                {promo.description}
-              </p>
+              <h3 className="text-xl font-semibold text-emerald-700 mb-3">{promo.title}</h3>
+              <p className="text-slate-600 text-sm mb-6">{promo.description}</p>
             </div>
 
             <div className="flex items-center justify-between mt-6">
-              <span className="text-2xl font-bold text-emerald-800">
-                {promo.price}
-              </span>
+              <span className="text-2xl font-bold text-emerald-800">{promo.price}</span>
 
               <Link
                 to="/ordenar"
@@ -84,9 +76,7 @@ const Promotions = () => {
         <h2 className="text-2xl md:text-3xl font-bold text-emerald-800">
           ¡No dejes pasar estas ofertas!
         </h2>
-        <p className="mt-3 text-slate-600">
-          Promociones válidas por tiempo limitado.
-        </p>
+        <p className="mt-3 text-slate-600">Promociones válidas por tiempo limitado.</p>
         <Link
           to="/menu"
           className="inline-block mt-6 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 transition"

@@ -1,24 +1,24 @@
-import { useState } from "react";
-import { Plus, Trash2, CalendarDays, Users } from "lucide-react";
+import { useState } from 'react';
+import { Plus, Trash2, CalendarDays, Users } from 'lucide-react';
 
 const Menus = () => {
-  const [vista, setVista] = useState("semanal");
+  const [vista, setVista] = useState('semanal');
 
   const [menuSemanal, setMenuSemanal] = useState([
-    { id: 1, dia: "Lunes", plato: "Arroz con pollo" },
-    { id: 2, dia: "Martes", plato: "Carne en salsa" },
+    { id: 1, dia: 'Lunes', plato: 'Arroz con pollo' },
+    { id: 2, dia: 'Martes', plato: 'Carne en salsa' },
   ]);
 
   const [menuFamiliar, setMenuFamiliar] = useState([
-    { id: 1, tipo: "Almuerzo", plato: "Lasagna familiar" },
-    { id: 2, tipo: "Cena", plato: "Tacos familiares" },
+    { id: 1, tipo: 'Almuerzo', plato: 'Lasagna familiar' },
+    { id: 2, tipo: 'Cena', plato: 'Tacos familiares' },
   ]);
 
-  const [nuevoPlato, setNuevoPlato] = useState("");
-  const [diaSeleccionado, setDiaSeleccionado] = useState("Lunes");
-  const [tipoSeleccionado, setTipoSeleccionado] = useState("Almuerzo");
+  const [nuevoPlato, setNuevoPlato] = useState('');
+  const [diaSeleccionado, setDiaSeleccionado] = useState('Lunes');
+  const [tipoSeleccionado, setTipoSeleccionado] = useState('Almuerzo');
 
-  const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+  const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 
   const agregarMenuSemanal = () => {
     if (!nuevoPlato) return;
@@ -30,7 +30,7 @@ const Menus = () => {
         plato: nuevoPlato,
       },
     ]);
-    setNuevoPlato("");
+    setNuevoPlato('');
   };
 
   const agregarMenuFamiliar = () => {
@@ -43,7 +43,7 @@ const Menus = () => {
         plato: nuevoPlato,
       },
     ]);
-    setNuevoPlato("");
+    setNuevoPlato('');
   };
 
   const eliminarSemanal = (id) => {
@@ -58,22 +58,16 @@ const Menus = () => {
     <div className="min-h-screen bg-slate-50 p-8">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-slate-800">
-          Gestión de Menús
-        </h1>
-        <p className="text-slate-500 mt-2">
-          Crea y administra menús semanales y familiares
-        </p>
+        <h1 className="text-3xl font-bold text-slate-800">Gestión de Menús</h1>
+        <p className="text-slate-500 mt-2">Crea y administra menús semanales y familiares</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-8">
         <button
-          onClick={() => setVista("semanal")}
+          onClick={() => setVista('semanal')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            vista === "semanal"
-              ? "bg-white shadow text-slate-800"
-              : "text-slate-600"
+            vista === 'semanal' ? 'bg-white shadow text-slate-800' : 'text-slate-600'
           }`}
         >
           <CalendarDays size={16} />
@@ -81,11 +75,9 @@ const Menus = () => {
         </button>
 
         <button
-          onClick={() => setVista("familiar")}
+          onClick={() => setVista('familiar')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            vista === "familiar"
-              ? "bg-white shadow text-slate-800"
-              : "text-slate-600"
+            vista === 'familiar' ? 'bg-white shadow text-slate-800' : 'text-slate-600'
           }`}
         >
           <Users size={16} />
@@ -94,13 +86,11 @@ const Menus = () => {
       </div>
 
       {/* ================= PLAN SEMANAL ================= */}
-      {vista === "semanal" && (
+      {vista === 'semanal' && (
         <>
           {/* Formulario */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-            <h2 className="font-semibold text-slate-800 mb-4">
-              Agregar Menú Semanal
-            </h2>
+            <h2 className="font-semibold text-slate-800 mb-4">Agregar Menú Semanal</h2>
 
             <div className="grid md:grid-cols-3 gap-4">
               <select
@@ -140,9 +130,7 @@ const Menus = () => {
               >
                 <div>
                   <p className="text-sm text-slate-400">{menu.dia}</p>
-                  <p className="font-semibold text-slate-800">
-                    {menu.plato}
-                  </p>
+                  <p className="font-semibold text-slate-800">{menu.plato}</p>
                 </div>
 
                 <button
@@ -158,13 +146,11 @@ const Menus = () => {
       )}
 
       {/* ================= PLAN FAMILIAR ================= */}
-      {vista === "familiar" && (
+      {vista === 'familiar' && (
         <>
           {/* Formulario */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-            <h2 className="font-semibold text-slate-800 mb-4">
-              Agregar Menú Familiar
-            </h2>
+            <h2 className="font-semibold text-slate-800 mb-4">Agregar Menú Familiar</h2>
 
             <div className="grid md:grid-cols-3 gap-4">
               <select
@@ -203,9 +189,7 @@ const Menus = () => {
               >
                 <div>
                   <p className="text-sm text-slate-400">{menu.tipo}</p>
-                  <p className="font-semibold text-slate-800">
-                    {menu.plato}
-                  </p>
+                  <p className="font-semibold text-slate-800">{menu.plato}</p>
                 </div>
 
                 <button

@@ -1,26 +1,23 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 
 const PublicNavBar = () => {
   const [open, setOpen] = useState(false);
 
   const links = [
-    { name: "Inicio", path: "/" },
-    { name: "Menú", path: "/menu" },
-    { name: "Promociones", path: "/promociones" },
-    { name: "Contacto", path: "/contacto" },
-    { name: "Login", path: "/login" },
+    { name: 'Inicio', path: '/' },
+    { name: 'Menú', path: '/menu' },
+    { name: 'Promociones', path: '/promociones' },
+    { name: 'Contacto', path: '/contacto' },
+    { name: 'Login', path: '/login' },
   ];
 
   return (
     <header className="w-full bg-gradient-to-r from-emerald-700 to-green-600 text-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
         {/* Logo */}
-        <Link
-          to="/"
-          className="text-2xl font-bold tracking-wide hover:opacity-90 transition"
-        >
+        <Link to="/" className="text-2xl font-bold tracking-wide hover:opacity-90 transition">
           Oasis Food
         </Link>
 
@@ -32,7 +29,7 @@ const PublicNavBar = () => {
               to={link.path}
               className={({ isActive }) =>
                 `font-medium transition hover:text-emerald-200 ${
-                  isActive ? "text-emerald-200" : "text-white"
+                  isActive ? 'text-emerald-200' : 'text-white'
                 }`
               }
             >
@@ -49,11 +46,7 @@ const PublicNavBar = () => {
         </nav>
 
         {/* Mobile Button */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden"
-          aria-label="Toggle menu"
-        >
+        <button onClick={() => setOpen(!open)} className="md:hidden" aria-label="Toggle menu">
           {open ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
@@ -68,9 +61,7 @@ const PublicNavBar = () => {
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 `block py-2 text-lg font-medium rounded-lg transition ${
-                  isActive
-                    ? "text-emerald-200"
-                    : "text-white hover:text-emerald-200"
+                  isActive ? 'text-emerald-200' : 'text-white hover:text-emerald-200'
                 }`
               }
             >

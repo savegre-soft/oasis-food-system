@@ -1,10 +1,10 @@
-import { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Modal({ isOpen, onClose, children }) {
   // Bloquea scroll del body cuando el modal está abierto
   useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "auto";
+    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
   }, [isOpen]);
 
   return (

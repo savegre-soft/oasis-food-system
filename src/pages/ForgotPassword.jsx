@@ -1,10 +1,9 @@
-import { motion } from "framer-motion"
-import { Mail, ArrowLeft, Send, Leaf } from "lucide-react"
+import { motion } from 'framer-motion';
+import { Mail, ArrowLeft, Send, Leaf } from 'lucide-react';
 
 const ForgotPassword = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700 p-6">
-      
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -12,19 +11,14 @@ const ForgotPassword = () => {
         className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8"
       >
         <div className="text-center mb-8">
-
           <div className="flex justify-center mb-4">
             <div className="bg-emerald-100 p-3 rounded-2xl">
               <Leaf className="text-emerald-600" size={28} />
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-800">
-            Recuperar contraseña
-          </h1>
-          <p className="text-gray-500 mt-2 text-sm">
-            Ingresa tu correo y te enviaremos un enlace
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">Recuperar contraseña</h1>
+          <p className="text-gray-500 mt-2 text-sm">Ingresa tu correo y te enviaremos un enlace</p>
         </div>
 
         <form className="space-y-5">
@@ -57,12 +51,10 @@ const ForgotPassword = () => {
           </button>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          © 2026 Oasis Food Operativo
-        </p>
+        <p className="text-center text-xs text-gray-400 mt-6">© 2026 Oasis Food Operativo</p>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default ForgotPassword
+export default ForgotPassword;

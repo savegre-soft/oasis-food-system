@@ -1,60 +1,55 @@
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { User, Mail, Lock, UserPlus, Leaf } from "lucide-react"
-import { useApp } from "../context/AppContext"
-import { sileo } from "sileo"
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { User, Mail, Lock, UserPlus, Leaf } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { sileo } from 'sileo';
 
 const Register = () => {
-  const { supabase } = useApp()
+  const { supabase } = useApp();
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleRegister = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
     try {
       // 1️⃣ Crear usuario en Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-      })
+      });
 
-      if (error) throw error
+      if (error) throw error;
 
       // 2️⃣ Crear perfil en tabla profiles
       if (data.user) {
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert([
-            {
-              id: data.user.id,
-              name: name,
-              role: "operador",
-            },
-          ])
+        const { error: profileError } = await supabase.from('profiles').insert([
+          {
+            id: data.user.id,
+            name: name,
+            role: 'operador',
+          },
+        ]);
 
-        if (profileError) throw profileError
+        if (profileError) throw profileError;
       }
-sileo.success("Cuenta creada correctamente 🎉")
-    
-
+      sileo.success('Cuenta creada correctamente 🎉');
     } catch (err) {
-      sileo.error("Error al crear la cuenta")
-      setError(err.message)
+      sileo.error('Error al crear la cuenta');
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700 p-6">
-      
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -68,16 +63,11 @@ sileo.success("Cuenta creada correctamente 🎉")
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-800">
-            Crear cuenta
-          </h1>
-          <p className="text-gray-500 mt-2 text-sm">
-            Regístrate en Oasis Food Operativo
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">Crear cuenta</h1>
+          <p className="text-gray-500 mt-2 text-sm">Regístrate en Oasis Food Operativo</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleRegister}>
-
           {/* Nombre */}
           <div>
             <label className="text-sm text-gray-600">Nombre completo</label>
@@ -126,9 +116,7 @@ sileo.success("Cuenta creada correctamente 🎉")
             </div>
           </div>
 
-          {error && (
-            <p className="text-red-500 text-xs text-center">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
           <motion.button
             type="submit"
@@ -138,16 +126,14 @@ sileo.success("Cuenta creada correctamente 🎉")
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl flex items-center justify-center gap-2 font-semibold transition shadow-md disabled:opacity-50"
           >
             <UserPlus size={18} />
-            {loading ? "Creando..." : "Crear cuenta"}
+            {loading ? 'Creando...' : 'Crear cuenta'}
           </motion.button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          © 2026 Oasis Food Operativo
-        </p>
+        <p className="text-center text-xs text-gray-400 mt-6">© 2026 Oasis Food Operativo</p>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

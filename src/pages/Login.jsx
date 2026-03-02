@@ -1,34 +1,31 @@
-import { motion } from "framer-motion"
-import { Mail, Lock, LogIn, Leaf } from "lucide-react"
-import { Link } from "react-router-dom"
-import { sileo } from "sileo"
-import { useNavigate } from "react-router-dom"
+import { motion } from 'framer-motion';
+import { Mail, Lock, LogIn, Leaf } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { sileo } from 'sileo';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const navigate = useNavigate();
 
   // 🔹 Función vacía para manejar envío del formulario
   const handleSubmit = (e) => {
-    e.preventDefault()
-  }
+    e.preventDefault();
+  };
 
   // 🔹 Función vacía para email
-  const handleEmailChange = (e) => {
-  }
+  const handleEmailChange = (e) => {};
 
   // 🔹 Función vacía para contraseña
-  const handlePasswordChange = (e) => {
-  }
+  const handlePasswordChange = (e) => {};
 
   // 🔹 Función vacía para botón login
   const handleLoginClick = () => {
-    sileo.success({ title: "Changes saved" })
-    navigate("/main")
-  }
+    sileo.success({ title: 'Changes saved' });
+    navigate('/main');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-green-800 to-emerald-700 p-6">
-      
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -37,11 +34,10 @@ const Login = () => {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring" }}
+            transition={{ delay: 0.2, type: 'spring' }}
             className="flex justify-center mb-4"
           >
             <div className="bg-emerald-100 p-3 rounded-2xl">
@@ -49,17 +45,12 @@ const Login = () => {
             </div>
           </motion.div>
 
-          <h1 className="text-2xl font-bold text-gray-800">
-            Oasis Food Operativo
-          </h1>
-          <p className="text-gray-500 mt-2 text-sm">
-            Accede a tu plataforma operativa
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">Oasis Food Operativo</h1>
+          <p className="text-gray-500 mt-2 text-sm">Accede a tu plataforma operativa</p>
         </div>
 
         {/* Form */}
         <form className="space-y-5" onSubmit={handleSubmit}>
-          
           {/* Email */}
           <div>
             <label className="text-sm text-gray-600">Correo electrónico</label>
@@ -78,10 +69,7 @@ const Login = () => {
           <div>
             <div className="flex justify-between items-center">
               <label className="text-sm text-gray-600">Contraseña</label>
-              <Link
-                to="/forgot-password"
-                className="text-xs text-emerald-600 hover:underline"
-              >
+              <Link to="/forgot-password" className="text-xs text-emerald-600 hover:underline">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -108,29 +96,23 @@ const Login = () => {
             <LogIn size={18} />
             Iniciar Sesión
           </motion.button>
-
         </form>
 
         {/* Registro */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500">
-            ¿No tienes cuenta?{" "}
-            <Link
-              to="/register"
-              className="text-emerald-600 font-semibold hover:underline"
-            >
+            ¿No tienes cuenta?{' '}
+            <Link to="/register" className="text-emerald-600 font-semibold hover:underline">
               Crear cuenta
             </Link>
           </p>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
-          © 2026 Oasis Food Operativo
-        </p>
+        <p className="text-center text-xs text-gray-400 mt-6">© 2026 Oasis Food Operativo</p>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;

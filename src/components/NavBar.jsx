@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
   Users,
@@ -11,15 +11,15 @@ import {
   User,
   LogOut,
   HamburgerIcon,
-} from "lucide-react";
+} from 'lucide-react';
 
 const links = [
-  { to: "/Main", label: "Home", icon: Home },
-  { to: "/Clientes", label: "Clientes", icon: Users },
-  { to: "/entregas", label: "Entregas", icon: RouteIcon },
-  { to: "/Pedidos", label: "Pedidos", icon: ShoppingCart },
-  { to: "/Gastos", label: "Gastos", icon: DollarSign },
-  { to: "/menus", label: "Menus", icon: HamburgerIcon },
+  { to: '/Main', label: 'Home', icon: Home },
+  { to: '/Clientes', label: 'Clientes', icon: Users },
+  { to: '/entregas', label: 'Entregas', icon: RouteIcon },
+  { to: '/Pedidos', label: 'Pedidos', icon: ShoppingCart },
+  { to: '/Gastos', label: 'Gastos', icon: DollarSign },
+  { to: '/menus', label: 'Menus', icon: HamburgerIcon },
 ];
 
 export default function Navbar() {
@@ -35,8 +35,8 @@ export default function Navbar() {
     // Si usas token:
     // localStorage.removeItem("token");
 
-    alert("Sesión cerrada");
-    nav("/login");
+    alert('Sesión cerrada');
+    nav('/login');
   }
 
   useEffect(() => {
@@ -45,12 +45,12 @@ export default function Navbar() {
         setProfileOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const baseStyle =
-    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2";
+    'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2';
 
   return (
     <nav className="sticky top-0 z-50 bg-green-800/95 backdrop-blur-md text-white shadow-lg">
@@ -69,8 +69,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `${baseStyle} ${
                     isActive
-                      ? "bg-white text-green-800 shadow-md"
-                      : "hover:bg-green-700 hover:scale-105"
+                      ? 'bg-white text-green-800 shadow-md'
+                      : 'hover:bg-green-700 hover:scale-105'
                   }`
                 }
               >
@@ -128,11 +128,7 @@ export default function Navbar() {
                 to={link.to}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `${baseStyle} ${
-                    isActive
-                      ? "bg-white text-green-800"
-                      : "hover:bg-green-700"
-                  }`
+                  `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
                 }
               >
                 <Icon size={18} />
