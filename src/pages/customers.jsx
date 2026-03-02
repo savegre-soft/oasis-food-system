@@ -1,32 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Plus, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Modal from './../components/Modal';
 import Offcanvas from './../components/Offcanvas';
 import AddCustomer from '../components/AddCustomer';
 import CustomerCard from '../components/CustomerCard';
 import { useApp } from '../context/AppContext';
 
-/**
- * Componente principal para administrar clientes.
- * Permite listar, buscar y agregar clientes mediante Modal u Offcanvas.
- */
 export default function Customers() {
   const { supabase } = useApp();
-
-  // Lista completa de clientes
   const [customers, setCustomers] = useState([]);
-
-  // Término de búsqueda
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Estados para Modal y Offcanvas
   const [showModal, setShowModal] = useState(false);
   const [showOffcanvas, setShowOffcanvas] = useState(false);
-
-  // Cliente seleccionado para mostrar en Offcanvas
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  // Carga inicial de clientes
   useEffect(() => {
     const fetchData = async () => {
       const { data, error } = await supabase
@@ -40,12 +28,7 @@ export default function Customers() {
     fetchData();
   }, [supabase]);
 
-  /**
-   * Agrega un nuevo cliente y recarga la lista
-   * @param {string} nombre - Nombre del cliente
-   */
   const handleAddCliente = async (nombre) => {
-    // Inserta el cliente en la DB
     const { data, error } = await supabase
       .schema('operations')
       .from('clients')
@@ -57,15 +40,20 @@ export default function Customers() {
       return;
     }
 
-    // Actualiza el estado con el nuevo cliente
     setCustomers([...customers, ...data]);
     setShowModal(false);
   };
 
-  // Filtra clientes según el buscador
   const filteredCustomers = customers.filter((c) =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Animación para los cards
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
+  };
 
   return (
     <div className="p-8">
@@ -93,49 +81,77 @@ export default function Customers() {
         </button>
       </div>
 
-      {/* Lista de clientes */}
-      <div className="grid border p-2 shadow border-gray-200 rounded grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {filteredCustomers.length > 0 ? (
-          filteredCustomers.map((c) => (
-            <CustomerCard
-              key={c.id}
-              customer={c}
-              onSelected={(customer) => {
-                setSelectedCustomer(customer);
-                setShowOffcanvas(true);
-              }}
-            />
-          ))
-        ) : (
-          <p className="text-slate-500 col-span-full text-center mt-4">
-            No se encontraron clientes.
-          </p>
-        )}
-      </div>
+      {/* Lista de clientes con motion */}
+      <motion.div
+        className="grid border p-2 shadow border-gray-200 rounded grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+        initial="hidden"
+        animate="visible"
+        exit="hidden"
+      >
+        <AnimatePresence>
+          {filteredCustomers.length > 0 ? (
+            filteredCustomers.map((c) => (
+              <motion.div
+                key={c.id}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                layout
+              >
+                <CustomerCard
+                  customer={c}
+                  onSelected={(customer) => {
+                    setSelectedCustomer(customer);
+                    setShowOffcanvas(true);
+                  }}
+                />
+              </motion.div>
+            ))
+          ) : (
+            <motion.p
+              className="text-slate-500 col-span-full text-center mt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              No se encontraron clientes.
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Modal para agregar cliente */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-        <AddCustomer onAdd={handleAddCliente} />
-      </Modal>
+      <AnimatePresence>
+        {showModal && (
+          <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
+            <AddCustomer onAdd={handleAddCliente} />
+          </Modal>
+        )}
+      </AnimatePresence>
 
       {/* Offcanvas para ver cliente seleccionado */}
-      <Offcanvas isOpen={showOffcanvas} onClose={() => setShowOffcanvas(false)}>
-        {selectedCustomer ? (
-          <div className="p-4">
-            <h2 className="text-xl font-bold mb-2">{selectedCustomer.name}</h2>
-            {selectedCustomer.phone && (
-              <p className="text-sm text-slate-700 mb-1">Teléfono: {selectedCustomer.phone}</p>
+      <AnimatePresence>
+        {showOffcanvas && (
+          <Offcanvas isOpen={showOffcanvas} onClose={() => setShowOffcanvas(false)}>
+            {selectedCustomer ? (
+              <div className="p-4">
+                <h2 className="text-xl font-bold mb-2">{selectedCustomer.name}</h2>
+                {selectedCustomer.phone && (
+                  <p className="text-sm text-slate-700 mb-1">Teléfono: {selectedCustomer.phone}</p>
+                )}
+                {selectedCustomer.address_detail && (
+                  <p className="text-sm text-slate-700">
+                    Dirección: {selectedCustomer.address_detail}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="p-4 text-slate-500">No hay cliente seleccionado</p>
             )}
-            {selectedCustomer.address_detail && (
-              <p className="text-sm text-slate-700">
-                Dirección: {selectedCustomer.address_detail}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="p-4 text-slate-500">No hay cliente seleccionado</p>
+          </Offcanvas>
         )}
-      </Offcanvas>
+      </AnimatePresence>
     </div>
   );
 }
