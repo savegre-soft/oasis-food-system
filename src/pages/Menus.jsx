@@ -1,65 +1,117 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Trash2, CalendarDays, Users } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 const Menus = () => {
+  const { supabase } = useApp();
+
   const [vista, setVista] = useState('semanal');
-
-  const [menuSemanal, setMenuSemanal] = useState([
-    { id: 1, dia: 'Lunes', plato: 'Arroz con pollo' },
-    { id: 2, dia: 'Martes', plato: 'Carne en salsa' },
-  ]);
-
-  const [menuFamiliar, setMenuFamiliar] = useState([
-    { id: 1, tipo: 'Almuerzo', plato: 'Lasagna familiar' },
-    { id: 2, tipo: 'Cena', plato: 'Tacos familiares' },
-  ]);
-
+  const [menuSemanal, setMenuSemanal] = useState([]);
+  const [menuFamiliar, setMenuFamiliar] = useState([]);
   const [nuevoPlato, setNuevoPlato] = useState('');
-  const [diaSeleccionado, setDiaSeleccionado] = useState('Lunes');
-  const [tipoSeleccionado, setTipoSeleccionado] = useState('Almuerzo');
+  const [loading, setLoading] = useState(false);
 
-  const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+  // ===============================
+  // OBTENER DATOS
+  // ===============================
+  const getData = async () => {
+    setLoading(true);
 
-  const agregarMenuSemanal = () => {
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('recipes')
+      .select('id, name, meal_type')
+      .eq('is_active', true)
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error(error);
+      setLoading(false);
+      return;
+    }
+
+    setMenuSemanal(
+      data
+        .filter((r) => r.meal_type === 'Lunch')
+        .map((r) => ({
+          id: r.id,
+          plato: r.name,
+        }))
+    );
+
+    setMenuFamiliar(
+      data
+        .filter((r) => r.meal_type === 'Dinner')
+        .map((r) => ({
+          id: r.id,
+          plato: r.name,
+        }))
+    );
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  // ===============================
+  // AGREGAR
+  // ===============================
+  const agregarMenu = async () => {
     if (!nuevoPlato) return;
-    setMenuSemanal([
-      ...menuSemanal,
-      {
-        id: Date.now(),
-        dia: diaSeleccionado,
-        plato: nuevoPlato,
-      },
-    ]);
+
+    const mealType = vista === 'semanal' ? 'Lunch' : 'Dinner';
+
+    const { error } = await supabase
+      .schema('operations')
+      .from('recipes')
+      .insert([
+        {
+          name: nuevoPlato,
+          description: '',
+          meal_type: mealType,
+          is_active: true,
+        },
+      ]);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
     setNuevoPlato('');
+    getData(); // refrescar
   };
 
-  const agregarMenuFamiliar = () => {
-    if (!nuevoPlato) return;
-    setMenuFamiliar([
-      ...menuFamiliar,
-      {
-        id: Date.now(),
-        tipo: tipoSeleccionado,
-        plato: nuevoPlato,
-      },
-    ]);
-    setNuevoPlato('');
-  };
+  // ===============================
+  // ELIMINAR (soft delete)
+  // ===============================
+  const eliminar = async (id) => {
+    const { error } = await supabase
+      .schema('operations')
+      .from('recipes')
+      .update({ is_active: false })
+      .eq('id', id);
 
-  const eliminarSemanal = (id) => {
-    setMenuSemanal(menuSemanal.filter((m) => m.id !== id));
-  };
+    if (error) {
+      console.error(error);
+      return;
+    }
 
-  const eliminarFamiliar = (id) => {
-    setMenuFamiliar(menuFamiliar.filter((m) => m.id !== id));
+    getData();
   };
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-slate-800">Gestión de Menús</h1>
-        <p className="text-slate-500 mt-2">Crea y administra menús semanales y familiares</p>
+        <h1 className="text-3xl font-bold text-slate-800">
+          Gestión de Menús
+        </h1>
+        <p className="text-slate-500 mt-2">
+          Crea y administra menús semanales y familiares
+        </p>
       </div>
 
       {/* Tabs */}
@@ -67,7 +119,9 @@ const Menus = () => {
         <button
           onClick={() => setVista('semanal')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            vista === 'semanal' ? 'bg-white shadow text-slate-800' : 'text-slate-600'
+            vista === 'semanal'
+              ? 'bg-white shadow text-slate-800'
+              : 'text-slate-600'
           }`}
         >
           <CalendarDays size={16} />
@@ -77,7 +131,9 @@ const Menus = () => {
         <button
           onClick={() => setVista('familiar')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            vista === 'familiar' ? 'bg-white shadow text-slate-800' : 'text-slate-600'
+            vista === 'familiar'
+              ? 'bg-white shadow text-slate-800'
+              : 'text-slate-600'
           }`}
         >
           <Users size={16} />
@@ -85,123 +141,54 @@ const Menus = () => {
         </button>
       </div>
 
-      {/* ================= PLAN SEMANAL ================= */}
-      {vista === 'semanal' && (
-        <>
-          {/* Formulario */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-            <h2 className="font-semibold text-slate-800 mb-4">Agregar Menú Semanal</h2>
+      {/* Formulario */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+        <h2 className="font-semibold text-slate-800 mb-4">
+          Agregar {vista === 'semanal' ? 'Menú Semanal' : 'Menú Familiar'}
+        </h2>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <select
-                value={diaSeleccionado}
-                onChange={(e) => setDiaSeleccionado(e.target.value)}
-                className="px-4 py-2 border border-slate-200 rounded-xl"
-              >
-                {dias.map((dia) => (
-                  <option key={dia}>{dia}</option>
-                ))}
-              </select>
+        <div className="grid md:grid-cols-2 gap-4">
+          <input
+            type="text"
+            placeholder="Nombre del plato"
+            value={nuevoPlato}
+            onChange={(e) => setNuevoPlato(e.target.value)}
+            className="px-4 py-2 border border-slate-200 rounded-xl"
+          />
 
-              <input
-                type="text"
-                placeholder="Nombre del plato"
-                value={nuevoPlato}
-                onChange={(e) => setNuevoPlato(e.target.value)}
-                className="px-4 py-2 border border-slate-200 rounded-xl"
-              />
+          <button
+            onClick={agregarMenu}
+            className="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition"
+          >
+            <Plus size={16} />
+            Agregar
+          </button>
+        </div>
+      </div>
 
-              <button
-                onClick={agregarMenuSemanal}
-                className="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition"
-              >
-                <Plus size={16} />
-                Agregar
-              </button>
-            </div>
-          </div>
-
-          {/* Lista */}
-          <div className="space-y-4">
-            {menuSemanal.map((menu) => (
-              <div
-                key={menu.id}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-sm text-slate-400">{menu.dia}</p>
-                  <p className="font-semibold text-slate-800">{menu.plato}</p>
-                </div>
-
-                <button
-                  onClick={() => eliminarSemanal(menu.id)}
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* ================= PLAN FAMILIAR ================= */}
-      {vista === 'familiar' && (
-        <>
-          {/* Formulario */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-            <h2 className="font-semibold text-slate-800 mb-4">Agregar Menú Familiar</h2>
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <select
-                value={tipoSeleccionado}
-                onChange={(e) => setTipoSeleccionado(e.target.value)}
-                className="px-4 py-2 border border-slate-200 rounded-xl"
-              >
-                <option>Almuerzo</option>
-                <option>Cena</option>
-              </select>
-
-              <input
-                type="text"
-                placeholder="Nombre del plato"
-                value={nuevoPlato}
-                onChange={(e) => setNuevoPlato(e.target.value)}
-                className="px-4 py-2 border border-slate-200 rounded-xl"
-              />
+      {/* Lista */}
+      {loading ? (
+        <p className="text-slate-500">Cargando...</p>
+      ) : (
+        <div className="space-y-4">
+          {(vista === 'semanal' ? menuSemanal : menuFamiliar).map((menu) => (
+            <div
+              key={menu.id}
+              className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"
+            >
+              <p className="font-semibold text-slate-800">
+                {menu.plato}
+              </p>
 
               <button
-                onClick={agregarMenuFamiliar}
-                className="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition"
+                onClick={() => eliminar(menu.id)}
+                className="text-red-500 hover:text-red-600"
               >
-                <Plus size={16} />
-                Agregar
+                <Trash2 size={18} />
               </button>
             </div>
-          </div>
-
-          {/* Lista */}
-          <div className="space-y-4">
-            {menuFamiliar.map((menu) => (
-              <div
-                key={menu.id}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-sm text-slate-400">{menu.tipo}</p>
-                  <p className="font-semibold text-slate-800">{menu.plato}</p>
-                </div>
-
-                <button
-                  onClick={() => eliminarFamiliar(menu.id)}
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
+          ))}
+        </div>
       )}
     </div>
   );

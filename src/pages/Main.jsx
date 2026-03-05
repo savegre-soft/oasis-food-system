@@ -9,17 +9,16 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-} from "recharts";
-import { useApp } from "../context/AppContext";
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
+} from 'recharts';
+import { useApp } from '../context/AppContext';
+import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 // Configurar icono por defecto de Leaflet para que se vea
 
@@ -30,14 +29,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-
 const salesData = [
-  { name: "Ene", ventas: 400, usuarios: 240 },
-  { name: "Feb", ventas: 300, usuarios: 139 },
-  { name: "Mar", ventas: 500, usuarios: 380 },
-  { name: "Abr", ventas: 478, usuarios: 390 },
-  { name: "May", ventas: 589, usuarios: 480 },
-  { name: "Jun", ventas: 439, usuarios: 380 },
+  { name: 'Ene', ventas: 400, usuarios: 240 },
+  { name: 'Feb', ventas: 300, usuarios: 139 },
+  { name: 'Mar', ventas: 500, usuarios: 380 },
+  { name: 'Abr', ventas: 478, usuarios: 390 },
+  { name: 'May', ventas: 589, usuarios: 480 },
+  { name: 'Jun', ventas: 439, usuarios: 380 },
 ];
 
 export default function Main() {
@@ -53,13 +51,13 @@ export default function Main() {
     const fetchClientCount = async () => {
       try {
         const { count, error } = await supabase
-          .schema("operations")
-          .from("clients")
-          .select("id", { count: "exact", head: true });
+          .schema('operations')
+          .from('clients')
+          .select('id', { count: 'exact', head: true });
         if (error) throw error;
         setClientCount(count || 0);
       } catch (err) {
-        console.error("Error fetching clients count:", err.message);
+        console.error('Error fetching clients count:', err.message);
       }
     };
     fetchClientCount();
@@ -71,17 +69,17 @@ export default function Main() {
       try {
         // Obtener distritos
         const { data: districtData, error: districtError } = await supabase
-          .schema("operations")
-          .from("districts")
-          .select("*");
+          .schema('operations')
+          .from('districts')
+          .select('*');
         if (districtError) throw districtError;
         setDistricts(districtData || []);
 
         // Obtener clientes con nombre y GPS
         const { data: clientsData, error: clientsError } = await supabase
-          .schema("operations")
-          .from("clients")
-          .select("id, name, district_id, latitude, longitude");
+          .schema('operations')
+          .from('clients')
+          .select('id, name, district_id, latitude, longitude');
         if (clientsError) throw clientsError;
 
         // Contar clientes por distrito
@@ -100,7 +98,7 @@ export default function Main() {
         setClientsPerDistrict(chartData);
         setClientLocations(locations);
       } catch (err) {
-        console.error("Error fetching clients per district:", err);
+        console.error('Error fetching clients per district:', err);
       }
     };
     fetchDistrictsAndClients();
@@ -158,14 +156,12 @@ export default function Main() {
       </div>
 
       {/* Mapa con Marcadores */}
-      <div className="bg-white p-6 rounded-2xl shadow">
+      <div className="relative z-0 bg-white p-6 rounded-2xl shadow">
         <h2 className="text-xl font-semibold mb-4">Mapa de Clientes</h2>
-        <MapContainer
-          center={[9.9333, -84.0833]}
-          zoom={10}
-          style={{ height: "400px", width: "100%" }}
-        >
+
+        <MapContainer center={[9.9333, -84.0833]} zoom={10} className="h-[400px] w-full rounded-xl">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
           {clientLocations.map((c) => (
             <Marker key={c.id} position={[c.latitude, c.longitude]}>
               <Popup>
