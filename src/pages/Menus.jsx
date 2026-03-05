@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, CalendarDays, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { AnimatePresence } from 'framer-motion';
+
+import Modal from './../components/Modal';
+import Offcanvas from './../components/Offcanvas';
+
+import AddRecipe from '../components/AddRecipe';
 
 const Menus = () => {
   const { supabase } = useApp();
@@ -10,6 +16,9 @@ const Menus = () => {
   const [menuFamiliar, setMenuFamiliar] = useState([]);
   const [nuevoPlato, setNuevoPlato] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [showOffcanvas, setShowOffcanvas] = useState(false);
 
   // ===============================
   // OBTENER DATOS
@@ -103,94 +112,77 @@ const Menus = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-3xl font-bold text-slate-800">
-          Gestión de Menús
-        </h1>
-        <p className="text-slate-500 mt-2">
-          Crea y administra menús semanales y familiares
-        </p>
-      </div>
+    <>
+      {/* Modal para agregar cliente */}
+      <AnimatePresence>
+        {showModal && (
+          <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
+            <AddRecipe />
+          </Modal>
+        )}
+      </AnimatePresence>
 
-      {/* Tabs */}
-      <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-8">
-        <button
-          onClick={() => setVista('semanal')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            vista === 'semanal'
-              ? 'bg-white shadow text-slate-800'
-              : 'text-slate-600'
-          }`}
-        >
-          <CalendarDays size={16} />
-          Plan Semanal
-        </button>
+      <div className="min-h-screen bg-slate-50 p-8">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-slate-800">Gestión de Menús</h1>
+          <p className="text-slate-500 mt-2">Crea y administra menús semanales y familiares</p>
+        </div>
 
-        <button
-          onClick={() => setVista('familiar')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-            vista === 'familiar'
-              ? 'bg-white shadow text-slate-800'
-              : 'text-slate-600'
-          }`}
-        >
-          <Users size={16} />
-          Familiar
-        </button>
-      </div>
-
-      {/* Formulario */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-        <h2 className="font-semibold text-slate-800 mb-4">
-          Agregar {vista === 'semanal' ? 'Menú Semanal' : 'Menú Familiar'}
-        </h2>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Nombre del plato"
-            value={nuevoPlato}
-            onChange={(e) => setNuevoPlato(e.target.value)}
-            className="px-4 py-2 border border-slate-200 rounded-xl"
-          />
+        {/* Tabs */}
+        <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-8">
+          <button
+            onClick={() => setVista('semanal')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+              vista === 'semanal' ? 'bg-white shadow text-slate-800' : 'text-slate-600'
+            }`}
+          >
+            <CalendarDays size={16} />
+            Plan Semanal
+          </button>
 
           <button
-            onClick={agregarMenu}
-            className="bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition"
+            onClick={() => setVista('familiar')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+              vista === 'familiar' ? 'bg-white shadow text-slate-800' : 'text-slate-600'
+            }`}
           >
-            <Plus size={16} />
-            Agregar
+            <Users size={16} />
+            Familiar
           </button>
         </div>
-      </div>
 
-      {/* Lista */}
-      {loading ? (
-        <p className="text-slate-500">Cargando...</p>
-      ) : (
-        <div className="space-y-4">
-          {(vista === 'semanal' ? menuSemanal : menuFamiliar).map((menu) => (
-            <div
-              key={menu.id}
-              className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"
-            >
-              <p className="font-semibold text-slate-800">
-                {menu.plato}
-              </p>
+        <button
+          className="bg-blue-500 text-white border rounded"
+          onClick={() => setShowModal(true)}
+        >
+          Agregar Receta
+        </button>
 
-              <button
-                onClick={() => eliminar(menu.id)}
-                className="text-red-500 hover:text-red-600"
+        {/* Lista */}
+        {loading ? (
+          <p className="text-slate-500">Cargando...</p>
+        ) : (
+          <div className="space-y-4">
+            {(vista === 'semanal' ? menuSemanal : menuFamiliar).map((menu) => (
+              <div
+                key={menu.id}
+                className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"
               >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+                <p className="font-semibold text-slate-800">{menu.plato}</p>
+
+                <button
+                  onClick={() => eliminar(menu.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 

@@ -21,10 +21,7 @@ export default function Customers() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('clients')
-        .select('*');
+      const { data, error } = await supabase.schema('operations').from('clients').select('*');
 
       if (data) setCustomers(data);
       if (error) console.error('Error fetching clientes:', error);
@@ -140,40 +137,42 @@ export default function Customers() {
         {showOffcanvas && (
           <Offcanvas isOpen={showOffcanvas} onClose={() => setShowOffcanvas(false)}>
             {selectedCustomer ? (
-             <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md mx-auto">
-  {/* Información básica */}
-  <div className="mb-4">
-    <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedCustomer.name}</h2>
-    {selectedCustomer.phone && (
-      <p className="text-sm text-gray-600 mb-1">
-        <span className="font-semibold">Teléfono:</span> {selectedCustomer.phone}
-      </p>
-    )}
-    {selectedCustomer.address_detail && (
-      <p className="text-sm text-gray-600 mb-1">
-        <span className="font-semibold">Dirección:</span> {selectedCustomer.address_detail}
-      </p>
-    )}
-  </div>
+              <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md mx-auto">
+                {/* Información básica */}
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedCustomer.name}</h2>
+                  {selectedCustomer.phone && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      <span className="font-semibold">Teléfono:</span> {selectedCustomer.phone}
+                    </p>
+                  )}
+                  {selectedCustomer.address_detail && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      <span className="font-semibold">Dirección:</span>{' '}
+                      {selectedCustomer.address_detail}
+                    </p>
+                  )}
+                </div>
 
-  {/* Mapa con ubicación */}
-  {selectedCustomer.latitude && selectedCustomer.longitude && (
-    <div className="mt-4 rounded-xl overflow-hidden shadow-md border border-gray-200">
-      <MapContainer
-        center={[selectedCustomer.latitude, selectedCustomer.longitude]}
-        zoom={15}
-        style={{ height: '250px', width: '100%' }}
-        scrollWheelZoom={false}
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <Marker position={[selectedCustomer.latitude, selectedCustomer.longitude]} />
-      </MapContainer>
-      <p className="mt-2 text-sm text-gray-500 text-center">
-        Lat: {selectedCustomer.latitude.toFixed(6)}, Lng: {selectedCustomer.longitude.toFixed(6)}
-      </p>
-    </div>
-  )}
-</div>
+                {/* Mapa con ubicación */}
+                {selectedCustomer.latitude && selectedCustomer.longitude && (
+                  <div className="mt-4 rounded-xl overflow-hidden shadow-md border border-gray-200">
+                    <MapContainer
+                      center={[selectedCustomer.latitude, selectedCustomer.longitude]}
+                      zoom={15}
+                      style={{ height: '250px', width: '100%' }}
+                      scrollWheelZoom={false}
+                    >
+                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                      <Marker position={[selectedCustomer.latitude, selectedCustomer.longitude]} />
+                    </MapContainer>
+                    <p className="mt-2 text-sm text-gray-500 text-center">
+                      Lat: {selectedCustomer.latitude.toFixed(6)}, Lng:{' '}
+                      {selectedCustomer.longitude.toFixed(6)}
+                    </p>
+                  </div>
+                )}
+              </div>
             ) : (
               <p className="p-4 text-slate-500">No hay cliente seleccionado</p>
             )}
