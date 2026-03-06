@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, CalendarDays, Users } from 'lucide-react';
+import { Trash2, CalendarDays, Users, UtensilsCrossed } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AnimatePresence } from 'framer-motion';
 
 import Modal from './../components/Modal';
-import Offcanvas from './../components/Offcanvas';
-
 import AddRecipe from '../components/AddRecipe';
 
 const Menus = () => {
@@ -14,11 +12,8 @@ const Menus = () => {
   const [vista, setVista] = useState('semanal');
   const [menuSemanal, setMenuSemanal] = useState([]);
   const [menuFamiliar, setMenuFamiliar] = useState([]);
-  const [nuevoPlato, setNuevoPlato] = useState('');
   const [loading, setLoading] = useState(false);
-
   const [showModal, setShowModal] = useState(false);
-  const [showOffcanvas, setShowOffcanvas] = useState(false);
 
   // ===============================
   // OBTENER DATOS
@@ -29,9 +24,9 @@ const Menus = () => {
     const { data, error } = await supabase
       .schema('operations')
       .from('recipes')
-      .select('id, name, meal_type')
+      .select('id_recipe, name, meal_type')
       .eq('is_active', true)
-      .order('id', { ascending: false });
+      .order('id_recipe', { ascending: false });
 
     if (error) {
       console.error(error);
@@ -39,23 +34,8 @@ const Menus = () => {
       return;
     }
 
-    setMenuSemanal(
-      data
-        .filter((r) => r.meal_type === 'Lunch')
-        .map((r) => ({
-          id: r.id,
-          plato: r.name,
-        }))
-    );
-
-    setMenuFamiliar(
-      data
-        .filter((r) => r.meal_type === 'Dinner')
-        .map((r) => ({
-          id: r.id,
-          plato: r.name,
-        }))
-    );
+    setMenuSemanal(data.filter((r) => r.meal_type === 'Lunch'));
+    setMenuFamiliar(data.filter((r) => r.meal_type === 'Dinner'));
 
     setLoading(false);
   };
@@ -65,35 +45,6 @@ const Menus = () => {
   }, []);
 
   // ===============================
-  // AGREGAR
-  // ===============================
-  const agregarMenu = async () => {
-    if (!nuevoPlato) return;
-
-    const mealType = vista === 'semanal' ? 'Lunch' : 'Dinner';
-
-    const { error } = await supabase
-      .schema('operations')
-      .from('recipes')
-      .insert([
-        {
-          name: nuevoPlato,
-          description: '',
-          meal_type: mealType,
-          is_active: true,
-        },
-      ]);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setNuevoPlato('');
-    getData(); // refrescar
-  };
-
-  // ===============================
   // ELIMINAR (soft delete)
   // ===============================
   const eliminar = async (id) => {
@@ -101,7 +52,7 @@ const Menus = () => {
       .schema('operations')
       .from('recipes')
       .update({ is_active: false })
-      .eq('id', id);
+      .eq('id_recipe', id);
 
     if (error) {
       console.error(error);
@@ -111,22 +62,33 @@ const Menus = () => {
     getData();
   };
 
+  const listaActual = vista === 'semanal' ? menuSemanal : menuFamiliar;
+
   return (
     <>
-      {/* Modal para agregar cliente */}
       <AnimatePresence>
         {showModal && (
-          <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-            <AddRecipe />
+          <Modal isOpen={showModal} onClose={() => { setShowModal(false); getData(); }}>
+            <AddRecipe onSuccess={() => { setShowModal(false); getData(); }} />
           </Modal>
         )}
       </AnimatePresence>
 
       <div className="min-h-screen bg-slate-50 p-8">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-slate-800">Gestión de Menús</h1>
-          <p className="text-slate-500 mt-2">Crea y administra menús semanales y familiares</p>
+        <div className="mb-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800">Gestión de Recetas</h1>
+            <p className="text-slate-500 mt-2">Crea y administra recetas semanales y familiares</p>
+          </div>
+
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium"
+          >
+            <UtensilsCrossed size={16} />
+            Agregar Receta
+          </button>
         </div>
 
         {/* Tabs */}
@@ -152,28 +114,26 @@ const Menus = () => {
           </button>
         </div>
 
-        <button
-          className="bg-blue-500 text-white border rounded"
-          onClick={() => setShowModal(true)}
-        >
-          Agregar Receta
-        </button>
-
         {/* Lista */}
         {loading ? (
           <p className="text-slate-500">Cargando...</p>
+        ) : listaActual.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
+            <p>No hay recetas registradas</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            {(vista === 'semanal' ? menuSemanal : menuFamiliar).map((menu) => (
+            {listaActual.map((recipe) => (
               <div
-                key={menu.id}
+                key={recipe.id_recipe}
                 className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center"
               >
-                <p className="font-semibold text-slate-800">{menu.plato}</p>
+                <p className="font-semibold text-slate-800">{recipe.name}</p>
 
                 <button
-                  onClick={() => eliminar(menu.id)}
-                  className="text-red-500 hover:text-red-600"
+                  onClick={() => eliminar(recipe.id_recipe)}
+                  className="text-red-500 hover:text-red-600 ml-4"
                 >
                   <Trash2 size={18} />
                 </button>

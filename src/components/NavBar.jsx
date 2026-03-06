@@ -1,9 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
-  ShoppingCart,
   RouteIcon,
   Menu,
   X,
@@ -11,57 +10,74 @@ import {
   User,
   LogOut,
   HamburgerIcon,
-} from 'lucide-react';
+  Utensils,
+  ChevronDown,
+  Handbag
+} from "lucide-react";
 
 const links = [
-  { to: '/Main', label: 'Home', icon: Home },
-  { to: '/Clientes', label: 'Clientes', icon: Users },
-  { to: '/entregas', label: 'Entregas', icon: RouteIcon },
-  { to: '/Pedidos', label: 'Pedidos', icon: ShoppingCart },
-  { to: '/Gastos', label: 'Gastos', icon: DollarSign },
-  { to: '/menus', label: 'Menus', icon: HamburgerIcon },
+  { to: "/Main", label: "Home", icon: Home },
+  { to: "/entregas", label: "Entregas", icon: RouteIcon },
+  { to: "/orders", label: "Órdenes", icon: Handbag }
+];
+
+const gestionLinks = [
+  { to: "/Clientes", label: "Clientes", icon: Users },
+  { to: "/menus", label: "Recetas", icon: HamburgerIcon },
+  { to: "/routes", label: "Rutas", icon: RouteIcon },
+  { to: "/templates", label: "Menús Predefinidos", icon: Utensils }
+];
+
+const financialLinks = [
+  { to: "/Gastos", label: "Gastos", icon: DollarSign }
 ];
 
 export default function Navbar() {
   const nav = useNavigate();
+
   const [isOpen, setIsOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef(null);
+  const [openMenu, setOpenMenu] = useState(null);
+
+  const navRef = useRef(null);
 
   function handleLogout() {
-    setProfileOpen(false);
+    setOpenMenu(null);
     setIsOpen(false);
+    alert("Sesión cerrada");
+    nav("/login");
+  }
 
-    // Si usas token:
-    // localStorage.removeItem("token");
-
-    alert('Sesión cerrada');
-    nav('/login');
+  function toggleMenu(menu) {
+    setOpenMenu(openMenu === menu ? null : menu);
   }
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setProfileOpen(false);
+    function handleClickOutside(e) {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setOpenMenu(null);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const baseStyle =
-    'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2';
+    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2";
 
   return (
-    <nav className="sticky top-0 z-50 bg-green-800/95 backdrop-blur-md text-white shadow-lg">
+    <nav
+      ref={navRef}
+      className="sticky top-0 z-50 bg-green-800/95 backdrop-blur-md text-white shadow-lg"
+    >
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
-        {/* Logo */}
         <h1 className="text-lg font-bold tracking-wide">Oasis Food</h1>
 
-        {/* Desktop Menu */}
+        {/* Desktop */}
         <div className="hidden md:flex items-center gap-3">
           {links.map((link) => {
             const Icon = link.icon;
+
             return (
               <NavLink
                 key={link.to}
@@ -69,8 +85,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `${baseStyle} ${
                     isActive
-                      ? 'bg-white text-green-800 shadow-md'
-                      : 'hover:bg-green-700 hover:scale-105'
+                      ? "bg-white text-green-800 shadow-md"
+                      : "hover:bg-green-700 hover:scale-105"
                   }`
                 }
               >
@@ -80,25 +96,45 @@ export default function Navbar() {
             );
           })}
 
-          {/* Profile Dropdown */}
-          <div className="relative" ref={profileRef}>
+          {/* Gestión */}
+          <Dropdown
+            label="Gestión"
+            menuKey="gestion"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={gestionLinks}
+            baseStyle={baseStyle}
+          />
+
+          {/* Finanzas */}
+          <Dropdown
+            label="Finanzas"
+            menuKey="finanzas"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={financialLinks}
+            baseStyle={baseStyle}
+          />
+
+          {/* Profile */}
+          <div className="relative">
             <button
-              onClick={() => setProfileOpen(!profileOpen)}
+              onClick={() => toggleMenu("profile")}
               className="p-2 rounded-full hover:bg-green-700 transition"
             >
               <User size={22} />
             </button>
 
-            {profileOpen && (
+            {openMenu === "profile" && (
               <div className="absolute right-0 mt-3 w-44 bg-white text-green-800 rounded-xl shadow-xl py-2">
-                <button className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100 transition">
+                <button className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100">
                   <User size={16} />
                   Perfil
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-100 text-red-600 transition"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-100 text-red-600"
                 >
                   <LogOut size={16} />
                   Cerrar Sesión
@@ -108,27 +144,32 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Button */}
+        {/* Mobile button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-green-700 transition"
+          className="md:hidden p-2 rounded-lg hover:bg-green-700"
         >
           {isOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile menu */}
       {isOpen && (
         <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-green-800">
-          {links.map((link) => {
+          {[...links, ...gestionLinks, ...financialLinks].map((link) => {
             const Icon = link.icon;
+
             return (
               <NavLink
                 key={link.to}
                 to={link.to}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
+                  `${baseStyle} ${
+                    isActive
+                      ? "bg-white text-green-800"
+                      : "hover:bg-green-700"
+                  }`
                 }
               >
                 <Icon size={18} />
@@ -136,23 +177,43 @@ export default function Navbar() {
               </NavLink>
             );
           })}
-
-          <div className="border-t border-green-700 pt-3 mt-3">
-            <button className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-green-700 transition">
-              <User size={18} />
-              Perfil
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-100 text-red-600 transition"
-            >
-              <LogOut size={16} />
-              Cerrar Sesión
-            </button>
-          </div>
         </div>
       )}
     </nav>
+  );
+}
+
+/* COMPONENTE DROPDOWN reutilizable */
+
+function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
+  return (
+    <div className="relative">
+      <button
+        onClick={() => toggleMenu(menuKey)}
+        className={`${baseStyle} hover:bg-green-700`}
+      >
+        {label}
+        <ChevronDown size={16} />
+      </button>
+
+      {openMenu === menuKey && (
+        <div className="absolute mt-2 w-56 bg-white text-green-800 rounded-xl shadow-xl py-2">
+          {links.map((link) => {
+            const Icon = link.icon;
+
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100"
+              >
+                <Icon size={16} />
+                {link.label}
+              </NavLink>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
