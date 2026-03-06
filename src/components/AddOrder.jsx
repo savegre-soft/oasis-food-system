@@ -1,0 +1,896 @@
+import { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import { ChevronRight, ChevronLeft, Check, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { sileo } from 'sileo';
+
+// ── Constantes ──
+const DAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const DAY_LABELS = {
+  Monday:    'Lunes',
+  Tuesday:   'Martes',
+  Wednesday: 'Miércoles',
+  Thursday:  'Jueves',
+  Friday:    'Viernes',
+  Saturday:  'Sábado',
+  Sunday:    'Domingo',
+};
+
+const MACRO_UNITS = ['g', 'oz', 'kg'];
+const STEP_LABELS = ['Cliente', 'Menú', 'Ajustes', 'Confirmar'];
+
+// ── Utilidades de fecha ──
+const getWeekRange = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { weekStart: monday, weekEnd: sunday };
+};
+
+const toDateString = (date) => date.toISOString().split('T')[0];
+
+const getDateForDay = (dayOfWeek, weekStart) => {
+  const idx = DAYS_ORDER.indexOf(dayOfWeek);
+  const date = new Date(weekStart);
+  date.setDate(weekStart.getDate() + idx);
+  return toDateString(date);
+};
+
+const isFamily = (client) => client?.client_type === 'family';
+
+const AddOrder = ({ onSuccess }) => {
+  const { supabase } = useApp();
+  const { weekStart, weekEnd } = getWeekRange();
+
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  // ── Paso 1: Cliente ──
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [clientSearch, setClientSearch] = useState('');
+
+  // ── Paso 2: Menú ──
+  const [menuType, setMenuType] = useState(null);
+  // Personal
+  const [lunchTemplates, setLunchTemplates] = useState([]);
+  const [dinnerTemplates, setDinnerTemplates] = useState([]);
+  const [selectedLunchTemplate, setSelectedLunchTemplate] = useState(null);
+  const [selectedDinnerTemplate, setSelectedDinnerTemplate] = useState(null);
+  // Familiar
+  const [familyTemplates, setFamilyTemplates] = useState([]);
+  const [selectedFamilyTemplate, setSelectedFamilyTemplate] = useState(null);
+  const [familyRecipes, setFamilyRecipes] = useState([]); // recetas disponibles de la plantilla
+
+  const [extraRecipes, setExtraRecipes] = useState(0);
+  const [resolvedRoute, setResolvedRoute] = useState(null);
+  const [allRoutes, setAllRoutes] = useState([]);
+  const [showRouteSelector, setShowRouteSelector] = useState(false);
+  const [routeManuallyChanged, setRouteManuallyChanged] = useState(false);
+
+  // ── Paso 3: Ajustes por día ──
+  const [dayRecipes, setDayRecipes] = useState({});
+  const [expandedDays, setExpandedDays] = useState({});
+  const [globalMacros, setGlobalMacros] = useState(null);
+  const [dayMacros, setDayMacros] = useState({});
+
+  // ── Cargar clientes ──
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase
+        .schema('operations')
+        .from('clients')
+        .select(`
+          id_client, name, client_type, macro_profile_id,
+          macro_profiles!fk_clients_macro (
+            id_macro_profile, name,
+            protein_value, protein_unit,
+            carb_value, carb_unit
+          )
+        `)
+        .eq('is_active', true)
+        .order('name');
+      if (data) setClients(data);
+    };
+    fetch();
+  }, []);
+
+  // ── Inicializar macros globales al seleccionar cliente ──
+  useEffect(() => {
+    if (!selectedClient?.macro_profiles) return;
+    const m = selectedClient.macro_profiles;
+    setGlobalMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit, modified: false });
+  }, [selectedClient]);
+
+  // ── Cargar plantillas según tipo de cliente ──
+  useEffect(() => {
+    if (!selectedClient) return;
+
+    if (isFamily(selectedClient)) {
+      // Plantillas familiares: meal_type = 'Family', sin días, solo lista de recetas
+      const fetch = async () => {
+        const { data } = await supabase
+          .schema('operations')
+          .from('order_templates')
+          .select(`
+            id_template, name, meal_type,
+            order_template_details (
+              id_template_detail, quantity,
+              recipes ( id_recipe, name )
+            )
+          `)
+          .eq('is_active', true)
+          .eq('meal_type', 'Family')
+          .order('id_template', { ascending: false });
+        setFamilyTemplates(data ?? []);
+      };
+      fetch();
+    }
+  }, [selectedClient]);
+
+  // ── Cargar plantillas personales según menuType ──
+  useEffect(() => {
+    if (!menuType || isFamily(selectedClient)) return;
+    const fetchTemplates = async () => {
+      const types = menuType === 'both' ? ['Lunch', 'Dinner'] : [menuType];
+      for (const type of types) {
+        const { data } = await supabase
+          .schema('operations')
+          .from('order_templates')
+          .select(`
+            id_template, name, meal_type,
+            order_template_days (
+              id_template_day, day_of_week,
+              order_template_details (
+                id_template_detail, quantity,
+                recipes ( id_recipe, name )
+              )
+            )
+          `)
+          .eq('is_active', true)
+          .eq('meal_type', type)
+          .order('id_template', { ascending: false });
+        if (type === 'Lunch') setLunchTemplates(data ?? []);
+        else setDinnerTemplates(data ?? []);
+      }
+    };
+    fetchTemplates();
+  }, [menuType, selectedClient]);
+
+  // ── Cargar todas las rutas activas ──
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase
+        .schema('operations')
+        .from('routes')
+        .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+        .eq('is_active', true)
+        .order('id_route');
+      if (data) setAllRoutes(data);
+    };
+    fetch();
+  }, []);
+
+  // ── Resolver ruta personal ──
+  const resolveRoute = async (type, extras) => {
+    const needsComplete = type === 'both' || extras > 3;
+    const { data } = await supabase
+      .schema('operations')
+      .from('routes')
+      .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+      .eq('route_type', needsComplete ? 'complete' : 'individual')
+      .eq('is_active', true)
+      .single();
+    setResolvedRoute(data ?? null);
+    return data;
+  };
+
+  // ── Resolver ruta familiar (siempre family) ──
+  const resolveFamilyRoute = async () => {
+    const { data } = await supabase
+      .schema('operations')
+      .from('routes')
+      .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+      .eq('route_type', 'family')
+      .eq('is_active', true)
+      .single();
+    setResolvedRoute(data ?? null);
+  };
+
+  // ── Re-evaluar ruta personal cuando cambian extras (solo personal) ──
+  useEffect(() => {
+    if (step !== 3 || !menuType || isFamily(selectedClient)) return;
+    resolveRoute(menuType, extraRecipes);
+  }, [extraRecipes, step]);
+
+  // ── Construir dayRecipes para cliente personal desde plantillas ──
+  const buildDayRecipesFromTemplates = (lunchTpl, dinnerTpl) => {
+    const result = {};
+    const addFromTemplate = (tpl) => {
+      if (!tpl) return;
+      for (const day of tpl.order_template_days ?? []) {
+        if (!result[day.day_of_week]) result[day.day_of_week] = [];
+        for (const detail of day.order_template_details ?? []) {
+          result[day.day_of_week].push({ recipe_id: detail.recipes.id_recipe, recipe_name: detail.recipes.name, quantity: detail.quantity, isExtra: false });
+        }
+      }
+    };
+    addFromTemplate(lunchTpl);
+    addFromTemplate(dinnerTpl);
+    setDayRecipes(result);
+    const macros = {};
+    Object.keys(result).forEach((d) => { macros[d] = null; });
+    setDayMacros(macros);
+    const expanded = {};
+    Object.keys(result).forEach((d) => { expanded[d] = true; });
+    setExpandedDays(expanded);
+  };
+
+  // ── Construir dayRecipes para cliente familiar: 7 días vacíos ──
+  const buildFamilyDayRecipes = (template) => {
+    // Guardar lista de recetas disponibles de la plantilla
+    const recipes = (template?.order_template_details ?? []).map((d) => ({
+      id_recipe: d.recipes.id_recipe,
+      name: d.recipes.name,
+    }));
+    setFamilyRecipes(recipes);
+
+    // 7 días vacíos
+    const result = {};
+    DAYS_ORDER.forEach((d) => { result[d] = []; });
+    setDayRecipes(result);
+    const macros = {};
+    DAYS_ORDER.forEach((d) => { macros[d] = null; });
+    setDayMacros(macros);
+    // Solo viernes expandido por defecto
+    const expanded = {};
+    DAYS_ORDER.forEach((d) => { expanded[d] = d === 'Friday'; });
+    setExpandedDays(expanded);
+  };
+
+  // ── Helpers recetas ──
+  const addRecipeToDay = (day, recipeId, recipeName) => {
+    setDayRecipes((prev) => ({
+      ...prev,
+      [day]: [...(prev[day] || []), { recipe_id: recipeId || '', recipe_name: recipeName || '', quantity: 1, isExtra: !isFamily(selectedClient) }],
+    }));
+    if (!isFamily(selectedClient)) setExtraRecipes((n) => n + 1);
+  };
+
+  const updateRecipeInDay = (day, index, field, value) => {
+    setDayRecipes((prev) => {
+      const updated = [...(prev[day] || [])];
+      if (field === 'recipe_id') {
+        const found = (isFamily(selectedClient) ? familyRecipes : []).find((r) => r.id_recipe === Number(value));
+        updated[index] = { ...updated[index], recipe_id: Number(value), recipe_name: found?.name || '' };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return { ...prev, [day]: updated };
+    });
+  };
+
+  const removeRecipeFromDay = (day, index) => {
+    setDayRecipes((prev) => {
+      const updated = [...(prev[day] || [])];
+      const wasExtra = updated[index].isExtra;
+      updated.splice(index, 1);
+      if (wasExtra) setExtraRecipes((n) => Math.max(0, n - 1));
+      return { ...prev, [day]: updated };
+    });
+  };
+
+  // ── Helpers macros ──
+  const updateGlobalMacro = (field, value) => setGlobalMacros((prev) => ({ ...prev, [field]: value, modified: true }));
+  const applyGlobalMacrosToAllDays = () => {
+    const newDayMacros = {};
+    Object.keys(dayRecipes).forEach((d) => { newDayMacros[d] = null; });
+    setDayMacros(newDayMacros);
+    sileo.success('Macros globales aplicados a todos los días');
+  };
+  const updateDayMacro = (day, field, value) => {
+    setDayMacros((prev) => ({ ...prev, [day]: { ...(prev[day] || { ...globalMacros }), [field]: value, modified: true } }));
+  };
+  const resetDayMacros = (day) => setDayMacros((prev) => ({ ...prev, [day]: null }));
+  const getEffectiveMacros = (day) => dayMacros[day] ?? globalMacros;
+
+  // ── Navegación ──
+  const canGoNext = () => {
+    if (step === 1) return selectedClient !== null;
+    if (step === 2) {
+      if (isFamily(selectedClient)) return selectedFamilyTemplate !== null;
+      if (!menuType) return false;
+      if (menuType === 'Lunch') return selectedLunchTemplate !== null;
+      if (menuType === 'Dinner') return selectedDinnerTemplate !== null;
+      if (menuType === 'both') return selectedLunchTemplate !== null && selectedDinnerTemplate !== null;
+    }
+    return true;
+  };
+
+  const goNext = async () => {
+    if (step === 2) {
+      if (isFamily(selectedClient)) {
+        await resolveFamilyRoute();
+        buildFamilyDayRecipes(selectedFamilyTemplate);
+      } else {
+        await resolveRoute(menuType, extraRecipes);
+        buildDayRecipesFromTemplates(
+          menuType !== 'Dinner' ? selectedLunchTemplate : null,
+          menuType !== 'Lunch' ? selectedDinnerTemplate : null,
+        );
+      }
+    }
+    setStep((s) => s + 1);
+  };
+
+  // ── Guardar ──
+  const handleSubmit = async () => {
+    setLoading(true);
+    const weekStartStr = toDateString(weekStart);
+    const weekEndStr = toDateString(weekEnd);
+    const activeDays = Object.keys(dayRecipes).filter((d) => (dayRecipes[d] || []).some((r) => r.recipe_id));
+    const macro = selectedClient?.macro_profiles;
+    const menuTypes = isFamily(selectedClient) ? ['Family'] : (menuType === 'both' ? ['Lunch', 'Dinner'] : [menuType]);
+
+    for (const type of menuTypes) {
+      const templateId = type === 'Lunch' ? selectedLunchTemplate?.id_template
+        : type === 'Dinner' ? selectedDinnerTemplate?.id_template
+        : selectedFamilyTemplate?.id_template;
+
+      const { data: orderData, error: orderError } = await supabase
+        .schema('operations')
+        .from('orders')
+        .insert([{
+          client_id: selectedClient.id_client,
+          template_id: templateId,
+          week_start_date: weekStartStr,
+          week_end_date: weekEndStr,
+          route_id: resolvedRoute?.id_route ?? null,
+          classification: type,
+          status: 'PENDING',
+          macro_profile_snapshot_id: macro?.id_macro_profile ?? null,
+          protein_snapshot: globalMacros?.protein_value ?? macro?.protein_value ?? null,
+          protein_unit_snapshot: globalMacros?.protein_unit ?? macro?.protein_unit ?? null,
+          carb_snapshot: globalMacros?.carb_value ?? macro?.carb_value ?? null,
+          carb_unit_snapshot: globalMacros?.carb_unit ?? macro?.carb_unit ?? null,
+        }])
+        .select('id_order')
+        .single();
+
+      if (orderError) { sileo.error('Error al crear el pedido'); console.error(orderError); setLoading(false); return; }
+
+      const orderId = orderData.id_order;
+
+      for (const day of activeDays) {
+        const { data: dayData, error: dayError } = await supabase
+          .schema('operations')
+          .from('order_days')
+          .insert([{ order_id: orderId, day_of_week: day, delivery_date: getDateForDay(day, weekStart), status: 'PENDING' }])
+          .select('id_order_day')
+          .single();
+
+        if (dayError) { sileo.error(`Error al crear el día ${DAY_LABELS[day]}`); console.error(dayError); setLoading(false); return; }
+
+        const eff = getEffectiveMacros(day);
+        const details = (dayRecipes[day] || []).filter((r) => r.recipe_id);
+        if (details.length > 0) {
+          const { error: detailsError } = await supabase
+            .schema('operations')
+            .from('order_day_details')
+            .insert(details.map((r) => ({
+              order_day_id: dayData.id_order_day,
+              recipe_id: r.recipe_id,
+              quantity: Number(r.quantity) || 1,
+              protein_value_applied: eff?.protein_value ?? null,
+              protein_unit_applied: eff?.protein_unit ?? null,
+              carb_value_applied: eff?.carb_value ?? null,
+              carb_unit_applied: eff?.carb_unit ?? null,
+            })));
+          if (detailsError) { sileo.error(`Error al guardar recetas del día ${DAY_LABELS[day]}`); console.error(detailsError); setLoading(false); return; }
+        }
+      }
+    }
+
+    sileo.success('Pedido registrado correctamente');
+    setLoading(false);
+    if (onSuccess) onSuccess();
+  };
+
+  // ── Estilos ──
+  const inputClass = 'w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-sm';
+  const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
+  const macroInputClass = 'px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-24';
+  const macroSelectClass = 'px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white';
+
+  const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()));
+  const familyClient = isFamily(selectedClient);
+
+  return (
+    <div className="bg-slate-50 p-8 flex justify-center">
+      <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Nuevo Pedido</h1>
+        <p className="text-sm text-slate-500 mb-6">
+          Semana: {weekStart.toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })} — {weekEnd.toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
+        </p>
+
+        {/* Stepper */}
+        <div className="flex items-center mb-8">
+          {STEP_LABELS.map((label, i) => {
+            const stepNum = i + 1;
+            const isActive = step === stepNum;
+            const isDone = step > stepNum;
+            return (
+              <div key={label} className="flex items-center flex-1 last:flex-none">
+                <div className="flex flex-col items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition ${isDone ? 'bg-green-500 text-white' : isActive ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                    {isDone ? <Check size={14} /> : stepNum}
+                  </div>
+                  <span className={`text-xs mt-1 font-medium ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
+                </div>
+                {i < STEP_LABELS.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-2 mb-4 ${step > stepNum ? 'bg-green-400' : 'bg-slate-200'}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── PASO 1: Cliente ── */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <label className={labelClass}>Buscar cliente</label>
+              <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Escribe el nombre..." className={inputClass} autoFocus />
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {filteredClients.map((c) => (
+                <button key={c.id_client} type="button" onClick={() => setSelectedClient(c)}
+                  className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${selectedClient?.id_client === c.id_client ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{c.name}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      c.client_type === 'family'
+                        ? selectedClient?.id_client === c.id_client ? 'bg-purple-700 text-purple-100' : 'bg-purple-50 text-purple-700'
+                        : selectedClient?.id_client === c.id_client ? 'bg-blue-700 text-blue-100' : 'bg-blue-50 text-blue-700'
+                    }`}>
+                      {c.client_type === 'family' ? '👨‍👩‍👧 Familiar' : '👤 Personal'}
+                    </span>
+                  </div>
+                  {c.macro_profiles && (
+                    <p className={`text-xs mt-0.5 ${selectedClient?.id_client === c.id_client ? 'text-slate-300' : 'text-slate-400'}`}>
+                      {c.macro_profiles.name} · {c.macro_profiles.protein_value}{c.macro_profiles.protein_unit} prot · {c.macro_profiles.carb_value}{c.macro_profiles.carb_unit} carbos
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── PASO 2: Menú ── */}
+        {step === 2 && (
+          <div className="space-y-6">
+
+            {/* FAMILIAR */}
+            {familyClient ? (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="bg-purple-50 text-purple-700 text-xs font-medium px-2.5 py-0.5 rounded-full">👨‍👩‍👧 Cliente Familiar</span>
+                  <span className="text-xs text-slate-400">Entrega automática los Viernes</span>
+                </div>
+                <label className={labelClass}>Plantilla familiar</label>
+                <div className="space-y-2 mt-1">
+                  {familyTemplates.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No hay plantillas familiares disponibles</p>
+                  ) : familyTemplates.map((t) => {
+                    const selected = selectedFamilyTemplate?.id_template === t.id_template;
+                    return (
+                      <button key={t.id_template} type="button" onClick={() => setSelectedFamilyTemplate(t)}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${selected ? 'bg-purple-50 border-purple-400 text-purple-900' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                      >
+                        <p className="font-medium">{t.name}</p>
+                        {selected && (
+                          <p className="text-xs mt-1 text-purple-600">
+                            {(t.order_template_details ?? []).length} recetas disponibles
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Preview recetas de la plantilla seleccionada */}
+                {selectedFamilyTemplate && (
+                  <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-xs font-medium text-slate-500 mb-2">Recetas disponibles para asignar por día:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(selectedFamilyTemplate.order_template_details ?? []).map((d) => (
+                        <span key={d.id_template_detail} className="text-xs bg-white border border-slate-200 text-slate-600 px-2.5 py-1 rounded-full">
+                          {d.recipes.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* PERSONAL */
+              <>
+                <div>
+                  <label className={labelClass}>Tipo de menú</label>
+                  <div className="flex gap-2 mt-1">
+                    {[
+                      { value: 'Lunch',  label: '☀️ Solo Almuerzo' },
+                      { value: 'Dinner', label: '🌙 Solo Cena' },
+                      { value: 'both',   label: '✨ Ambos' },
+                    ].map((opt) => (
+                      <button key={opt.value} type="button" onClick={() => setMenuType(opt.value)}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${menuType === opt.value ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {(menuType === 'Lunch' || menuType === 'both') && (
+                  <div>
+                    <label className={labelClass}>Plantilla de Almuerzo</label>
+                    <div className="space-y-2 mt-1">
+                      {lunchTemplates.length === 0 ? <p className="text-xs text-slate-400 italic">No hay plantillas de almuerzo disponibles</p>
+                        : lunchTemplates.map((t) => (
+                          <button key={t.id_template} type="button" onClick={() => setSelectedLunchTemplate(t)}
+                            className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${selectedLunchTemplate?.id_template === t.id_template ? 'bg-amber-50 border-amber-400 text-amber-900' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                          >{t.name}</button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {(menuType === 'Dinner' || menuType === 'both') && (
+                  <div>
+                    <label className={labelClass}>Plantilla de Cena</label>
+                    <div className="space-y-2 mt-1">
+                      {dinnerTemplates.length === 0 ? <p className="text-xs text-slate-400 italic">No hay plantillas de cena disponibles</p>
+                        : dinnerTemplates.map((t) => (
+                          <button key={t.id_template} type="button" onClick={() => setSelectedDinnerTemplate(t)}
+                            className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${selectedDinnerTemplate?.id_template === t.id_template ? 'bg-indigo-50 border-indigo-400 text-indigo-900' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'}`}
+                          >{t.name}</button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── PASO 3: Ajustes ── */}
+        {step === 3 && (
+          <div className="space-y-5">
+
+            {/* Ruta resuelta */}
+            {resolvedRoute && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Ruta asignada automáticamente</p>
+                <p className="text-sm font-semibold text-slate-800">{resolvedRoute.name}</p>
+                <div className="flex gap-1 mt-1">
+                  {resolvedRoute.route_delivery_days?.map((d, i) => (
+                    <span key={i} className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full">
+                      {DAY_LABELS[d.day_of_week] ?? d.day_of_week}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Macros globales */}
+            {globalMacros && (
+              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Macros del pedido</p>
+                    <p className="text-xs text-slate-400">Se aplican a todos los días. Puedes sobreescribir por día abajo.</p>
+                  </div>
+                  {globalMacros.modified && (
+                    <button type="button" onClick={applyGlobalMacrosToAllDays} className="text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition flex items-center gap-1">
+                      <RefreshCw size={12} /> Resetear días
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Proteína</label>
+                    <div className="flex gap-2">
+                      <input type="number" min="0" value={globalMacros.protein_value} onChange={(e) => updateGlobalMacro('protein_value', e.target.value)} className={macroInputClass} />
+                      <select value={globalMacros.protein_unit} onChange={(e) => updateGlobalMacro('protein_unit', e.target.value)} className={macroSelectClass}>
+                        {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 mb-1 block">Carbohidratos</label>
+                    <div className="flex gap-2">
+                      <input type="number" min="0" value={globalMacros.carb_value} onChange={(e) => updateGlobalMacro('carb_value', e.target.value)} className={macroInputClass} />
+                      <select value={globalMacros.carb_unit} onChange={(e) => updateGlobalMacro('carb_unit', e.target.value)} className={macroSelectClass}>
+                        {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Días */}
+            {DAYS_ORDER.map((day) => {
+              const recipes = dayRecipes[day] ?? [];
+              // Para personal: solo mostrar días con recetas
+              // Para familiar: mostrar todos los 7 días
+              if (!familyClient && recipes.length === 0) return null;
+
+              const effMacros = getEffectiveMacros(day);
+              const hasDayOverride = dayMacros[day] !== null && dayMacros[day] !== undefined;
+              const isExpanded = expandedDays[day] ?? false;
+
+              return (
+                <div key={day} className="border border-slate-100 rounded-2xl overflow-hidden">
+                  <button type="button" onClick={() => setExpandedDays((p) => ({ ...p, [day]: !p[day] }))}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-700 text-sm">{DAY_LABELS[day]}</span>
+                      {day === 'Friday' && familyClient && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Día de entrega</span>
+                      )}
+                      {hasDayOverride && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Macros modificados</span>
+                      )}
+                      <span className="text-xs text-slate-400">
+                        {recipes.length} receta{recipes.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {isExpanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="p-4 space-y-4">
+                      <div className="space-y-2">
+                        {recipes.map((item, index) => (
+                          <div key={index} className="flex gap-2 items-center p-2 rounded-xl bg-slate-50">
+                            {familyClient ? (
+                              // Familiar: selector con recetas de la plantilla
+                              <select value={item.recipe_id}
+                                onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
+                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                              >
+                                <option value="">Seleccionar receta</option>
+                                {familyRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)}
+                              </select>
+                            ) : item.isExtra ? (
+                              <select value={item.recipe_id}
+                                onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
+                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                              >
+                                <option value="">Seleccionar receta</option>
+                                {familyRecipes.length > 0
+                                  ? familyRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)
+                                  : <option disabled>No hay recetas disponibles</option>
+                                }
+                              </select>
+                            ) : (
+                              <span className="flex-1 text-sm text-slate-700 px-3 py-2 bg-white border border-slate-100 rounded-xl">{item.recipe_name}</span>
+                            )}
+                            <input type="number" min="1" value={item.quantity}
+                              onChange={(e) => updateRecipeInDay(day, index, 'quantity', e.target.value)}
+                              className="w-16 px-3 py-2 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
+                            />
+                            <button type="button" onClick={() => removeRecipeFromDay(day, index)} className="text-red-400 hover:text-red-600 transition">✕</button>
+                          </div>
+                        ))}
+
+                        <button type="button" onClick={() => addRecipeToDay(day)}
+                          className="flex items-center gap-1.5 text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition mt-1"
+                        >
+                          + {familyClient ? 'Agregar receta' : 'Agregar receta extra'}
+                        </button>
+                      </div>
+
+                      {/* Macros por día */}
+                      <div className="border-t border-slate-100 pt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-medium text-slate-500">
+                            Macros este día
+                            {!hasDayOverride && <span className="ml-1 text-slate-400">(usando macros globales)</span>}
+                          </p>
+                          {hasDayOverride && (
+                            <button type="button" onClick={() => resetDayMacros(day)} className="text-xs text-slate-500 hover:text-slate-700 underline">Usar global</button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Proteína</label>
+                            <div className="flex gap-1.5">
+                              <input type="number" min="0"
+                                value={hasDayOverride ? dayMacros[day].protein_value : effMacros?.protein_value ?? ''}
+                                onChange={(e) => updateDayMacro(day, 'protein_value', e.target.value)}
+                                className="w-20 px-2 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
+                              />
+                              <select value={hasDayOverride ? dayMacros[day].protein_unit : effMacros?.protein_unit ?? 'g'}
+                                onChange={(e) => updateDayMacro(day, 'protein_unit', e.target.value)}
+                                className="px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800"
+                              >
+                                {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs text-slate-400 mb-1 block">Carbohidratos</label>
+                            <div className="flex gap-1.5">
+                              <input type="number" min="0"
+                                value={hasDayOverride ? dayMacros[day].carb_value : effMacros?.carb_value ?? ''}
+                                onChange={(e) => updateDayMacro(day, 'carb_value', e.target.value)}
+                                className="w-20 px-2 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
+                              />
+                              <select value={hasDayOverride ? dayMacros[day].carb_unit : effMacros?.carb_unit ?? 'g'}
+                                onChange={(e) => updateDayMacro(day, 'carb_unit', e.target.value)}
+                                className="px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800"
+                              >
+                                {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── PASO 4: Confirmar ── */}
+        {step === 4 && (
+          <div className="space-y-5">
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
+
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-slate-800">{selectedClient?.name}</p>
+                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${familyClient ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
+                  {familyClient ? '👨‍👩‍👧 Familiar' : '👤 Personal'}
+                </span>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Semana</p>
+                <p className="text-sm text-slate-700">{weekStart.toLocaleDateString('es-CR')} — {weekEnd.toLocaleDateString('es-CR')}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Menú</p>
+                <p className="text-sm text-slate-700">
+                  {familyClient ? `Familiar — ${selectedFamilyTemplate?.name}`
+                    : menuType === 'both' ? 'Almuerzo + Cena'
+                    : menuType === 'Lunch' ? 'Solo Almuerzo' : 'Solo Cena'}
+                </p>
+              </div>
+
+              {/* Ruta con opción de cambio manual */}
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-1">Ruta</p>
+                {!showRouteSelector ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">{resolvedRoute?.name ?? 'Sin ruta'}</p>
+                      {resolvedRoute?.route_delivery_days?.length > 0 && (
+                        <div className="flex gap-1 mt-1">
+                          {resolvedRoute.route_delivery_days.map((d, i) => (
+                            <span key={i} className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                              {DAY_LABELS[d.day_of_week] ?? d.day_of_week}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-slate-400 mt-1">
+                        {routeManuallyChanged ? 'Asignada manualmente' : 'Asignada automáticamente'}
+                      </p>
+                    </div>
+                    {!familyClient && (
+                      <button type="button" onClick={() => setShowRouteSelector(true)}
+                        className="text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition shrink-0 ml-4"
+                      >
+                        Cambiar ruta
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-400">Selecciona una ruta:</p>
+                    {allRoutes.map((route) => (
+                      <button key={route.id_route} type="button"
+                        onClick={() => { setResolvedRoute(route); setShowRouteSelector(false); setRouteManuallyChanged(true); }}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${resolvedRoute?.id_route === route.id_route ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}`}
+                      >
+                        <p className="font-medium">{route.name}</p>
+                        {route.route_delivery_days?.length > 0 && (
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            {route.route_delivery_days.map((d, i) => (
+                              <span key={i} className={`text-xs px-2 py-0.5 rounded-full ${resolvedRoute?.id_route === route.id_route ? 'bg-slate-600 text-slate-200' : 'bg-slate-100 text-slate-500'}`}>
+                                {DAY_LABELS[d.day_of_week] ?? d.day_of_week}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                    <button type="button" onClick={() => setShowRouteSelector(false)} className="text-xs text-slate-400 hover:text-slate-600 underline">Cancelar</button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros globales del pedido</p>
+                <p className="text-sm text-slate-700">
+                  Proteína: {globalMacros?.protein_value}{globalMacros?.protein_unit} · Carbos: {globalMacros?.carb_value}{globalMacros?.carb_unit}
+                  {globalMacros?.modified && <span className="ml-2 text-blue-600 text-xs">(modificados)</span>}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-2">Días con recetas</p>
+                {DAYS_ORDER.filter((d) => (dayRecipes[d] || []).some((r) => r.recipe_id)).map((day) => {
+                  const hasDayOverride = dayMacros[day] !== null && dayMacros[day] !== undefined;
+                  return (
+                    <div key={day} className="flex items-start gap-2 mb-1.5">
+                      <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium min-w-[50px] text-center shrink-0">{DAY_LABELS[day]}</span>
+                      <div>
+                        <p className="text-xs text-slate-600">{dayRecipes[day].filter((r) => r.recipe_id).map((r) => r.recipe_name || 'Receta').join(', ')}</p>
+                        {hasDayOverride && (
+                          <p className="text-xs text-blue-600">Macros: {dayMacros[day].protein_value}{dayMacros[day].protein_unit} prot · {dayMacros[day].carb_value}{dayMacros[day].carb_unit} carbos</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Navegación ── */}
+        <div className="flex justify-between mt-8">
+          {step > 1 ? (
+            <button type="button" onClick={() => setStep((s) => s - 1)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:border-slate-400 transition text-sm font-medium"
+            >
+              <ChevronLeft size={16} /> Atrás
+            </button>
+          ) : <div />}
+
+          {step < 4 ? (
+            <button type="button" onClick={goNext} disabled={!canGoNext()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition text-sm font-medium disabled:opacity-40"
+            >
+              Siguiente <ChevronRight size={16} />
+            </button>
+          ) : (
+            <button type="button" onClick={handleSubmit} disabled={loading}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition text-sm font-medium disabled:opacity-40"
+            >
+              <Check size={16} />
+              {loading ? 'Guardando...' : 'Confirmar Pedido'}
+            </button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default AddOrder;

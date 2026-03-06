@@ -19,6 +19,9 @@ import Bills from './pages/Bills';
 import Menus from './pages/Menus';
 import Settings from './pages/Settings';
 import Recipes from './pages/Recipes';
+import Routes_page from './pages/Routes';
+import Templates from './pages/Templates';
+import Orders from './pages/orders';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -36,6 +39,9 @@ export default function App() {
             <Route path="/menus" element={<Menus />} />
             <Route path="/recetas" element={<Recipes />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/routes" element={<Routes_page />} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/orders" element={<Orders />} />
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />
