@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Clock, Truck } from 'lucide-react';
+import { Truck, ChefHat, Package } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
-import RecipeProductionCard from '../components/RecipeProductionCard';
+import CocinaView  from '../components/Kitchen';
+import EmpaqueView from '../components/Package';
+import EntregaView from '../components/Delivered';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const DAY_LABELS = {
   Monday:    'Lunes',
@@ -15,222 +19,175 @@ const DAY_LABELS = {
   Sunday:    'Domingo',
 };
 
-const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+const TABS = [
+  { id: 'cocina',  label: 'Cocina',  Icon: ChefHat },
+  { id: 'empaque', label: 'Empaque', Icon: Package  },
+  { id: 'entrega', label: 'Entrega', Icon: Truck    },
+];
+
+// ── Week range ────────────────────────────────────────────────────────────────
 
 const getWeekRange = () => {
-  const today = new Date();
-  const day = today.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const today  = new Date();
+  const day    = today.getDay();
+  const diff   = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
+  monday.setDate(today.getDate() + diff);
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   return {
     weekStart: monday.toISOString().split('T')[0],
-    weekEnd: sunday.toISOString().split('T')[0],
+    weekEnd:   sunday.toISOString().split('T')[0],
   };
 };
 
+// ── Supabase select fragment ──────────────────────────────────────────────────
+
+const ORDER_DAY_SELECT = `
+  id_order_day,
+  day_of_week,
+  delivery_date,
+  status,
+  orders (
+    id_order,
+    classification,
+    clients ( id_client, name )
+  ),
+  order_day_details (
+    id_order_day_detail,
+    quantity,
+    protein_value_applied,
+    protein_unit_applied,
+    carb_value_applied,
+    carb_unit_applied,
+    recipes (
+      id_recipe, name,
+      recipe_ingredients ( name, category )
+    ),
+    order_day_recipe_overrides ( name, category )
+  )
+`;
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 const Production = () => {
-  const { supabase } = useApp();
+  const { supabase }           = useApp();
   const { weekStart, weekEnd } = getWeekRange();
 
+  const [activeTab,     setActiveTab]     = useState('cocina');
   const [availableDays, setAvailableDays] = useState([]);
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingDays, setLoadingDays] = useState(false);
-  const [orderDays, setOrderDays] = useState([]);
-  const [expandedRecipes, setExpandedRecipes] = useState({});
+  const [selectedDay,   setSelectedDay]   = useState(null);
+  const [loadingDays,   setLoadingDays]   = useState(false);
+  const [loading,       setLoading]       = useState(false);
 
-  // ===============================
-  // DÍAS CON ENTREGAS PENDIENTES
-  // ===============================
+  // Each view has its own data slice
+  const [pendingDays, setPendingDays] = useState([]);   // PENDING → Cocina + Empaque
+  const [packedDays,  setPackedDays]  = useState([]);   // PACKED  → Entrega
+
+  // ── Available days (PENDING ∪ PACKED) ─────────────────────────────────────
+
   const getAvailableDays = async () => {
     setLoadingDays(true);
-
     const { data, error } = await supabase
       .schema('operations')
       .from('order_days')
       .select('day_of_week')
-      .eq('status', 'PENDING')
+      .in('status', ['PENDING', 'PACKED'])
       .gte('delivery_date', weekStart)
       .lte('delivery_date', weekEnd);
 
-    if (error) {
-      console.error(error);
-      setLoadingDays(false);
-      return;
-    }
+    if (error) { console.error(error); setLoadingDays(false); return; }
 
     const unique = [...new Set((data ?? []).map((d) => d.day_of_week))]
       .sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
 
     setAvailableDays(unique);
-
-    if (unique.length > 0 && !selectedDay) {
-      setSelectedDay(unique[0]);
-    }
-
+    if (unique.length > 0 && !selectedDay) setSelectedDay(unique[0]);
     setLoadingDays(false);
   };
 
-  useEffect(() => {
-    getAvailableDays();
-  }, []);
+  // ── Data for selected day ─────────────────────────────────────────────────
 
-  // ===============================
-  // DATOS DEL DÍA SELECCIONADO
-  // ===============================
   const getData = async () => {
     if (!selectedDay) return;
     setLoading(true);
 
-    const { data, error } = await supabase
-      .schema('operations')
-      .from('order_days')
-      .select(`
-        id_order_day,
-        day_of_week,
-        delivery_date,
-        status,
-        orders (
-          id_order,
-          classification,
-          clients ( id_client, name )
-        ),
-        order_day_details (
-          id_order_day_detail,
-          quantity,
-          protein_value_applied,
-          protein_unit_applied,
-          carb_value_applied,
-          carb_unit_applied,
-          recipes ( id_recipe, name )
-        )
-      `)
-      .eq('day_of_week', selectedDay)
-      .eq('status', 'PENDING')
-      .gte('delivery_date', weekStart)
-      .lte('delivery_date', weekEnd)
-      .order('id_order_day');
+    const base = (status) =>
+      supabase
+        .schema('operations')
+        .from('order_days')
+        .select(ORDER_DAY_SELECT)
+        .eq('day_of_week', selectedDay)
+        .eq('status', status)
+        .gte('delivery_date', weekStart)
+        .lte('delivery_date', weekEnd)
+        .order('id_order_day');
 
-    if (error) {
-      console.error(error);
-      setLoading(false);
-      return;
-    }
+    const [pendingRes, packedRes] = await Promise.all([
+      base('PENDING'),
+      base('PACKED'),
+    ]);
 
-    setOrderDays(data ?? []);
+    if (pendingRes.error) console.error(pendingRes.error);
+    if (packedRes.error)  console.error(packedRes.error);
+
+    setPendingDays(pendingRes.data ?? []);
+    setPackedDays(packedRes.data   ?? []);
     setLoading(false);
   };
 
-  useEffect(() => {
-    getData();
-    setExpandedRecipes({});
-  }, [selectedDay]);
+  useEffect(() => { getAvailableDays(); }, []);
+  useEffect(() => { getData(); },          [selectedDay]);
 
-  // ===============================
-  // MARCAR ENTREGA
-  // ===============================
-  const markDelivered = async (orderDayId) => {
-    const { error } = await supabase
-      .schema('operations')
-      .from('order_days')
-      .update({ status: 'DELIVERED' })
-      .eq('id_order_day', orderDayId);
+  // ── Refresh both ──────────────────────────────────────────────────────────
 
-    if (error) {
-      sileo.error('Error al marcar la entrega');
-      console.error(error);
-      return;
-    }
-
-    sileo.success('Entrega marcada como completada');
+  const refresh = async () => {
     await getAvailableDays();
     await getData();
   };
 
-  // ===============================
-  // ===============================
-  // AGRUPAR POR RECETA → CLIENTE → MEALS
-  // Estructura: recipe → clients (agrupados por nombre) → meals (Almuerzo/Cena)
-  // ===============================
-  const groupByRecipe = () => {
-    const grouped = {};
+  // ── Status transitions ────────────────────────────────────────────────────
 
-    for (const orderDay of orderDays) {
-      const clientName = orderDay.orders?.clients?.name ?? 'Cliente';
-      const classification = orderDay.orders?.classification;
-      const orderDayId = orderDay.id_order_day;
+  const updateStatus = async (orderDayId, newStatus, successMsg) => {
+    const { error } = await supabase
+      .schema('operations')
+      .from('order_days')
+      .update({ status: newStatus })
+      .eq('id_order_day', orderDayId);
 
-      // Consolidar detalles del mismo orderDay por receta
-      const detailsByRecipe = {};
-      for (const detail of orderDay.order_day_details ?? []) {
-        const recipeId = detail.recipes?.id_recipe;
-        if (!recipeId) continue;
-        if (!detailsByRecipe[recipeId]) {
-          detailsByRecipe[recipeId] = {
-            recipeId,
-            recipeName: detail.recipes?.name ?? 'Receta',
-            quantity: 0,
-            protein: detail.protein_value_applied,
-            proteinUnit: detail.protein_unit_applied,
-            carb: detail.carb_value_applied,
-            carbUnit: detail.carb_unit_applied,
-          };
-        }
-        detailsByRecipe[recipeId].quantity += detail.quantity;
-      }
+    if (error) { sileo.error('Error al actualizar el estado'); console.error(error); return; }
 
-      // Agregar al agrupado: receta → cliente → meals
-      for (const item of Object.values(detailsByRecipe)) {
-        if (!grouped[item.recipeId]) {
-          grouped[item.recipeId] = { recipe_name: item.recipeName, totalUnits: 0, clients: {} };
-        }
-        grouped[item.recipeId].totalUnits += item.quantity;
-
-        if (!grouped[item.recipeId].clients[clientName]) {
-          grouped[item.recipeId].clients[clientName] = { clientName, totalQuantity: 0, meals: [] };
-        }
-        grouped[item.recipeId].clients[clientName].totalQuantity += item.quantity;
-        grouped[item.recipeId].clients[clientName].meals.push({
-          classification,
-          quantity: item.quantity,
-          orderDayId,
-          protein: item.protein,
-          proteinUnit: item.proteinUnit,
-          carb: item.carb,
-          carbUnit: item.carbUnit,
-        });
-      }
-    }
-
-    // Convertir clients de objeto a array
-    for (const recipe of Object.values(grouped)) {
-      recipe.clients = Object.values(recipe.clients);
-    }
-
-    return grouped;
+    sileo.success(successMsg);
+    await refresh();
   };
 
+  const markPacked    = (id) => updateStatus(id, 'PACKED',    '📦 Marcado como empacado');
+  const markDelivered = (id) => updateStatus(id, 'DELIVERED', '🚚 Entrega registrada');
 
-  const grouped = groupByRecipe();
-  const totalPending = orderDays.length;
-  const totalUnitsAll = Object.values(grouped).reduce((acc, r) => acc + r.totalUnits, 0);
+  // ── Tab badge counts ──────────────────────────────────────────────────────
 
-  const toggleRecipe = (recipeId) => {
-    setExpandedRecipes((prev) => ({ ...prev, [recipeId]: !prev[recipeId] }));
+  const counts = {
+    cocina:  pendingDays.length,
+    empaque: pendingDays.length,
+    entrega: packedDays.length,
   };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
 
-      {/* Header */}
-      <div className="mb-10">
+      {/* Page header */}
+      <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
-        <p className="text-slate-500 mt-2">
-          Semana del {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })} al {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
+        <p className="text-slate-500 mt-1">
+          Semana del{' '}
+          {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })}
+          {' '}al{' '}
+          {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
@@ -239,12 +196,12 @@ const Production = () => {
       ) : availableDays.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <Truck size={40} className="mx-auto mb-3 opacity-30" />
-          <p>No hay entregas pendientes esta semana</p>
+          <p>No hay pedidos activos esta semana</p>
         </div>
       ) : (
         <>
-          {/* Selector de día — dinámico */}
-          <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-8">
+          {/* Day selector */}
+          <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-6">
             {availableDays.map((day) => (
               <button
                 key={day}
@@ -260,53 +217,59 @@ const Production = () => {
             ))}
           </div>
 
-          {/* Resumen */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex items-center gap-4">
-              <Clock className="text-amber-500 shrink-0" size={22} />
-              <div>
-                <p className="text-xs text-slate-500">Pedidos pendientes</p>
-                <p className="text-2xl font-semibold text-slate-800">{totalPending}</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex items-center gap-4">
-              <Truck className="text-blue-500 shrink-0" size={22} />
-              <div>
-                <p className="text-xs text-slate-500">Total unidades</p>
-                <p className="text-2xl font-semibold text-slate-800">{totalUnitsAll}</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex items-center gap-4">
-              <CheckCircle className="text-green-500 shrink-0" size={22} />
-              <div>
-                <p className="text-xs text-slate-500">Recetas distintas</p>
-                <p className="text-2xl font-semibold text-slate-800">{Object.keys(grouped).length}</p>
-              </div>
-            </div>
+          {/* Tab bar */}
+          <div className="flex gap-2 mb-8">
+            {TABS.map(({ id, label, Icon }) => {
+              const isActive = activeTab === id;
+              const count    = counts[id];
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border ${
+                    isActive
+                      ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  <Icon size={15} />
+                  {label}
+                  {count > 0 && (
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                      isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Lista agrupada */}
+          {/* Active view */}
           {loading ? (
-            <p className="text-slate-500">Cargando...</p>
-          ) : Object.keys(grouped).length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <CheckCircle size={36} className="mx-auto mb-3 opacity-30" />
-              <p>Todas las entregas del {DAY_LABELS[selectedDay]} están completadas</p>
-            </div>
+            <p className="text-slate-500 text-sm">Cargando...</p>
           ) : (
-            <div className="space-y-4">
-              {Object.entries(grouped).map(([recipeId, recipe]) => (
-                <RecipeProductionCard
-                  key={recipeId}
-                  recipeId={recipeId}
-                  recipe={recipe}
-                  isExpanded={expandedRecipes[recipeId] ?? false}
-                  onToggle={toggleRecipe}
+            <div>
+              {activeTab === 'cocina'  && (
+                <CocinaView
+                  orderDays={pendingDays}
+                  onPack={markPacked}
+                  DAY_LABELS={DAY_LABELS}
+                />
+              )}
+              {activeTab === 'empaque' && (
+                <EmpaqueView
+                  orderDays={pendingDays}s
+                  onPack={markPacked}
+                />
+              )}
+              {activeTab === 'entrega' && (
+                <EntregaView
+                  orderDays={packedDays}
                   onDeliver={markDelivered}
                 />
-              ))}
+              )}
             </div>
           )}
         </>
