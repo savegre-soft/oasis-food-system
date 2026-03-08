@@ -15,6 +15,8 @@ import {
   Handbag
 } from "lucide-react";
 
+import { useApp } from "../context/AppContext"; // ✅ IMPORTAR CONTEXTO
+
 const links = [
   { to: "/Main", label: "Home", icon: Home },
   { to: "/entregas", label: "Entregas", icon: RouteIcon },
@@ -33,17 +35,21 @@ const financialLinks = [
 ];
 
 export default function Navbar() {
+
   const nav = useNavigate();
+  const { supabase, user } = useApp(); // ✅ USAR CONTEXTO
 
   const [isOpen, setIsOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
 
   const navRef = useRef(null);
 
-  function handleLogout() {
+  async function handleLogout() {
     setOpenMenu(null);
     setIsOpen(false);
-    alert("Sesión cerrada");
+
+    await supabase.auth.signOut(); // ✅ LOGOUT REAL
+
     nav("/login");
   }
 
@@ -96,7 +102,6 @@ export default function Navbar() {
             );
           })}
 
-          {/* Gestión */}
           <Dropdown
             label="Gestión"
             menuKey="gestion"
@@ -106,7 +111,6 @@ export default function Navbar() {
             baseStyle={baseStyle}
           />
 
-          {/* Finanzas */}
           <Dropdown
             label="Finanzas"
             menuKey="finanzas"
@@ -126,7 +130,15 @@ export default function Navbar() {
             </button>
 
             {openMenu === "profile" && (
-              <div className="absolute right-0 mt-3 w-44 bg-white text-green-800 rounded-xl shadow-xl py-2">
+              <div className="absolute right-0 mt-3 w-48 bg-white text-green-800 rounded-xl shadow-xl py-2">
+
+                {/* Usuario logueado */}
+                {user && (
+                  <div className="px-4 py-2 text-xs text-gray-500 border-b">
+                    {user.email}
+                  </div>
+                )}
+
                 <button className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100">
                   <User size={16} />
                   Perfil
@@ -177,13 +189,22 @@ export default function Navbar() {
               </NavLink>
             );
           })}
+
+          {/* Logout mobile */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-red-300 hover:bg-red-700 rounded-lg"
+          >
+            <LogOut size={18} />
+            Cerrar Sesión
+          </button>
         </div>
       )}
     </nav>
   );
 }
 
-/* COMPONENTE DROPDOWN reutilizable */
+/* Dropdown */
 
 function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
   return (
