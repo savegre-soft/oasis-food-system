@@ -131,6 +131,7 @@ const AddCustomer = ({ onAdd }) => {
           sileo.error('Error al guardar el perfil de almuerzo');
           console.error(lunchError);
           setLoading(false);
+          
           return;
         }
         lunchProfileId = lunchData.id_macro_profile;
