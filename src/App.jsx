@@ -22,6 +22,7 @@ import Recipes from './pages/Recipes';
 import Routes_page from './pages/Routes';
 import Templates from './pages/Templates';
 import Orders from './pages/Orders';
+import ChangePassword from './pages/ChangePassword';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -52,6 +53,8 @@ export default function App() {
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/ChangePassword/*" element={<ChangePassword />} />
+          
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/*" element={<NotFound />} />
         </Routes>

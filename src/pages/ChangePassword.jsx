@@ -17,22 +17,35 @@ const ChangePassword = () => {
 
     const hash = window.location.hash;
 
-    if (hash) {
-      const params = new URLSearchParams(hash.replace("#", ""));
+    if (!hash) return;
 
-      const error = params.get("error");
-      const description = params.get("error_description");
+    const params = new URLSearchParams(hash.replace("#", ""));
 
-      if (error) {
-        const message = decodeURIComponent(description || "Error en el enlace");
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const error = params.get("error");
+    const description = params.get("error_description");
 
-        setUrlError(message);
+    // manejar errores
+    if (error) {
+      const message = decodeURIComponent(description || "Error en el enlace");
 
-        sileo.error({
-          title: "Link inválido",
-          description: message
-        });
-      }
+      setUrlError(message);
+
+      sileo.error({
+        title: "Link inválido",
+        description: message
+      });
+
+      return;
+    }
+
+    // crear sesión de recovery
+    if (access_token && refresh_token) {
+      supabase.auth.setSession({
+        access_token,
+        refresh_token
+      });
     }
 
   }, []);
