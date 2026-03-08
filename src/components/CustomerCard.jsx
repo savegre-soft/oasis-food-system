@@ -3,9 +3,14 @@ const CLIENT_TYPE = {
   family:   { label: 'Familiar', className: 'bg-purple-50 text-purple-700' },
 };
 
+const PLAN_TYPE = {
+  estandar:    { label: '⭐ Estándar',    className: 'bg-slate-100 text-slate-600' },
+  nutricional: { label: '🥗 Nutricional', className: 'bg-green-50 text-green-700'  },
+};
+
 const CustomerCard = ({ customer, onSelected }) => {
-  const macro = customer.macro_profiles;
   const typeStyle = CLIENT_TYPE[customer.client_type] ?? CLIENT_TYPE.personal;
+  const planStyle = customer.plan_type ? (PLAN_TYPE[customer.plan_type] ?? PLAN_TYPE.estandar) : null;
 
   return (
     <div
@@ -19,6 +24,11 @@ const CustomerCard = ({ customer, onSelected }) => {
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeStyle.className}`}>
             {typeStyle.label}
           </span>
+          {planStyle && customer.client_type === 'personal' && (
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${planStyle.className}`}>
+              {planStyle.label}
+            </span>
+          )}
         </div>
         {customer.is_active !== undefined && (
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-1 ${
@@ -38,11 +48,11 @@ const CustomerCard = ({ customer, onSelected }) => {
       </div>
 
       {/* Macro profile */}
-      {macro ? (
+      {(customer.lunch_macro || customer.dinner_macro) ? (
         <p className="text-xs text-slate-500 italic">👆 Haz click para ver el perfil nutricional</p>
-      ) : (
+      ) : customer.client_type === 'personal' ? (
         <p className="text-xs text-slate-400 italic">Sin perfil nutricional</p>
-      )}
+      ) : null}
 
       {/* Fecha */}
       {customer.created_at && (

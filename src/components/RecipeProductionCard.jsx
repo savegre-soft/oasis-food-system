@@ -52,9 +52,21 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                 <IngredientBadges ingredients={recipe.effectiveIngredients} />
               </div>
             )}
-            <p className="text-xs text-slate-400 mt-1">
-              {(recipe.clients ?? []).length} cliente{(recipe.clients ?? []).length !== 1 ? 's' : ''}
-            </p>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <p className="text-xs text-slate-400">
+                {(recipe.clients ?? []).length} cliente{(recipe.clients ?? []).length !== 1 ? 's' : ''}
+              </p>
+              {recipe.totalProtein != null && (
+                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                  {Math.round(recipe.totalProtein)}{recipe.totalProteinUnit ?? 'g'} prot
+                </span>
+              )}
+              {recipe.totalCarb != null && (
+                <span className="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">
+                  {Math.round(recipe.totalCarb)}{recipe.totalCarbUnit ?? 'g'} carb
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {isExpanded
@@ -78,15 +90,15 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                   <p className="text-sm font-semibold text-slate-800">{client.clientName}</p>
                 </div>
 
-                {/* Empacar todo el cliente de una vez si tiene solo una meal */}
-                {client.meals?.length === 1 && (
+                {/* Empacar todo — solo cuando el cliente tiene más de 1 meal */}
+                {client.meals?.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => (client.meals[0].orderDayIds ?? []).forEach((id) => onPack(id))}
+                    onClick={() => (client.meals ?? []).flatMap((m) => m.orderDayIds ?? []).forEach((id) => onPack(id))}
                     className="flex items-center gap-1.5 text-xs text-orange-600 border border-orange-200 bg-orange-50 px-3 py-1.5 rounded-xl hover:bg-orange-100 transition shrink-0 ml-4"
                   >
                     <Archive size={13} />
-                    Empacar
+                    Empacar todo
                   </button>
                 )}
               </div>

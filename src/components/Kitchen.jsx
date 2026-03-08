@@ -56,7 +56,8 @@ export const groupByRecipe = (orderDays) => {
       }
 
       const g = grouped[variantKey];
-      g.totalUnits += detail.quantity ?? 1;
+      const qty = detail.quantity ?? 1;
+      g.totalUnits += qty;
 
       if (!g.clients[clientName]) {
         g.clients[clientName] = { clientName, totalQuantity: 0, meals: {} };
@@ -76,8 +77,22 @@ export const groupByRecipe = (orderDays) => {
       }
 
       const m = g.clients[clientName].meals[mealKey];
-      m.quantity    += detail.quantity ?? 1;
+      m.quantity    += qty;
+      // Only count macros once per order_day (the Set deduplicates order_days)
+      const isNewOrderDay = !m.orderDayIds.has(orderDay.id_order_day);
       m.orderDayIds.add(orderDay.id_order_day);
+      if (isNewOrderDay) {
+        const pVal = parseFloat(detail.protein_value_applied);
+        const cVal = parseFloat(detail.carb_value_applied);
+        if (!isNaN(pVal)) {
+          g.totalProtein     = (g.totalProtein     ?? 0) + pVal;
+          g.totalProteinUnit = detail.protein_unit_applied ?? g.totalProteinUnit ?? 'g';
+        }
+        if (!isNaN(cVal)) {
+          g.totalCarb     = (g.totalCarb     ?? 0) + cVal;
+          g.totalCarbUnit = detail.carb_unit_applied ?? g.totalCarbUnit ?? 'g';
+        }
+      }
     }
   }
 
