@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, ChevronLeft, Check, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { sileo } from 'sileo';
+import RecipeIngredientEditor from './RecipeIngredientEditor';
 
 // ── Constantes ──
 const DAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -43,6 +44,47 @@ const getDateForDay = (dayOfWeek, weekStart) => {
 
 const isFamily = (client) => client?.client_type === 'family';
 
+// ── MacroPanel: reusable macro display/edit block ──
+const MacroPanel = ({ label, colorClass, macros, overridden, onUpdate, onReset, macroInputClass, macroSelectClass }) => {
+  const colors = {
+    amber:  { border: 'border-amber-200', bg: 'bg-amber-50',  text: 'text-amber-700'  },
+    indigo: { border: 'border-indigo-200', bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  };
+  const c = colors[colorClass] ?? colors.amber;
+  return (
+    <div className={`rounded-xl p-3 border ${c.border} ${c.bg}`}>
+      <div className="flex items-center justify-between mb-2">
+        <p className={`text-xs font-semibold ${c.text}`}>{label}</p>
+        {overridden && onReset && (
+          <button type="button" onClick={onReset} className="text-xs text-slate-400 hover:text-slate-600 underline">
+            Usar base
+          </button>
+        )}
+      </div>
+      <div className="space-y-2">
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">Proteína</label>
+          <div className="flex gap-1.5">
+            <input type="number" min="0" value={macros?.protein_value ?? ''} onChange={(e) => onUpdate('protein_value', e.target.value)} className={macroInputClass ?? 'w-20 px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800'} />
+            <select value={macros?.protein_unit ?? 'g'} onChange={(e) => onUpdate('protein_unit', e.target.value)} className={macroSelectClass ?? 'px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800'}>
+              {['g','oz','kg'].map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-500 mb-1 block">Carbohidratos</label>
+          <div className="flex gap-1.5">
+            <input type="number" min="0" value={macros?.carb_value ?? ''} onChange={(e) => onUpdate('carb_value', e.target.value)} className={macroInputClass ?? 'w-20 px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800'} />
+            <select value={macros?.carb_unit ?? 'g'} onChange={(e) => onUpdate('carb_unit', e.target.value)} className={macroSelectClass ?? 'px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800'}>
+              {['g','oz','kg'].map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AddOrder = ({ onSuccess }) => {
   const { supabase } = useApp();
   const { weekStart, weekEnd } = getWeekRange();
@@ -66,6 +108,7 @@ const AddOrder = ({ onSuccess }) => {
   const [familyTemplates, setFamilyTemplates] = useState([]);
   const [selectedFamilyTemplate, setSelectedFamilyTemplate] = useState(null);
   const [familyRecipes, setFamilyRecipes] = useState([]); // recetas disponibles de la plantilla
+  const [allRecipes, setAllRecipes] = useState([]); // todas las recetas del sistema
 
   const [extraRecipes, setExtraRecipes] = useState(0);
   const [resolvedRoute, setResolvedRoute] = useState(null);
@@ -76,8 +119,16 @@ const AddOrder = ({ onSuccess }) => {
   // ── Paso 3: Ajustes por día ──
   const [dayRecipes, setDayRecipes] = useState({});
   const [expandedDays, setExpandedDays] = useState({});
-  const [globalMacros, setGlobalMacros] = useState(null);
-  const [dayMacros, setDayMacros] = useState({});
+  const [lunchMacros, setLunchMacros] = useState(null);   // macros base almuerzo
+  const [dinnerMacros, setDinnerMacros] = useState(null); // macros base cena
+  const [dayMacros, setDayMacros] = useState({});          // overrides por día
+
+  // recipeIngredients: { recipeId: { protein: [], carb: [], extra: [] } } — base desde BD
+  const [recipeIngredients, setRecipeIngredients] = useState({});
+  // ingredientOverrides: { 'day-recipeIndex': { protein: [], carb: [], extra: [] } | null }
+  const [ingredientOverrides, setIngredientOverrides] = useState({});
+  // extraMealTypes: { 'day-recipeIndex': 'Lunch' | 'Dinner' } — tipo de comida para platos extra
+  const [extraMealTypes, setExtraMealTypes] = useState({});
 
   // ── Cargar clientes ──
   useEffect(() => {
@@ -86,11 +137,13 @@ const AddOrder = ({ onSuccess }) => {
         .schema('operations')
         .from('clients')
         .select(`
-          id_client, name, client_type, macro_profile_id,
-          macro_profiles!fk_clients_macro (
-            id_macro_profile, name,
-            protein_value, protein_unit,
-            carb_value, carb_unit
+          id_client, name, client_type,
+          lunch_macro_profile_id, dinner_macro_profile_id,
+          lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey (
+            id_macro_profile, protein_value, protein_unit, carb_value, carb_unit
+          ),
+          dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
+            id_macro_profile, protein_value, protein_unit, carb_value, carb_unit
           )
         `)
         .eq('is_active', true)
@@ -102,10 +155,25 @@ const AddOrder = ({ onSuccess }) => {
 
   // ── Inicializar macros globales al seleccionar cliente ──
   useEffect(() => {
-    if (!selectedClient?.macro_profiles) return;
-    const m = selectedClient.macro_profiles;
-    setGlobalMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit, modified: false });
+    const lm = selectedClient?.lunch_macro;
+    const dm = selectedClient?.dinner_macro;
+    if (lm) setLunchMacros({ protein_value: lm.protein_value, protein_unit: lm.protein_unit, carb_value: lm.carb_value, carb_unit: lm.carb_unit, modified: false });
+    if (dm) setDinnerMacros({ protein_value: dm.protein_value, protein_unit: dm.protein_unit, carb_value: dm.carb_value, carb_unit: dm.carb_unit, modified: false });
   }, [selectedClient]);
+
+  // ── Cargar todas las recetas del sistema ──
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase
+        .schema('operations')
+        .from('recipes')
+        .select('id_recipe, name')
+        .eq('is_active', true)
+        .order('name');
+      if (data) setAllRecipes(data);
+    };
+    fetch();
+  }, []);
 
   // ── Cargar plantillas según tipo de cliente ──
   useEffect(() => {
@@ -229,6 +297,10 @@ const AddOrder = ({ onSuccess }) => {
     const expanded = {};
     Object.keys(result).forEach((d) => { expanded[d] = true; });
     setExpandedDays(expanded);
+    setIngredientOverrides({});
+    // Cargar ingredientes base de todas las recetas
+    const ids = Object.values(result).flat().map((r) => r.recipe_id).filter(Boolean);
+    fetchRecipeIngredients(ids);
   };
 
   // ── Construir dayRecipes para cliente familiar: 7 días vacíos ──
@@ -253,6 +325,26 @@ const AddOrder = ({ onSuccess }) => {
     setExpandedDays(expanded);
   };
 
+  // ── Cargar ingredientes base de recetas ──
+  const fetchRecipeIngredients = async (recipeIds) => {
+    if (!recipeIds || recipeIds.length === 0) return;
+    const unique = [...new Set(recipeIds.filter(Boolean))];
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('recipe_ingredients')
+      .select('recipe_id, name, category')
+      .in('recipe_id', unique);
+
+    if (error) { console.error(error); return; }
+
+    const grouped = {};
+    for (const row of data ?? []) {
+      if (!grouped[row.recipe_id]) grouped[row.recipe_id] = { protein: [], carb: [], extra: [] };
+      if (grouped[row.recipe_id][row.category]) grouped[row.recipe_id][row.category].push(row.name);
+    }
+    setRecipeIngredients((prev) => ({ ...prev, ...grouped }));
+  };
+
   // ── Helpers recetas ──
   const addRecipeToDay = (day, recipeId, recipeName) => {
     setDayRecipes((prev) => ({
@@ -266,7 +358,8 @@ const AddOrder = ({ onSuccess }) => {
     setDayRecipes((prev) => {
       const updated = [...(prev[day] || [])];
       if (field === 'recipe_id') {
-        const found = (isFamily(selectedClient) ? familyRecipes : []).find((r) => r.id_recipe === Number(value));
+        const pool = isFamily(selectedClient) ? familyRecipes : allRecipes;
+        const found = pool.find((r) => r.id_recipe === Number(value));
         updated[index] = { ...updated[index], recipe_id: Number(value), recipe_name: found?.name || '' };
       } else {
         updated[index] = { ...updated[index], [field]: value };
@@ -286,18 +379,39 @@ const AddOrder = ({ onSuccess }) => {
   };
 
   // ── Helpers macros ──
-  const updateGlobalMacro = (field, value) => setGlobalMacros((prev) => ({ ...prev, [field]: value, modified: true }));
-  const applyGlobalMacrosToAllDays = () => {
+  // Devuelve los macros base según clasificación del pedido
+  const getBaseMacros = (classification) => classification === 'Dinner' ? dinnerMacros : lunchMacros;
+
+  // Editar macros base por tipo
+  const updateLunchMacro = (field, value) => setLunchMacros((prev) => ({ ...prev, [field]: value, modified: true }));
+  const updateDinnerMacro = (field, value) => setDinnerMacros((prev) => ({ ...prev, [field]: value, modified: true }));
+
+  // Override por día — cuando se guarda, usa los macros base del tipo de ese día como punto de partida
+  const updateDayMacro = (day, classification, field, value) => {
+    setDayMacros((prev) => {
+      const base = getBaseMacros(classification);
+      const existing = prev?.[day]?.[classification] || { ...base };
+      return { ...prev, [day]: { ...(prev[day] || {}), [classification]: { ...existing, [field]: value, modified: true } } };
+    });
+  };
+  const resetDayMacros = (day, classification) => {
+    if (classification) {
+      setDayMacros((prev) => ({ ...prev, [day]: { ...(prev[day] || {}), [classification]: null } }));
+    } else {
+      setDayMacros((prev) => ({ ...prev, [day]: null }));
+    }
+  };
+
+  // Macros efectivos de un día: override > base por clasificación
+  const getEffectiveMacros = (day, classification) => dayMacros?.[day]?.[classification] ?? getBaseMacros(classification);
+
+  // Resetear macros base a todos los días
+  const applyBaseToAllDays = () => {
     const newDayMacros = {};
     Object.keys(dayRecipes).forEach((d) => { newDayMacros[d] = null; });
     setDayMacros(newDayMacros);
-    sileo.success('Macros globales aplicados a todos los días');
+    sileo.success('Macros base aplicados a todos los días');
   };
-  const updateDayMacro = (day, field, value) => {
-    setDayMacros((prev) => ({ ...prev, [day]: { ...(prev[day] || { ...globalMacros }), [field]: value, modified: true } }));
-  };
-  const resetDayMacros = (day) => setDayMacros((prev) => ({ ...prev, [day]: null }));
-  const getEffectiveMacros = (day) => dayMacros[day] ?? globalMacros;
 
   // ── Navegación ──
   const canGoNext = () => {
@@ -334,7 +448,6 @@ const AddOrder = ({ onSuccess }) => {
     const weekStartStr = toDateString(weekStart);
     const weekEndStr = toDateString(weekEnd);
     const activeDays = Object.keys(dayRecipes).filter((d) => (dayRecipes[d] || []).some((r) => r.recipe_id));
-    const macro = selectedClient?.macro_profiles;
     const menuTypes = isFamily(selectedClient) ? ['Family'] : (menuType === 'both' ? ['Lunch', 'Dinner'] : [menuType]);
 
     for (const type of menuTypes) {
@@ -353,11 +466,11 @@ const AddOrder = ({ onSuccess }) => {
           route_id: resolvedRoute?.id_route ?? null,
           classification: type,
           status: 'PENDING',
-          macro_profile_snapshot_id: macro?.id_macro_profile ?? null,
-          protein_snapshot: globalMacros?.protein_value ?? macro?.protein_value ?? null,
-          protein_unit_snapshot: globalMacros?.protein_unit ?? macro?.protein_unit ?? null,
-          carb_snapshot: globalMacros?.carb_value ?? macro?.carb_value ?? null,
-          carb_unit_snapshot: globalMacros?.carb_unit ?? macro?.carb_unit ?? null,
+          macro_profile_snapshot_id: (type === 'Dinner' ? selectedClient?.dinner_macro_profile_id : selectedClient?.lunch_macro_profile_id) ?? null,
+          protein_snapshot: (type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null,
+          protein_unit_snapshot: (type === 'Dinner' ? dinnerMacros?.protein_unit : lunchMacros?.protein_unit) ?? null,
+          carb_snapshot: (type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null,
+          carb_unit_snapshot: (type === 'Dinner' ? dinnerMacros?.carb_unit : lunchMacros?.carb_unit) ?? null,
         }])
         .select('id_order')
         .single();
@@ -376,22 +489,49 @@ const AddOrder = ({ onSuccess }) => {
 
         if (dayError) { sileo.error(`Error al crear el día ${DAY_LABELS[day]}`); console.error(dayError); setLoading(false); return; }
 
-        const eff = getEffectiveMacros(day);
         const details = (dayRecipes[day] || []).filter((r) => r.recipe_id);
         if (details.length > 0) {
-          const { error: detailsError } = await supabase
+          const { data: detailsData, error: detailsError } = await supabase
             .schema('operations')
             .from('order_day_details')
-            .insert(details.map((r) => ({
-              order_day_id: dayData.id_order_day,
-              recipe_id: r.recipe_id,
-              quantity: Number(r.quantity) || 1,
-              protein_value_applied: eff?.protein_value ?? null,
-              protein_unit_applied: eff?.protein_unit ?? null,
-              carb_value_applied: eff?.carb_value ?? null,
-              carb_unit_applied: eff?.carb_unit ?? null,
-            })));
+            .insert(details.map((r, i) => {
+              // Extras can override which macro profile to use (Lunch/Dinner)
+              const effectiveType = r.isExtra
+                ? (extraMealTypes[`${day}-${i}`] ?? type)
+                : type;
+              const eff = getEffectiveMacros(day, effectiveType);
+              return {
+                order_day_id: dayData.id_order_day,
+                recipe_id: r.recipe_id,
+                quantity: Number(r.quantity) || 1,
+                protein_value_applied: eff?.protein_value ?? null,
+                protein_unit_applied: eff?.protein_unit ?? null,
+                carb_value_applied: eff?.carb_value ?? null,
+                carb_unit_applied: eff?.carb_unit ?? null,
+              };
+            }))
+            .select('id_order_day_detail');
           if (detailsError) { sileo.error(`Error al guardar recetas del día ${DAY_LABELS[day]}`); console.error(detailsError); setLoading(false); return; }
+
+          // Guardar overrides de ingredientes si los hay
+          const overrideRows = [];
+          (detailsData ?? []).forEach((detail, i) => {
+            const key = `${day}-${i}`;
+            const override = ingredientOverrides[key];
+            if (!override) return;
+            for (const category of ['protein', 'carb', 'extra']) {
+              for (const ingName of override[category] ?? []) {
+                overrideRows.push({ order_day_detail_id: detail.id_order_day_detail, name: ingName, category });
+              }
+            }
+          });
+          if (overrideRows.length > 0) {
+            const { error: overrideError } = await supabase
+              .schema('operations')
+              .from('order_day_recipe_overrides')
+              .insert(overrideRows);
+            if (overrideError) { console.error('Error al guardar overrides:', overrideError); }
+          }
         }
       }
     }
@@ -463,9 +603,10 @@ const AddOrder = ({ onSuccess }) => {
                       {c.client_type === 'family' ? '👨‍👩‍👧 Familiar' : '👤 Personal'}
                     </span>
                   </div>
-                  {c.macro_profiles && (
+                  {c.lunch_macro && (
                     <p className={`text-xs mt-0.5 ${selectedClient?.id_client === c.id_client ? 'text-slate-300' : 'text-slate-400'}`}>
-                      {c.macro_profiles.name} · {c.macro_profiles.protein_value}{c.macro_profiles.protein_unit} prot · {c.macro_profiles.carb_value}{c.macro_profiles.carb_unit} carbos
+                      ☀️ {c.lunch_macro.protein_value}{c.lunch_macro.protein_unit} · {c.lunch_macro.carb_value}{c.lunch_macro.carb_unit}
+                      {c.dinner_macro && <span className="ml-2">🌙 {c.dinner_macro.protein_value}{c.dinner_macro.protein_unit} · {c.dinner_macro.carb_value}{c.dinner_macro.carb_unit}</span>}
                     </p>
                   )}
                 </button>
@@ -589,39 +730,36 @@ const AddOrder = ({ onSuccess }) => {
               </div>
             )}
 
-            {/* Macros globales */}
-            {globalMacros && (
-              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50">
-                <div className="flex items-center justify-between mb-3">
+            {/* Macros base — Almuerzo y/o Cena */}
+            {!familyClient && (lunchMacros || dinnerMacros) && (
+              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+                <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-slate-700">Macros del pedido</p>
-                    <p className="text-xs text-slate-400">Se aplican a todos los días. Puedes sobreescribir por día abajo.</p>
+                    <p className="text-xs text-slate-400">Base por tipo de comida. Puedes sobreescribir por día.</p>
                   </div>
-                  {globalMacros.modified && (
-                    <button type="button" onClick={applyGlobalMacrosToAllDays} className="text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition flex items-center gap-1">
-                      <RefreshCw size={12} /> Resetear días
-                    </button>
-                  )}
+                  <button type="button" onClick={applyBaseToAllDays} className="text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition flex items-center gap-1">
+                    <RefreshCw size={12} /> Resetear días
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">Proteína</label>
-                    <div className="flex gap-2">
-                      <input type="number" min="0" value={globalMacros.protein_value} onChange={(e) => updateGlobalMacro('protein_value', e.target.value)} className={macroInputClass} />
-                      <select value={globalMacros.protein_unit} onChange={(e) => updateGlobalMacro('protein_unit', e.target.value)} className={macroSelectClass}>
-                        {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1 block">Carbohidratos</label>
-                    <div className="flex gap-2">
-                      <input type="number" min="0" value={globalMacros.carb_value} onChange={(e) => updateGlobalMacro('carb_value', e.target.value)} className={macroInputClass} />
-                      <select value={globalMacros.carb_unit} onChange={(e) => updateGlobalMacro('carb_unit', e.target.value)} className={macroSelectClass}>
-                        {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    </div>
-                  </div>
+
+                <div className={`grid gap-3 ${menuType === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {lunchMacros && (menuType === 'Lunch' || menuType === 'both') && (
+                    <MacroPanel
+                      label="☀️ Almuerzo" colorClass="amber"
+                      macros={lunchMacros}
+                      onUpdate={updateLunchMacro}
+                      macroInputClass={macroInputClass} macroSelectClass={macroSelectClass}
+                    />
+                  )}
+                  {dinnerMacros && (menuType === 'Dinner' || menuType === 'both') && (
+                    <MacroPanel
+                      label="🌙 Cena" colorClass="indigo"
+                      macros={dinnerMacros}
+                      onUpdate={updateDinnerMacro}
+                      macroInputClass={macroInputClass} macroSelectClass={macroSelectClass}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -631,10 +769,9 @@ const AddOrder = ({ onSuccess }) => {
               const recipes = dayRecipes[day] ?? [];
               // Para personal: solo mostrar días con recetas
               // Para familiar: mostrar todos los 7 días
-              if (!familyClient && recipes.length === 0) return null;
+              // Siempre mostrar el día — permite agregar recetas aunque esté vacío
 
-              const effMacros = getEffectiveMacros(day);
-              const hasDayOverride = dayMacros[day] !== null && dayMacros[day] !== undefined;
+
               const isExpanded = expandedDays[day] ?? false;
 
               return (
@@ -647,7 +784,7 @@ const AddOrder = ({ onSuccess }) => {
                       {day === 'Friday' && familyClient && (
                         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">Día de entrega</span>
                       )}
-                      {hasDayOverride && (
+                      {dayMacros?.[day] && Object.values(dayMacros[day]).some(Boolean) && (
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Macros modificados</span>
                       )}
                       <span className="text-xs text-slate-400">
@@ -659,40 +796,64 @@ const AddOrder = ({ onSuccess }) => {
 
                   {isExpanded && (
                     <div className="p-4 space-y-4">
+                      {/* Recetas — lista única, sin distinción de tipo */}
                       <div className="space-y-2">
                         {recipes.map((item, index) => (
-                          <div key={index} className="flex gap-2 items-center p-2 rounded-xl bg-slate-50">
-                            {familyClient ? (
-                              // Familiar: selector con recetas de la plantilla
-                              <select value={item.recipe_id}
-                                onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
-                              >
-                                <option value="">Seleccionar receta</option>
-                                {familyRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)}
-                              </select>
-                            ) : item.isExtra ? (
-                              <select value={item.recipe_id}
-                                onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
-                              >
-                                <option value="">Seleccionar receta</option>
-                                {familyRecipes.length > 0
-                                  ? familyRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)
-                                  : <option disabled>No hay recetas disponibles</option>
-                                }
-                              </select>
-                            ) : (
-                              <span className="flex-1 text-sm text-slate-700 px-3 py-2 bg-white border border-slate-100 rounded-xl">{item.recipe_name}</span>
+                          <div key={index} className="space-y-1">
+                            <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+                              {familyClient ? (
+                                <select value={item.recipe_id}
+                                  onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                                >
+                                  <option value="">Seleccionar receta</option>
+                                  {familyRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)}
+                                </select>
+                              ) : item.isExtra ? (
+                                <>
+                                  <select value={item.recipe_id}
+                                    onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
+                                    className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                                  >
+                                    <option value="">Seleccionar receta</option>
+                                    {allRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)}
+                                  </select>
+                                  {menuType === 'both' && (
+                                    <div className="flex rounded-xl overflow-hidden border border-slate-200 shrink-0 text-xs font-medium">
+                                      {['Lunch', 'Dinner'].map((cls) => (
+                                        <button key={cls} type="button"
+                                          onClick={() => setExtraMealTypes((prev) => ({ ...prev, [`${day}-${index}`]: cls }))}
+                                          className={`px-2 py-1.5 transition ${
+                                            (extraMealTypes[`${day}-${index}`] ?? 'Lunch') === cls
+                                              ? cls === 'Lunch' ? 'bg-amber-400 text-white' : 'bg-indigo-500 text-white'
+                                              : 'bg-white text-slate-400 hover:bg-slate-50'
+                                          }`}
+                                        >
+                                          {cls === 'Lunch' ? '☀️' : '🌙'}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="flex-1 text-sm text-slate-700 px-3 py-2">{item.recipe_name}</span>
+                              )}
+                              <input type="number" min="1" value={item.quantity}
+                                onChange={(e) => updateRecipeInDay(day, index, 'quantity', e.target.value)}
+                                className="w-16 px-2 py-1.5 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
+                              />
+                              <button type="button" onClick={() => removeRecipeFromDay(day, index)} className="text-red-400 hover:text-red-600 transition">✕</button>
+                            </div>
+                            {item.recipe_id && (
+                              <RecipeIngredientEditor
+                                recipeName={item.recipe_name}
+                                baseIngredients={recipeIngredients[item.recipe_id] ?? { protein: [], carb: [], extra: [] }}
+                                value={ingredientOverrides[`${day}-${index}`] ?? null}
+                                onChange={(val) => setIngredientOverrides((prev) => ({ ...prev, [`${day}-${index}`]: val }))}
+                              />
                             )}
-                            <input type="number" min="1" value={item.quantity}
-                              onChange={(e) => updateRecipeInDay(day, index, 'quantity', e.target.value)}
-                              className="w-16 px-3 py-2 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
-                            />
-                            <button type="button" onClick={() => removeRecipeFromDay(day, index)} className="text-red-400 hover:text-red-600 transition">✕</button>
                           </div>
                         ))}
-
                         <button type="button" onClick={() => addRecipeToDay(day)}
                           className="flex items-center gap-1.5 text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition mt-1"
                         >
@@ -700,52 +861,30 @@ const AddOrder = ({ onSuccess }) => {
                         </button>
                       </div>
 
-                      {/* Macros por día */}
-                      <div className="border-t border-slate-100 pt-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-medium text-slate-500">
-                            Macros este día
-                            {!hasDayOverride && <span className="ml-1 text-slate-400">(usando macros globales)</span>}
-                          </p>
-                          {hasDayOverride && (
-                            <button type="button" onClick={() => resetDayMacros(day)} className="text-xs text-slate-500 hover:text-slate-700 underline">Usar global</button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Proteína</label>
-                            <div className="flex gap-1.5">
-                              <input type="number" min="0"
-                                value={hasDayOverride ? dayMacros[day].protein_value : effMacros?.protein_value ?? ''}
-                                onChange={(e) => updateDayMacro(day, 'protein_value', e.target.value)}
-                                className="w-20 px-2 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
-                              />
-                              <select value={hasDayOverride ? dayMacros[day].protein_unit : effMacros?.protein_unit ?? 'g'}
-                                onChange={(e) => updateDayMacro(day, 'protein_unit', e.target.value)}
-                                className="px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800"
-                              >
-                                {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                              </select>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs text-slate-400 mb-1 block">Carbohidratos</label>
-                            <div className="flex gap-1.5">
-                              <input type="number" min="0"
-                                value={hasDayOverride ? dayMacros[day].carb_value : effMacros?.carb_value ?? ''}
-                                onChange={(e) => updateDayMacro(day, 'carb_value', e.target.value)}
-                                className="w-20 px-2 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
-                              />
-                              <select value={hasDayOverride ? dayMacros[day].carb_unit : effMacros?.carb_unit ?? 'g'}
-                                onChange={(e) => updateDayMacro(day, 'carb_unit', e.target.value)}
-                                className="px-2 py-1.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-800"
-                              >
-                                {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                              </select>
-                            </div>
+                      {/* Macros por día — columnas según menuType */}
+                      {!familyClient && (
+                        <div className="border-t border-slate-100 pt-3">
+                          <div className={`grid gap-3 ${menuType === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                            {['Lunch', 'Dinner'].filter((cls) => menuType === 'both' || menuType === cls).map((cls) => {
+                              const dayOverride = dayMacros?.[day]?.[cls];
+                              const hasCls = dayOverride !== null && dayOverride !== undefined;
+                              const effCls = hasCls ? dayOverride : getBaseMacros(cls);
+                              return (
+                                <MacroPanel
+                                  key={cls}
+                                  label={cls === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
+                                  colorClass={cls === 'Lunch' ? 'amber' : 'indigo'}
+                                  macros={effCls}
+                                  overridden={hasCls}
+                                  onUpdate={(field, value) => updateDayMacro(day, cls, field, value)}
+                                  onReset={() => resetDayMacros(day, cls)}
+                                  macroInputClass={macroInputClass} macroSelectClass={macroSelectClass}
+                                />
+                              );
+                            })}
                           </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -836,8 +975,8 @@ const AddOrder = ({ onSuccess }) => {
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros globales del pedido</p>
                 <p className="text-sm text-slate-700">
-                  Proteína: {globalMacros?.protein_value}{globalMacros?.protein_unit} · Carbos: {globalMacros?.carb_value}{globalMacros?.carb_unit}
-                  {globalMacros?.modified && <span className="ml-2 text-blue-600 text-xs">(modificados)</span>}
+                  {lunchMacros && <>☀️ {lunchMacros.protein_value}{lunchMacros.protein_unit} prot · {lunchMacros.carb_value}{lunchMacros.carb_unit} carbos</>}
+                  {dinnerMacros && <span className="ml-2">🌙 {dinnerMacros.protein_value}{dinnerMacros.protein_unit} prot · {dinnerMacros.carb_value}{dinnerMacros.carb_unit} carbos</span>}
                 </p>
               </div>
 
