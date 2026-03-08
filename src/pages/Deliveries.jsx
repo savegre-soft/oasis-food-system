@@ -84,8 +84,9 @@ const Production = () => {
   const [loading,       setLoading]       = useState(false);
 
   // Each view has its own data slice
-  const [pendingDays, setPendingDays] = useState([]);   // PENDING → Cocina + Empaque
-  const [packedDays,  setPackedDays]  = useState([]);   // PACKED  → Entrega
+  const [pendingDays,   setPendingDays]   = useState([]);  // PENDING  → Cocina + Empaque
+  const [packedDays,    setPackedDays]    = useState([]);  // PACKED   → Empaque
+  const [deliveredDays, setDeliveredDays] = useState([]);  // DELIVERED → Entrega
 
   // ── Available days (PENDING ∪ PACKED) ─────────────────────────────────────
 
@@ -95,7 +96,7 @@ const Production = () => {
       .schema('operations')
       .from('order_days')
       .select('day_of_week')
-      .in('status', ['PENDING', 'PACKED'])
+      .in('status', ['PENDING', 'PACKED', 'DELIVERED'])
       .gte('delivery_date', weekStart)
       .lte('delivery_date', weekEnd);
 
@@ -126,16 +127,19 @@ const Production = () => {
         .lte('delivery_date', weekEnd)
         .order('id_order_day');
 
-    const [pendingRes, packedRes] = await Promise.all([
+    const [pendingRes, packedRes, deliveredRes] = await Promise.all([
       base('PENDING'),
       base('PACKED'),
+      base('DELIVERED'),
     ]);
 
-    if (pendingRes.error) console.error(pendingRes.error);
-    if (packedRes.error)  console.error(packedRes.error);
+    if (pendingRes.error)   console.error(pendingRes.error);
+    if (packedRes.error)    console.error(packedRes.error);
+    if (deliveredRes.error) console.error(deliveredRes.error);
 
-    setPendingDays(pendingRes.data ?? []);
-    setPackedDays(packedRes.data   ?? []);
+    setPendingDays(pendingRes.data     ?? []);
+    setPackedDays(packedRes.data       ?? []);
+    setDeliveredDays(deliveredRes.data ?? []);
     setLoading(false);
   };
 
@@ -171,8 +175,8 @@ const Production = () => {
 
   const counts = {
     cocina:  pendingDays.length,
-    empaque: pendingDays.length,
-    entrega: packedDays.length,
+    empaque: packedDays.length + pendingDays.length,
+    entrega: deliveredDays.length,
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -260,14 +264,14 @@ const Production = () => {
               )}
               {activeTab === 'empaque' && (
                 <EmpaqueView
-                  orderDays={pendingDays}s
-                  onPack={markPacked}
+                  pendingDays={pendingDays}
+                  packedDays={packedDays}
+                  onDeliver={markDelivered}
                 />
               )}
               {activeTab === 'entrega' && (
                 <EntregaView
-                  orderDays={packedDays}
-                  onDeliver={markDelivered}
+                  orderDays={deliveredDays}
                 />
               )}
             </div>

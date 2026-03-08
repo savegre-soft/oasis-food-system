@@ -24,6 +24,27 @@ const LocationPicker = ({ position, setPosition }) => {
 
 const MACRO_UNITS = ['g', 'oz', 'kg'];
 
+const PlanToggle = ({ value, onChange, name }) => (
+  <div className="flex rounded-xl overflow-hidden border border-slate-200 text-xs font-medium">
+    {[
+      { v: 'estandar',    label: '⭐ Estándar'   },
+      { v: 'nutricional', label: '🥗 Nutricional' },
+    ].map((opt) => (
+      <label key={opt.v}
+        className={`flex items-center px-3 py-1.5 cursor-pointer transition select-none ${
+          value === opt.v
+            ? 'bg-slate-800 text-white'
+            : 'bg-white text-slate-500 hover:bg-slate-50'
+        }`}
+      >
+        <input type="radio" name={name} value={opt.v} checked={value === opt.v}
+          onChange={() => onChange(opt.v)} className="sr-only" />
+        {opt.label}
+      </label>
+    ))}
+  </div>
+);
+
 const AddCustomer = ({ onAdd }) => {
   const { supabase } = useApp();
 
@@ -34,6 +55,8 @@ const AddCustomer = ({ onAdd }) => {
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
   const [clientType, setClientType] = useState('personal'); // 'personal' | 'family'
+  const [lunchPlanType,  setLunchPlanType]  = useState('nutricional'); // 'estandar' | 'nutricional'
+  const [dinnerPlanType, setDinnerPlanType] = useState('nutricional'); // 'estandar' | 'nutricional'
   const [errorMsg, setErrorMsg] = useState('');
 
   // Macros — almuerzo
@@ -82,11 +105,52 @@ const AddCustomer = ({ onAdd }) => {
   const filteredCantons = cantons.filter((c) => c.province_id === Number(selectedProvince));
   const filteredDistricts = districts.filter((d) => d.canton_id === Number(selectedCanton));
 
+  const STANDARD_MACRO = '120';
+  const isStandard = (p, c) => String(p) === STANDARD_MACRO && String(c) === STANDARD_MACRO;
+
+  const handleLunchPlanChange = (value) => {
+    setLunchPlanType(value);
+    if (value === 'estandar') {
+      setLunchProtein(STANDARD_MACRO); setLunchProteinUnit('g');
+      setLunchCarb(STANDARD_MACRO);    setLunchCarbUnit('g');
+    }
+  };
+
+  const handleDinnerPlanChange = (value) => {
+    setDinnerPlanType(value);
+    if (value === 'estandar') {
+      setDinnerProtein(STANDARD_MACRO); setDinnerProteinUnit('g');
+      setDinnerCarb(STANDARD_MACRO);    setDinnerCarbUnit('g');
+    }
+  };
+
+  const handleLunchMacroChange = (field, value) => {
+    const newProtein = field === 'protein' ? value : lunchProtein;
+    const newCarb    = field === 'carb'    ? value : lunchCarb;
+    if (field === 'protein') setLunchProtein(value);
+    if (field === 'carb')    setLunchCarb(value);
+    setLunchPlanType(isStandard(newProtein, newCarb) ? 'estandar' : 'nutricional');
+  };
+
+  const handleDinnerMacroChange = (field, value) => {
+    const newProtein = field === 'protein' ? value : dinnerProtein;
+    const newCarb    = field === 'carb'    ? value : dinnerCarb;
+    if (field === 'protein') setDinnerProtein(value);
+    if (field === 'carb')    setDinnerCarb(value);
+    setDinnerPlanType(isStandard(newProtein, newCarb) ? 'estandar' : 'nutricional');
+  };
+
+  // Derived plan_type for DB: estandar only if both meals are standard
+  const derivedPlanType = lunchPlanType === 'estandar' && dinnerPlanType === 'estandar'
+    ? 'estandar' : 'nutricional';
+
   const resetForm = () => {
     setNombre('');
     setPhone('');
     setAddress('');
     setClientType('personal');
+    setLunchPlanType('nutricional');
+    setDinnerPlanType('nutricional');
     setSelectedCountry('');
     setSelectedProvince('');
     setSelectedCanton('');
@@ -174,6 +238,7 @@ const AddCustomer = ({ onAdd }) => {
           lunch_macro_profile_id: lunchProfileId,
           dinner_macro_profile_id: dinnerProfileId,
           client_type: clientType,
+          plan_type: derivedPlanType,
           is_active: true,
           created_at: new Date().toISOString(),
         }]);
@@ -320,12 +385,15 @@ const AddCustomer = ({ onAdd }) => {
 
               {/* Almuerzo */}
               <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">
-                <p className="text-xs font-semibold text-amber-700 mb-3">☀️ Almuerzo</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-amber-700">☀️ Almuerzo</p>
+                  <PlanToggle value={lunchPlanType} onChange={handleLunchPlanChange} name="lunchPlan" />
+                </div>
                 <div className="flex flex-col gap-3">
                   <div>
                     <label className={labelClass}>Proteína</label>
                     <div className="flex gap-2">
-                      <input type="number" min="0" value={lunchProtein} onChange={(e) => setLunchProtein(e.target.value)} className={inputClass} placeholder="Ej: 200" required />
+                      <input type="number" min="0" value={lunchProtein} onChange={(e) => handleLunchMacroChange('protein', e.target.value)} className={inputClass} placeholder="Ej: 200" required />
                       <select value={lunchProteinUnit} onChange={(e) => setLunchProteinUnit(e.target.value)} className="px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-sm bg-white">
                         {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                       </select>
@@ -334,7 +402,7 @@ const AddCustomer = ({ onAdd }) => {
                   <div>
                     <label className={labelClass}>Carbohidratos</label>
                     <div className="flex gap-2">
-                      <input type="number" min="0" value={lunchCarb} onChange={(e) => setLunchCarb(e.target.value)} className={inputClass} placeholder="Ej: 150" required />
+                      <input type="number" min="0" value={lunchCarb} onChange={(e) => handleLunchMacroChange('carb', e.target.value)} className={inputClass} placeholder="Ej: 150" required />
                       <select value={lunchCarbUnit} onChange={(e) => setLunchCarbUnit(e.target.value)} className="px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-sm bg-white">
                         {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                       </select>
@@ -345,12 +413,15 @@ const AddCustomer = ({ onAdd }) => {
 
               {/* Cena */}
               <div className="border border-indigo-200 rounded-xl p-4 bg-indigo-50">
-                <p className="text-xs font-semibold text-indigo-700 mb-3">🌙 Cena</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-indigo-700">🌙 Cena</p>
+                  <PlanToggle value={dinnerPlanType} onChange={handleDinnerPlanChange} name="dinnerPlan" />
+                </div>
                 <div className="flex flex-col gap-3">
                   <div>
                     <label className={labelClass}>Proteína</label>
                     <div className="flex gap-2">
-                      <input type="number" min="0" value={dinnerProtein} onChange={(e) => setDinnerProtein(e.target.value)} className={inputClass} placeholder="Ej: 150" required />
+                      <input type="number" min="0" value={dinnerProtein} onChange={(e) => handleDinnerMacroChange('protein', e.target.value)} className={inputClass} placeholder="Ej: 150" required />
                       <select value={dinnerProteinUnit} onChange={(e) => setDinnerProteinUnit(e.target.value)} className="px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-sm bg-white">
                         {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                       </select>
@@ -359,7 +430,7 @@ const AddCustomer = ({ onAdd }) => {
                   <div>
                     <label className={labelClass}>Carbohidratos</label>
                     <div className="flex gap-2">
-                      <input type="number" min="0" value={dinnerCarb} onChange={(e) => setDinnerCarb(e.target.value)} className={inputClass} placeholder="Ej: 100" required />
+                      <input type="number" min="0" value={dinnerCarb} onChange={(e) => handleDinnerMacroChange('carb', e.target.value)} className={inputClass} placeholder="Ej: 100" required />
                       <select value={dinnerCarbUnit} onChange={(e) => setDinnerCarbUnit(e.target.value)} className="px-3 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-sm bg-white">
                         {MACRO_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                       </select>

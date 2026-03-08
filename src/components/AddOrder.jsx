@@ -253,7 +253,7 @@ const AddOrder = ({ onSuccess }) => {
       .select('id_route, name, route_type, route_delivery_days(day_of_week)')
       .eq('route_type', needsComplete ? 'complete' : 'individual')
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
     setResolvedRoute(data ?? null);
     return data;
   };
@@ -266,8 +266,19 @@ const AddOrder = ({ onSuccess }) => {
       .select('id_route, name, route_type, route_delivery_days(day_of_week)')
       .eq('route_type', 'family')
       .eq('is_active', true)
-      .single();
-    setResolvedRoute(data ?? null);
+      .maybeSingle();
+    // If no dedicated family route exists, try to find any route with Friday delivery
+    if (data) { setResolvedRoute(data); return; }
+    const { data: fallback } = await supabase
+      .schema('operations')
+      .from('routes')
+      .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+      .eq('is_active', true)
+      .limit(10);
+    const fridayRoute = (fallback ?? []).find((r) =>
+      r.route_delivery_days?.some((d) => d.day_of_week === 'Friday')
+    );
+    setResolvedRoute(fridayRoute ?? null);
   };
 
   // ── Re-evaluar ruta personal cuando cambian extras (solo personal) ──
@@ -355,17 +366,23 @@ const AddOrder = ({ onSuccess }) => {
   };
 
   const updateRecipeInDay = (day, index, field, value) => {
-    setDayRecipes((prev) => {
-      const updated = [...(prev[day] || [])];
-      if (field === 'recipe_id') {
-        const pool = isFamily(selectedClient) ? familyRecipes : allRecipes;
-        const found = pool.find((r) => r.id_recipe === Number(value));
-        updated[index] = { ...updated[index], recipe_id: Number(value), recipe_name: found?.name || '' };
-      } else {
+    if (field === 'recipe_id') {
+      const id = Number(value);
+      const found = allRecipes.find((r) => r.id_recipe === id);
+      setDayRecipes((prev) => {
+        const updated = [...(prev[day] || [])];
+        updated[index] = { ...updated[index], recipe_id: id, recipe_name: found?.name || '' };
+        return { ...prev, [day]: updated };
+      });
+      // Load base ingredients if not already cached
+      if (id && !recipeIngredients[id]) fetchRecipeIngredients([id]);
+    } else {
+      setDayRecipes((prev) => {
+        const updated = [...(prev[day] || [])];
         updated[index] = { ...updated[index], [field]: value };
-      }
-      return { ...prev, [day]: updated };
-    });
+        return { ...prev, [day]: updated };
+      });
+    }
   };
 
   const removeRecipeFromDay = (day, index) => {
@@ -417,7 +434,7 @@ const AddOrder = ({ onSuccess }) => {
   const canGoNext = () => {
     if (step === 1) return selectedClient !== null;
     if (step === 2) {
-      if (isFamily(selectedClient)) return selectedFamilyTemplate !== null;
+      if (isFamily(selectedClient)) return true; // never reached, but safe fallback
       if (!menuType) return false;
       if (menuType === 'Lunch') return selectedLunchTemplate !== null;
       if (menuType === 'Dinner') return selectedDinnerTemplate !== null;
@@ -427,6 +444,13 @@ const AddOrder = ({ onSuccess }) => {
   };
 
   const goNext = async () => {
+    if (step === 1 && isFamily(selectedClient)) {
+      // Familia: saltar paso 2, inicializar días vacíos y resolver ruta
+      await resolveFamilyRoute();
+      buildFamilyDayRecipes(null); // días vacíos, sin plantilla
+      setStep(3);
+      return;
+    }
     if (step === 2) {
       if (isFamily(selectedClient)) {
         await resolveFamilyRoute();
@@ -559,22 +583,24 @@ const AddOrder = ({ onSuccess }) => {
           Semana: {weekStart.toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })} — {weekEnd.toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
 
-        {/* Stepper */}
+        {/* Stepper — familia omite paso 2 */}
         <div className="flex items-center mb-8">
-          {STEP_LABELS.map((label, i) => {
-            const stepNum = i + 1;
-            const isActive = step === stepNum;
-            const isDone = step > stepNum;
+          {(isFamily(selectedClient)
+            ? [{ label: 'Cliente', real: 1 }, { label: 'Ajustes', real: 3 }, { label: 'Confirmar', real: 4 }]
+            : STEP_LABELS.map((label, i) => ({ label, real: i + 1 }))
+          ).map(({ label, real }, i, arr) => {
+            const isActive = step === real;
+            const isDone   = step > real;
             return (
               <div key={label} className="flex items-center flex-1 last:flex-none">
                 <div className="flex flex-col items-center">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition ${isDone ? 'bg-green-500 text-white' : isActive ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-500'}`}>
-                    {isDone ? <Check size={14} /> : stepNum}
+                    {isDone ? <Check size={14} /> : i + 1}
                   </div>
                   <span className={`text-xs mt-1 font-medium ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
                 </div>
-                {i < STEP_LABELS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-2 mb-4 ${step > stepNum ? 'bg-green-400' : 'bg-slate-200'}`} />
+                {i < arr.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-2 mb-4 ${step > real ? 'bg-green-400' : 'bg-slate-200'}`} />
                 )}
               </div>
             );
@@ -807,7 +833,7 @@ const AddOrder = ({ onSuccess }) => {
                                   className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
                                 >
                                   <option value="">Seleccionar receta</option>
-                                  {familyRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)}
+                                  {allRecipes.map((r) => <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>)}
                                 </select>
                               ) : item.isExtra ? (
                                 <>
@@ -913,7 +939,7 @@ const AddOrder = ({ onSuccess }) => {
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Menú</p>
                 <p className="text-sm text-slate-700">
-                  {familyClient ? `Familiar — ${selectedFamilyTemplate?.name}`
+                  {familyClient ? (selectedFamilyTemplate?.name ? `Familiar — ${selectedFamilyTemplate.name}` : 'Familiar')
                     : menuType === 'both' ? 'Almuerzo + Cena'
                     : menuType === 'Lunch' ? 'Solo Almuerzo' : 'Solo Cena'}
                 </p>
@@ -925,7 +951,9 @@ const AddOrder = ({ onSuccess }) => {
                 {!showRouteSelector ? (
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{resolvedRoute?.name ?? 'Sin ruta'}</p>
+                      <p className="text-sm font-medium text-slate-800">
+                        {resolvedRoute?.name ?? (familyClient ? 'Sin ruta familiar configurada' : 'Sin ruta')}
+                      </p>
                       {resolvedRoute?.route_delivery_days?.length > 0 && (
                         <div className="flex gap-1 mt-1">
                           {resolvedRoute.route_delivery_days.map((d, i) => (
@@ -972,13 +1000,15 @@ const AddOrder = ({ onSuccess }) => {
                 )}
               </div>
 
-              <div>
-                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros globales del pedido</p>
-                <p className="text-sm text-slate-700">
-                  {lunchMacros && <>☀️ {lunchMacros.protein_value}{lunchMacros.protein_unit} prot · {lunchMacros.carb_value}{lunchMacros.carb_unit} carbos</>}
-                  {dinnerMacros && <span className="ml-2">🌙 {dinnerMacros.protein_value}{dinnerMacros.protein_unit} prot · {dinnerMacros.carb_value}{dinnerMacros.carb_unit} carbos</span>}
-                </p>
-              </div>
+              {!familyClient && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros globales del pedido</p>
+                  <p className="text-sm text-slate-700">
+                    {lunchMacros && <>☀️ {lunchMacros.protein_value}{lunchMacros.protein_unit} prot · {lunchMacros.carb_value}{lunchMacros.carb_unit} carbos</>}
+                    {dinnerMacros && <span className="ml-2">🌙 {dinnerMacros.protein_value}{dinnerMacros.protein_unit} prot · {dinnerMacros.carb_value}{dinnerMacros.carb_unit} carbos</span>}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-2">Días con recetas</p>
