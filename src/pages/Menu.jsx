@@ -3,37 +3,62 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 
+const PAGE_SIZE = 6;
+
 const Menu = () => {
   const { supabase } = useApp();
+
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
   const loadRecipes = async () => {
-    const { data, error } = await supabase
+    setLoading(true);
+
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase
       .schema('operations')
       .from('recipes')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('is_active', true)
-      .order('id_recipe', { ascending: false });
+      .order('id_recipe', { ascending: false })
+      .range(from, to);
+
+    if (search) {
+      query = query.or(
+        `name.ilike.%${search}%,description.ilike.%${search}%`
+      );
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
       console.error(error);
+      setLoading(false);
       return;
     }
 
     setRecipes(data);
+    setTotal(count);
     setLoading(false);
   };
 
   useEffect(() => {
     loadRecipes();
-  }, []);
+  }, [page, search]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="py-16">
 
       {/* Header */}
-      <div className="text-center mb-14">
+      <div className="text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">
           Nuestro Menú
         </h1>
@@ -41,6 +66,22 @@ const Menu = () => {
         <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
           Descubre nuestros platos frescos preparados al momento con ingredientes naturales.
         </p>
+      </div>
+
+      {/* Filtros */}
+      <div className="max-w-xl mx-auto mb-10">
+
+        <input
+          type="text"
+          placeholder="Buscar platos..."
+          value={search}
+          onChange={(e) => {
+            setPage(1);
+            setSearch(e.target.value);
+          }}
+          className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600 outline-none"
+        />
+
       </div>
 
       {/* Loading */}
@@ -57,13 +98,11 @@ const Menu = () => {
           <motion.div
             key={dish.id_recipe}
             initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.05 }}
             className="bg-white rounded-3xl shadow-md hover:shadow-xl transition overflow-hidden flex flex-col"
           >
 
-            {/* Imagen */}
             {dish.image_url && (
               <img
                 src={dish.image_url}
@@ -84,7 +123,7 @@ const Menu = () => {
                 </p>
               </div>
 
-              <div className="flex items-center justify-end mt-4">
+              <div className="flex justify-end">
 
                 <Link
                   to={`/ordenar/${dish.id_recipe}`}
@@ -94,12 +133,50 @@ const Menu = () => {
                 </Link>
 
               </div>
+
             </div>
 
           </motion.div>
         ))}
 
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-12">
+
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className="px-4 py-2 rounded-lg border disabled:opacity-40"
+          >
+            Anterior
+          </button>
+
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPage(i + 1)}
+              className={`px-4 py-2 rounded-lg border ${
+                page === i + 1
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(page + 1)}
+            className="px-4 py-2 rounded-lg border disabled:opacity-40"
+          >
+            Siguiente
+          </button>
+
+        </div>
+      )}
 
       {/* CTA */}
       <div className="mt-20 text-center">
@@ -120,6 +197,7 @@ const Menu = () => {
         </Link>
 
       </div>
+
     </div>
   );
 };
