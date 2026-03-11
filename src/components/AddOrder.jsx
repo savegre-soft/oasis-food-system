@@ -35,11 +35,74 @@ const getWeekRange = () => {
 
 const toDateString = (date) => date.toISOString().split('T')[0];
 
-const getDateForDay = (dayOfWeek, weekStart) => {
+// Returns the Date object of `dayOfWeek` within the week starting on `weekStart`
+const getAbsoluteDate = (dayOfWeek, weekStart) => {
   const idx = DAYS_ORDER.indexOf(dayOfWeek);
   const date = new Date(weekStart);
   date.setDate(weekStart.getDate() + idx);
-  return toDateString(date);
+  return date;
+};
+
+// Assigns each meal-day its delivery date = the next route delivery day >= that day.
+// routeDeliveryDays: string[] e.g. ['Sunday', 'Wednesday']
+// Falls back to the meal-day's own date if no route is provided.
+// Given a meal's day-of-week, find the delivery date:
+// The delivery happens on the LAST route day <= meal day (i.e. the most recent
+// delivery day that is on or before the meal day).
+// Example: route Sun+Wed, meal=Monday → delivery=Sunday (same week)
+//          route Sun+Wed, meal=Thursday → delivery=Wednesday (same week)
+//          route Sun+Wed, meal=Sunday → delivery=Sunday (same week)
+// If no route day falls on or before the meal day (shouldn't happen with Sun),
+// fall back to the last delivery day of the previous week.
+// Delivery slot logic:
+// The week runs Mon(0)…Sat(5), with Sun(6) treated as the START of the slot
+// cycle (idx = -1 relative to Monday). A Sunday delivery covers Mon→next-slot.
+//
+// Algorithm: for a meal on dayOfWeek, find the latest route delivery day
+// whose "slot index" is <= meal's slot index, where Sunday maps to -1.
+//
+// Example route Sun+Wed (slotIdx: Sun=-1, Wed=2):
+//   Mon(0) → last delivery with slotIdx ≤ 0 → Sun(-1) → Sunday ✓
+//   Tue(1) → Sun(-1) ✓
+//   Wed(2) → Wed(2) ✓  (Wednesday covers itself)
+//   Thu(3) → Wed(2) ✓
+//   Fri(4) → Wed(2) ✓
+//   Sat(5) → Wed(2) ✓
+//   Sun(6) → Sun(-1)... but Sun's own slot covers the NEXT week cycle,
+//             so map Sun meal → same-week Sunday delivery ✓
+const getDateForDay = (dayOfWeek, weekStart, routeDeliveryDays) => {
+  if (!routeDeliveryDays || routeDeliveryDays.length === 0) {
+    return toDateString(getAbsoluteDate(dayOfWeek, weekStart));
+  }
+
+  // Slot index: Sunday = -1 (start of week), Mon=0 … Sat=5, Sun as meal = 6
+  const slotIdx = (d) => d === 'Sunday' ? -1 : DAYS_ORDER.indexOf(d);
+  const mealSlot = DAYS_ORDER.indexOf(dayOfWeek); // Mon=0…Sun=6
+
+  const sorted = [...routeDeliveryDays].sort((a, b) => slotIdx(a) - slotIdx(b));
+
+  // Find latest delivery whose slotIdx <= mealSlot
+  // Special case: Sunday meal (idx 6) should map to the Sunday delivery of same week
+  if (dayOfWeek === 'Sunday') {
+    const hasSunday = sorted.includes('Sunday');
+    if (hasSunday) return toDateString(getAbsoluteDate('Sunday', weekStart));
+    // No Sunday delivery → last delivery day of this week
+    const last = sorted[sorted.length - 1];
+    return toDateString(getAbsoluteDate(last, weekStart));
+  }
+
+  // For Mon–Sat: find latest delivery slotIdx <= mealSlot
+  const candidates = sorted.filter((d) => slotIdx(d) <= mealSlot);
+  if (candidates.length > 0) {
+    const best = candidates[candidates.length - 1];
+    return toDateString(getAbsoluteDate(best, weekStart));
+  }
+
+  // No delivery precedes this meal day → shouldn't happen with a Sunday route,
+  // but fall back to last delivery day of previous week
+  const prev = new Date(getAbsoluteDate(sorted[sorted.length - 1], weekStart));
+  prev.setDate(prev.getDate() - 7);
+  return toDateString(prev);
 };
 
 const isFamily = (client) => client?.client_type === 'family';
@@ -466,6 +529,14 @@ const AddOrder = ({ onSuccess }) => {
     setStep((s) => s + 1);
   };
 
+  const goBack = () => {
+    if (step === 3 && isFamily(selectedClient)) {
+      setStep(1); // skip step 2 for family clients
+      return;
+    }
+    setStep((s) => s - 1);
+  };
+
   // ── Guardar ──
   const handleSubmit = async () => {
     setLoading(true);
@@ -473,6 +544,8 @@ const AddOrder = ({ onSuccess }) => {
     const weekEndStr = toDateString(weekEnd);
     const activeDays = Object.keys(dayRecipes).filter((d) => (dayRecipes[d] || []).some((r) => r.recipe_id));
     const menuTypes = isFamily(selectedClient) ? ['Family'] : (menuType === 'both' ? ['Lunch', 'Dinner'] : [menuType]);
+    // Route delivery days for delivery_date calculation
+    const routeDeliveryDays = (resolvedRoute?.route_delivery_days ?? []).map((d) => d.day_of_week);
 
     for (const type of menuTypes) {
       const templateId = type === 'Lunch' ? selectedLunchTemplate?.id_template
@@ -507,7 +580,7 @@ const AddOrder = ({ onSuccess }) => {
         const { data: dayData, error: dayError } = await supabase
           .schema('operations')
           .from('order_days')
-          .insert([{ order_id: orderId, day_of_week: day, delivery_date: getDateForDay(day, weekStart), status: 'PENDING' }])
+          .insert([{ order_id: orderId, day_of_week: day, delivery_date: getDateForDay(day, weekStart, routeDeliveryDays), status: 'PENDING' }])
           .select('id_order_day')
           .single();
 
@@ -575,7 +648,7 @@ const AddOrder = ({ onSuccess }) => {
   const familyClient = isFamily(selectedClient);
 
   return (
-    <div className="bg-slate-50 p-8 flex justify-center">
+    <div className="bg-slate-50 p-8 flex justify-center" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
       <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
 
         <h1 className="text-2xl font-bold text-slate-800 mb-2">Nuevo Pedido</h1>
@@ -612,7 +685,7 @@ const AddOrder = ({ onSuccess }) => {
           <div className="space-y-4">
             <div>
               <label className={labelClass}>Buscar cliente</label>
-              <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Escribe el nombre..." className={inputClass} autoFocus />
+              <input type="text" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Escribe el nombre..." spellCheck="false" autoComplete="off" className={inputClass} autoFocus />
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {filteredClients.map((c) => (
@@ -825,10 +898,10 @@ const AddOrder = ({ onSuccess }) => {
                       {/* Recetas — lista única, sin distinción de tipo */}
                       <div className="space-y-2">
                         {recipes.map((item, index) => (
-                          <div key={index} className="space-y-1">
+                          <div key={`${day}-${index}`} className="space-y-1">
                             <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
                               {familyClient ? (
-                                <select value={item.recipe_id}
+                                <select value={item.recipe_id || ''}
                                   onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
                                   className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
                                 >
@@ -837,7 +910,7 @@ const AddOrder = ({ onSuccess }) => {
                                 </select>
                               ) : item.isExtra ? (
                                 <>
-                                  <select value={item.recipe_id}
+                                  <select value={item.recipe_id || ''}
                                     onChange={(e) => updateRecipeInDay(day, index, 'recipe_id', e.target.value)}
                                     className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
                                   >
@@ -870,14 +943,14 @@ const AddOrder = ({ onSuccess }) => {
                               />
                               <button type="button" onClick={() => removeRecipeFromDay(day, index)} className="text-red-400 hover:text-red-600 transition">✕</button>
                             </div>
-                            {item.recipe_id && (
+                            {item.recipe_id ? (
                               <RecipeIngredientEditor
                                 recipeName={item.recipe_name}
                                 baseIngredients={recipeIngredients[item.recipe_id] ?? { protein: [], carb: [], extra: [] }}
                                 value={ingredientOverrides[`${day}-${index}`] ?? null}
                                 onChange={(val) => setIngredientOverrides((prev) => ({ ...prev, [`${day}-${index}`]: val }))}
                               />
-                            )}
+                            ) : null}
                           </div>
                         ))}
                         <button type="button" onClick={() => addRecipeToDay(day)}
@@ -1013,15 +1086,21 @@ const AddOrder = ({ onSuccess }) => {
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-2">Días con recetas</p>
                 {DAYS_ORDER.filter((d) => (dayRecipes[d] || []).some((r) => r.recipe_id)).map((day) => {
-                  const hasDayOverride = dayMacros[day] !== null && dayMacros[day] !== undefined;
+                  // dayMacros[day] = { Lunch?: {...}, Dinner?: {...} } — iterate entries
+                  const overriddenClasses = Object.entries(dayMacros?.[day] ?? {})
+                    .filter(([, v]) => v !== null && v !== undefined);
                   return (
                     <div key={day} className="flex items-start gap-2 mb-1.5">
                       <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium min-w-[50px] text-center shrink-0">{DAY_LABELS[day]}</span>
                       <div>
-                        <p className="text-xs text-slate-600">{dayRecipes[day].filter((r) => r.recipe_id).map((r) => r.recipe_name || 'Receta').join(', ')}</p>
-                        {hasDayOverride && (
-                          <p className="text-xs text-blue-600">Macros: {dayMacros[day].protein_value}{dayMacros[day].protein_unit} prot · {dayMacros[day].carb_value}{dayMacros[day].carb_unit} carbos</p>
-                        )}
+                        <p className="text-xs text-slate-600">
+                          {dayRecipes[day].filter((r) => r.recipe_id).map((r) => r.recipe_name || 'Receta').join(', ')}
+                        </p>
+                        {overriddenClasses.map(([cls, m]) => (
+                          <p key={cls} className="text-xs text-blue-600">
+                            {cls === 'Lunch' ? '☀️' : '🌙'} {m.protein_value ?? '—'}{m.protein_unit ?? ''} prot · {m.carb_value ?? '—'}{m.carb_unit ?? ''} carbos
+                          </p>
+                        ))}
                       </div>
                     </div>
                   );
@@ -1034,7 +1113,7 @@ const AddOrder = ({ onSuccess }) => {
         {/* ── Navegación ── */}
         <div className="flex justify-between mt-8">
           {step > 1 ? (
-            <button type="button" onClick={() => setStep((s) => s - 1)}
+            <button type="button" onClick={goBack}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:border-slate-400 transition text-sm font-medium"
             >
               <ChevronLeft size={16} /> Atrás
