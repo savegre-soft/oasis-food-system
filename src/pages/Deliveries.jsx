@@ -34,7 +34,7 @@ const getWeekRange = () => {
   const day    = today.getDay();
   const diff   = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diff);
+  monday.setDate(today.getDate() + diff + 7); // next week
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -53,43 +53,51 @@ const getWeekRange = () => {
 // Rule: slot N covers days from (slot[N-1].date + 1 day) to slot[N].date.
 // For the first slot we wrap around: start = slot[last] of PREVIOUS week + 1.
 //
-const buildDeliverySlots = (deliveryDayNames, weekMonday) => {
-  // Map day name → absolute date this week
-  const dateForName = (name) => {
-    const idx = DAY_ORDER.indexOf(name);           // 0=Mon … 6=Sun
-    const d   = new Date(weekMonday);
-    d.setDate(weekMonday.getDate() + idx);
-    return d;
-  };
+// Cycle order for delivery slots: Sunday starts the week (index -1),
+// then Mon(0)…Sat(5). Matches getDateForDay in AddOrder.
+const cycleIdx = (d) => d === 'Sunday' ? -1 : DAY_ORDER.indexOf(d);
 
-  // Sort slots by DAY_ORDER position
-  const sorted = [...deliveryDayNames].sort(
-    (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b)
-  );
+// Absolute ISO date of a named day within the week starting on weekMonday.
+const isoOfDay = (name, weekMonday) => {
+  const d = new Date(weekMonday);
+  if (name === 'Sunday') {
+    d.setDate(weekMonday.getDate() - 1); // Sunday precedes Monday
+  } else {
+    d.setDate(weekMonday.getDate() + DAY_ORDER.indexOf(name)); // Mon=0…Sat=5
+  }
+  return d.toISOString().split('T')[0];
+};
+
+// Build delivery slots from route delivery day names.
+// Each slot's dateFrom/dateTo = the exact delivery_date stored in order_days
+// for that slot (a single date, not a range), because Production filters by
+// delivery_date == slot date.
+//
+// The slot LABEL shows which meal days it covers, but the DB query uses
+// the exact delivery_date value.
+//
+// Slot order follows cycleIdx (Sun first, then Mon–Sat).
+const buildDeliverySlots = (deliveryDayNames, weekMonday) => {
+  const sorted = [...deliveryDayNames].sort((a, b) => cycleIdx(a) - cycleIdx(b));
 
   return sorted.map((name, i) => {
-    const toDate = dateForName(name);
+    const deliveryDate = isoOfDay(name, weekMonday);
 
-    // Start = day after previous slot (or day after last slot of previous week)
-    let fromDate;
-    if (i === 0) {
-      const prevName = sorted[sorted.length - 1];
-      const prevDate = dateForName(prevName);
-      prevDate.setDate(prevDate.getDate() - 7); // previous week's last slot
-      fromDate = new Date(prevDate);
-      fromDate.setDate(prevDate.getDate() + 1);
-    } else {
-      const prevDate = dateForName(sorted[i - 1]);
-      fromDate = new Date(prevDate);
-      fromDate.setDate(prevDate.getDate() + 1);
-    }
+    // Label: show which meal days this delivery covers
+    // From: day after previous delivery (cycle order), To: day before next delivery
+    const prevName = i === 0 ? null : sorted[i - 1];
+    const nextName = sorted[i + 1] ?? null;
 
-    const fmt = (d) => d.toISOString().split('T')[0];
+    const prevDate = prevName ? isoOfDay(prevName, weekMonday) : null;
+    const nextDate = nextName ? isoOfDay(nextName, weekMonday) : null;
+
+    // dateFrom/dateTo for DB query = exact delivery_date (single day)
     return {
-      name,                          // day-of-week key  e.g. 'Tuesday'
-      label: DAY_LABELS[name] ?? name,
-      dateFrom: fmt(fromDate),
-      dateTo:   fmt(toDate),
+      name,
+      label:        DAY_LABELS[name] ?? name,
+      deliveryDate, // exact date stored in order_days.delivery_date
+      prevDate,     // for display: meal days start after this
+      nextDate,     // for display: meal days end before this
     };
   });
 };
@@ -174,7 +182,7 @@ const Production = () => {
       const fallbackSlots = uniqueDates.map((dateStr) => {
         const d = new Date(dateStr + 'T00:00:00');
         const name = DAY_ORDER[d.getDay() === 0 ? 6 : d.getDay() - 1];
-        return { name, label: DAY_LABELS[name] ?? name, dateFrom: dateStr, dateTo: dateStr };
+        return { name, label: DAY_LABELS[name] ?? name, deliveryDate: dateStr };
       });
       setSlots(fallbackSlots);
       if (fallbackSlots.length > 0 && !selectedSlot) setSelectedSlot(fallbackSlots[0]);
@@ -197,13 +205,9 @@ const Production = () => {
 
     const activeDateSet = new Set((activeDates ?? []).map((d) => d.delivery_date));
 
-    const activeSlots = allSlots.filter((slot) => {
-      // Check if any active date falls within this slot's range
-      for (const date of activeDateSet) {
-        if (date >= slot.dateFrom && date <= slot.dateTo) return true;
-      }
-      return false;
-    });
+    const activeSlots = allSlots.filter((slot) =>
+      activeDateSet.has(slot.deliveryDate)
+    );
 
     setSlots(activeSlots);
     if (activeSlots.length > 0 && !selectedSlot) setSelectedSlot(activeSlots[0]);
@@ -221,8 +225,7 @@ const Production = () => {
         .schema('operations')
         .from('order_days')
         .select(ORDER_DAY_SELECT)
-        .gte('delivery_date', selectedSlot.dateFrom)
-        .lte('delivery_date', selectedSlot.dateTo)
+        .eq('delivery_date', selectedSlot.deliveryDate)
         .eq('status', status)
         .order('id_order_day');
 
@@ -315,9 +318,8 @@ const Production = () => {
           <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-6">
             {slots.map((slot) => {
               const isActive = selectedSlot?.name === slot.name;
-              const from = new Date(slot.dateFrom + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-              const to   = new Date(slot.dateTo   + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-              const range = slot.dateFrom === slot.dateTo ? from : `${from} – ${to}`;
+              const delivLabel = new Date(slot.deliveryDate + 'T00:00:00')
+                .toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
               return (
                 <button
                   key={slot.name}
@@ -327,7 +329,7 @@ const Production = () => {
                   }`}
                 >
                   <span>{slot.label}</span>
-                  <span className="text-xs font-normal opacity-60">{range}</span>
+                  <span className="text-xs font-normal opacity-60">{delivLabel}</span>
                 </button>
               );
             })}

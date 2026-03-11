@@ -26,7 +26,7 @@ const getWeekRange = () => {
   const day = today.getDay();
   const diffToMonday = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diffToMonday);
+  monday.setDate(today.getDate() + diffToMonday + 7); // orders are for next week
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -37,9 +37,14 @@ const toDateString = (date) => date.toISOString().split('T')[0];
 
 // Returns the Date object of `dayOfWeek` within the week starting on `weekStart`
 const getAbsoluteDate = (dayOfWeek, weekStart) => {
-  const idx = DAYS_ORDER.indexOf(dayOfWeek);
   const date = new Date(weekStart);
-  date.setDate(weekStart.getDate() + idx);
+  if (dayOfWeek === 'Sunday') {
+    // Sunday is the day BEFORE Monday (weekStart - 1), not after Saturday
+    date.setDate(weekStart.getDate() - 1);
+  } else {
+    const idx = DAYS_ORDER.indexOf(dayOfWeek); // Mon=0…Sat=5
+    date.setDate(weekStart.getDate() + idx);
+  }
   return date;
 };
 
