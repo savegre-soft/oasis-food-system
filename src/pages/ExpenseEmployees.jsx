@@ -12,13 +12,12 @@ import { useApp } from '../context/AppContext';
 import ExpenseCard from '../components/ExpenseCard';
 import ExpenseTable from '../components/ExpenseTable';
 import DatePicker from '../components/DatePicker';
-import AddExpensive from '../components/AddExpensive';
 import Modal from '../components/Modal';
 
-const Bills = () => {
+const ExpenseEmployees = () => {
   const { supabase } = useApp();
 
-  const [gastos, setGastos] = useState([]);
+  const [expensesEmployees, setExpensesEmployees] = useState([]);
   const [search, setSearch] = useState('');
   const [view, setView] = useState('cards');
   const [showModal, setShowModal] = useState(false);
@@ -28,14 +27,16 @@ const Bills = () => {
     endDate: null
   });
 
+  /* -----------------------------
+     Obtener datos
+  ----------------------------- */
+
   const fetchData = async () => {
     const { data, error } = await supabase
       .schema('operations')
-      .from('expenses')
+      .from('empCost')
       .select('*')
-      .order('expense_date', { ascending: false });
-
-      console.log(data)
+      .order('WorkDate', { ascending: false });
 
     if (error) {
       console.error(error);
@@ -43,43 +44,51 @@ const Bills = () => {
     }
 
     const formatted = data.map((item) => ({
-      id: item.id_expense,
-      descripcion: item.description,
-      categoria: `Categoria ${item.category_id}`,
-      fecha: item.expense_date,
-      monto: item.amount,
+      id: item.id,
+      descripcion: item.Name,
+      categoria: `Horas: ${item.Hours}`,
+      fecha: item.WorkDate,
+      monto: item.Amount
     }));
 
-    setGastos(formatted);
+    setExpensesEmployees(formatted);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const gastosFiltrados = gastos
-    .filter((gasto) =>
-      gasto.descripcion.toLowerCase().includes(search.toLowerCase())
+  /* -----------------------------
+     Filtros
+  ----------------------------- */
+
+  const expensesFiltered = expensesEmployees
+    .filter((expense) =>
+      expense.descripcion.toLowerCase().includes(search.toLowerCase())
     )
-    .filter((gasto) => {
+    .filter((expense) => {
       if (!dateRange.startDate || !dateRange.endDate) return true;
 
-      const fecha = new Date(gasto.fecha);
+      const fecha = new Date(expense.fecha);
       const start = new Date(dateRange.startDate);
       const end = new Date(dateRange.endDate);
 
       return fecha >= start && fecha <= end;
     });
 
-  const totalGastos = gastosFiltrados.reduce(
-    (acc, gasto) => acc + gasto.monto,
+  /* -----------------------------
+     Total
+  ----------------------------- */
+
+  const totalExpenses = expensesFiltered.reduce(
+    (acc, expense) => acc + expense.monto,
     0
   );
 
   return (
     <div className="min-h-screen bg-slate-100 rounded p-8">
 
-      {/* Modal agregar gasto */}
+      {/* Modal */}
       <AnimatePresence>
         {showModal && (
           <Modal
@@ -89,7 +98,9 @@ const Bills = () => {
               fetchData();
             }}
           >
-            <AddExpensive />
+            <div className="p-6">
+              Crear gasto de empleado
+            </div>
           </Modal>
         )}
       </AnimatePresence>
@@ -99,10 +110,10 @@ const Bills = () => {
 
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
-            Control de Gastos
+            Gastos de Empleados
           </h1>
           <p className="text-slate-500 mt-1">
-            Administra los gastos de tu negocio
+            Administra los gastos asociados al personal
           </p>
         </div>
 
@@ -119,7 +130,7 @@ const Bills = () => {
       {/* Date Picker */}
       <DatePicker onChange={setDateRange} />
 
-      {/* Resumen + Toggle */}
+      {/* Resumen */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
 
         <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4">
@@ -128,14 +139,16 @@ const Bills = () => {
           </div>
 
           <div>
-            <p className="text-sm text-slate-500">Total Gastado</p>
+            <p className="text-sm text-slate-500">
+              Total Pagado
+            </p>
             <p className="text-xl font-semibold text-slate-800">
-              ₡{totalGastos.toLocaleString()}
+              ₡{totalExpenses.toLocaleString()}
             </p>
           </div>
         </div>
 
-        {/* Toggle vista */}
+        {/* Toggle */}
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
 
           <button
@@ -168,36 +181,41 @@ const Bills = () => {
 
       {/* Buscador */}
       <div className="relative mb-8 max-w-md">
-        <Search size={18} className="absolute left-4 top-3.5 text-slate-400" />
+        <Search
+          size={18}
+          className="absolute left-4 top-3.5 text-slate-400"
+        />
 
         <input
           type="text"
-          placeholder="Buscar gasto..."
+          placeholder="Buscar empleado..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
         />
       </div>
 
-      {/* Vista dinámica */}
+      {/* Vista */}
       {view === 'cards' ? (
         <div className="space-y-4 overflow-auto">
-          {gastosFiltrados.map((gasto) => (
-            <ExpenseCard key={gasto.id} {...gasto} />
+
+          {expensesFiltered.map((expense) => (
+            <ExpenseCard key={expense.id} {...expense} />
           ))}
 
-          {gastosFiltrados.length === 0 && (
+          {expensesFiltered.length === 0 && (
             <div className="text-center text-slate-500 mt-12">
-              No se encontraron gastos.
+              No se encontraron registros.
             </div>
           )}
+
         </div>
       ) : (
-        <ExpenseTable gastos={gastosFiltrados} />
+        <ExpenseTable gastos={expensesFiltered} />
       )}
 
     </div>
   );
 };
 
-export default Bills;
+export default ExpenseEmployees;
