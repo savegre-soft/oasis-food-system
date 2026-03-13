@@ -6,13 +6,31 @@ import {
   LayoutGrid,
   Table
 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import { useApp } from '../context/AppContext';
 import ExpenseCard from '../components/ExpenseCard';
 import ExpenseTable from '../components/ExpenseTable';
 import DatePicker from '../components/DatePicker';
 import Modal from '../components/Modal';
+import AddExpenseEmployee from '../components/AddExpenseEmployee';
+
+/* Animaciones */
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0 }
+};
 
 const ExpenseEmployees = () => {
   const { supabase } = useApp();
@@ -27,9 +45,7 @@ const ExpenseEmployees = () => {
     endDate: null
   });
 
-  /* -----------------------------
-     Obtener datos
-  ----------------------------- */
+  /* Obtener datos */
 
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -37,7 +53,7 @@ const ExpenseEmployees = () => {
       .from('empCost')
       .select('*')
       .order('WorkDate', { ascending: false });
-
+    console.log(data)
     if (error) {
       console.error(error);
       return;
@@ -58,9 +74,7 @@ const ExpenseEmployees = () => {
     fetchData();
   }, []);
 
-  /* -----------------------------
-     Filtros
-  ----------------------------- */
+  /* Filtros */
 
   const expensesFiltered = expensesEmployees
     .filter((expense) =>
@@ -76,9 +90,7 @@ const ExpenseEmployees = () => {
       return fecha >= start && fecha <= end;
     });
 
-  /* -----------------------------
-     Total
-  ----------------------------- */
+  /* Total */
 
   const totalExpenses = expensesFiltered.reduce(
     (acc, expense) => acc + expense.monto,
@@ -86,7 +98,11 @@ const ExpenseEmployees = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 rounded p-8">
+    <motion.div
+      className="min-h-screen bg-slate-100 rounded p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
 
       {/* Modal */}
       <AnimatePresence>
@@ -98,15 +114,24 @@ const ExpenseEmployees = () => {
               fetchData();
             }}
           >
-            <div className="p-6">
-              Crear gasto de empleado
-            </div>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="p-6"
+            >
+             <AddExpenseEmployee/>
+            </motion.div>
           </Modal>
         )}
       </AnimatePresence>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <motion.div
+        initial={{ y: -25, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
 
         <div>
           <h1 className="text-3xl font-bold text-slate-800">
@@ -117,15 +142,17 @@ const ExpenseEmployees = () => {
           </p>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md transition active:scale-95"
+          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md"
         >
           <Plus size={18} />
           Nuevo Gasto
-        </button>
+        </motion.button>
 
-      </div>
+      </motion.div>
 
       {/* Date Picker */}
       <DatePicker onChange={setDateRange} />
@@ -133,7 +160,11 @@ const ExpenseEmployees = () => {
       {/* Resumen */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
 
-        <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4">
+        <motion.div
+          initial={{ y: 15, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4"
+        >
           <div className="bg-slate-100 p-3 rounded-xl">
             <DollarSign className="text-slate-700" size={22} />
           </div>
@@ -146,7 +177,7 @@ const ExpenseEmployees = () => {
               ₡{totalExpenses.toLocaleString()}
             </p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Toggle */}
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -180,7 +211,11 @@ const ExpenseEmployees = () => {
       </div>
 
       {/* Buscador */}
-      <div className="relative mb-8 max-w-md">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative mb-8 max-w-md"
+      >
         <Search
           size={18}
           className="absolute left-4 top-3.5 text-slate-400"
@@ -193,28 +228,52 @@ const ExpenseEmployees = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
         />
-      </div>
+      </motion.div>
 
       {/* Vista */}
-      {view === 'cards' ? (
-        <div className="space-y-4 overflow-auto">
+      <AnimatePresence mode="wait">
 
-          {expensesFiltered.map((expense) => (
-            <ExpenseCard key={expense.id} {...expense} />
-          ))}
+        {view === 'cards' ? (
+          <motion.div
+            key="cards"
+            variants={container}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0 }}
+            className="space-y-4 overflow-auto"
+          >
 
-          {expensesFiltered.length === 0 && (
-            <div className="text-center text-slate-500 mt-12">
-              No se encontraron registros.
-            </div>
-          )}
+            {expensesFiltered.map((expense) => (
+              <div key={expense.id} >
+                <ExpenseCard {...expense} />
+              </div>
+            ))}
 
-        </div>
-      ) : (
-        <ExpenseTable gastos={expensesFiltered} />
-      )}
+            {expensesFiltered.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-slate-500 mt-12"
+              >
+                No se encontraron registros.
+              </motion.div>
+            )}
 
-    </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="table"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ExpenseTable gastos={expensesFiltered} />
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+
+    </motion.div>
   );
 };
 

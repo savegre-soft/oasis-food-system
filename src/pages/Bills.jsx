@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react';
-import {
-  Plus,
-  Search,
-  DollarSign,
-  LayoutGrid,
-  Table
-} from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { Plus, Search, DollarSign, LayoutGrid, Table } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import { useApp } from '../context/AppContext';
 import ExpenseCard from '../components/ExpenseCard';
@@ -14,6 +8,21 @@ import ExpenseTable from '../components/ExpenseTable';
 import DatePicker from '../components/DatePicker';
 import AddExpensive from '../components/AddExpensive';
 import Modal from '../components/Modal';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 },
+};
 
 const Bills = () => {
   const { supabase } = useApp();
@@ -25,7 +34,7 @@ const Bills = () => {
 
   const [dateRange, setDateRange] = useState({
     startDate: null,
-    endDate: null
+    endDate: null,
   });
 
   const fetchData = async () => {
@@ -34,8 +43,6 @@ const Bills = () => {
       .from('expenses')
       .select('*')
       .order('expense_date', { ascending: false });
-
-      console.log(data)
 
     if (error) {
       console.error(error);
@@ -58,9 +65,7 @@ const Bills = () => {
   }, []);
 
   const gastosFiltrados = gastos
-    .filter((gasto) =>
-      gasto.descripcion.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((gasto) => gasto.descripcion.toLowerCase().includes(search.toLowerCase()))
     .filter((gasto) => {
       if (!dateRange.startDate || !dateRange.endDate) return true;
 
@@ -71,15 +76,15 @@ const Bills = () => {
       return fecha >= start && fecha <= end;
     });
 
-  const totalGastos = gastosFiltrados.reduce(
-    (acc, gasto) => acc + gasto.monto,
-    0
-  );
+  const totalGastos = gastosFiltrados.reduce((acc, gasto) => acc + gasto.monto, 0);
 
   return (
-    <div className="min-h-screen bg-slate-100 rounded p-8">
-
-      {/* Modal agregar gasto */}
+    <motion.div
+      className="min-h-screen bg-slate-100 rounded p-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {/* Modal */}
       <AnimatePresence>
         {showModal && (
           <Modal
@@ -95,55 +100,53 @@ const Bills = () => {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">
-            Control de Gastos
-          </h1>
-          <p className="text-slate-500 mt-1">
-            Administra los gastos de tu negocio
-          </p>
+          <h1 className="text-3xl font-bold text-slate-800">Control de Gastos</h1>
+          <p className="text-slate-500 mt-1">Administra los gastos de tu negocio</p>
         </div>
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md transition active:scale-95"
+          className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md"
         >
           <Plus size={18} />
           Nuevo Gasto
-        </button>
+        </motion.button>
+      </motion.div>
 
-      </div>
-
-      {/* Date Picker */}
+      {/* DatePicker */}
       <DatePicker onChange={setDateRange} />
 
-      {/* Resumen + Toggle */}
+      {/* Resumen */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-
-        <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4"
+        >
           <div className="bg-slate-100 p-3 rounded-xl">
             <DollarSign className="text-slate-700" size={22} />
           </div>
 
           <div>
             <p className="text-sm text-slate-500">Total Gastado</p>
-            <p className="text-xl font-semibold text-slate-800">
-              ₡{totalGastos.toLocaleString()}
-            </p>
+            <p className="text-xl font-semibold text-slate-800">₡{totalGastos.toLocaleString()}</p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Toggle vista */}
+        {/* Toggle */}
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-
           <button
             onClick={() => setView('cards')}
             className={`flex items-center gap-2 px-4 py-2 transition ${
-              view === 'cards'
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-600 hover:bg-slate-100'
+              view === 'cards' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <LayoutGrid size={16} />
@@ -153,21 +156,21 @@ const Bills = () => {
           <button
             onClick={() => setView('table')}
             className={`flex items-center gap-2 px-4 py-2 transition ${
-              view === 'table'
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-600 hover:bg-slate-100'
+              view === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Table size={16} />
             Tabla
           </button>
-
         </div>
-
       </div>
 
       {/* Buscador */}
-      <div className="relative mb-8 max-w-md">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative mb-8 max-w-md"
+      >
         <Search size={18} className="absolute left-4 top-3.5 text-slate-400" />
 
         <input
@@ -177,26 +180,47 @@ const Bills = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
         />
-      </div>
+      </motion.div>
 
-      {/* Vista dinámica */}
-      {view === 'cards' ? (
-        <div className="space-y-4 overflow-auto">
-          {gastosFiltrados.map((gasto) => (
-            <ExpenseCard key={gasto.id} {...gasto} />
-          ))}
+      {/* Vista */}
+      <AnimatePresence mode="wait">
+        {view === 'cards' ? (
+          <motion.div
+            key="cards"
+            variants={container}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0 }}
+            className="space-y-4 overflow-auto"
+          >
+            {gastosFiltrados.map((gasto) => (
+              <div key={gasto.id}>
+                <ExpenseCard {...gasto} />
+              </div>
+            ))}
 
-          {gastosFiltrados.length === 0 && (
-            <div className="text-center text-slate-500 mt-12">
-              No se encontraron gastos.
-            </div>
-          )}
-        </div>
-      ) : (
-        <ExpenseTable gastos={gastosFiltrados} />
-      )}
-
-    </div>
+            {gastosFiltrados.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-slate-500 mt-12"
+              >
+                No se encontraron gastos.
+              </motion.div>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="table"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ExpenseTable gastos={gastosFiltrados} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 
