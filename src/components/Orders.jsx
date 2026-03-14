@@ -207,10 +207,10 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
 const OrderCard = ({ order, onClick, onEdit }) => {
   const st = STATUS_STYLES[order.status] ?? { label: order.status, cls: 'bg-slate-100 text-slate-600 border-slate-200' };
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition">
-      <div className="flex items-start gap-4">
-        <button type="button" onClick={() => onClick(order)} className="flex-1 text-left min-w-0">
-          <div className="space-y-2">
+    <div className="group relative bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition">
+      <button type="button" onClick={() => onClick(order)} className="w-full text-left">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-slate-800">{order.clients?.name}</p>
               <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${st.cls}`}>{st.label}</span>
@@ -236,20 +236,18 @@ const OrderCard = ({ order, onClick, onEdit }) => {
               </div>
             )}
           </div>
-        </button>
-        <div className="flex items-center gap-2 shrink-0">
-          {onEdit && (
-            <button type="button" onClick={() => onEdit(order)}
-              className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
-              <Pencil size={14} />
-            </button>
-          )}
-          <button type="button" onClick={() => onClick(order)}
-            className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
-            <ChevronRight size={14} />
-          </button>
+          <ChevronRight size={16} className="text-slate-300 shrink-0 mt-1" />
         </div>
-      </div>
+      </button>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onEdit(order); }}
+          className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium bg-slate-800 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 transition shadow-md opacity-0 group-hover:opacity-100"
+        >
+          <Pencil size={12} /> Editar
+        </button>
+      )}
     </div>
   );
 };
