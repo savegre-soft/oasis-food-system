@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Trash2, UtensilsCrossed, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, UtensilsCrossed, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AnimatePresence } from 'framer-motion';
 import Modal from './../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import AddRecipe from '../components/AddRecipe';
 
 const CATEGORY_STYLE = {
@@ -11,7 +12,7 @@ const CATEGORY_STYLE = {
   extra:   { label: 'Extras',        badge: 'bg-green-100 text-green-700' },
 };
 
-const RecipeCard = ({ recipe, onDelete }) => {
+const RecipeCard = ({ recipe, onDelete, onEdit }) => {
   const [expanded, setExpanded] = useState(false);
 
   const byCategory = { protein: [], carb: [], extra: [] };
@@ -40,10 +41,18 @@ const RecipeCard = ({ recipe, onDelete }) => {
           )}
         </button>
 
-        <button onClick={() => onDelete(recipe.id_recipe)}
-          className="text-red-400 hover:text-red-600 transition ml-4 shrink-0">
-          <Trash2 size={18} />
-        </button>
+        <div className="flex items-center gap-2 ml-4 shrink-0">
+          {onEdit && (
+            <button type="button" onClick={() => onEdit(recipe)}
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
+              <Pencil size={14} />
+            </button>
+          )}
+          <button onClick={() => onDelete(recipe.id_recipe)}
+            className="p-1.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:border-red-300 transition">
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Ingredientes por categoría */}
@@ -83,7 +92,9 @@ const Menus = () => {
   const { supabase } = useApp();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal,      setShowModal]      = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState(null);
+  const [toDelete,      setToDelete]      = useState(null);
   const [search, setSearch] = useState('');
 
   const getData = async () => {
@@ -120,10 +131,26 @@ const Menus = () => {
 
   return (
     <>
+      <ConfirmDialog
+        open={!!toDelete}
+        title="¿Eliminar receta?"
+        message="Se eliminará la receta y todos sus ingredientes."
+        onConfirm={() => { eliminar(toDelete); setToDelete(null); }}
+        onCancel={() => setToDelete(null)}
+      />
+
       <AnimatePresence>
         {showModal && (
           <Modal isOpen={showModal} onClose={() => { setShowModal(false); getData(); }}>
             <AddRecipe onSuccess={() => { setShowModal(false); getData(); }} />
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingRecipe && (
+          <Modal isOpen={!!editingRecipe} onClose={() => setEditingRecipe(null)}>
+            <AddRecipe initialData={editingRecipe} onSuccess={() => { setEditingRecipe(null); getData(); }} />
           </Modal>
         )}
       </AnimatePresence>
@@ -163,7 +190,7 @@ const Menus = () => {
         ) : (
           <div className="space-y-3">
             {filtered.map((recipe) => (
-              <RecipeCard key={recipe.id_recipe} recipe={recipe} onDelete={eliminar} />
+              <RecipeCard key={recipe.id_recipe} recipe={recipe} onDelete={setToDelete} onEdit={setEditingRecipe} />
             ))}
           </div>
         )}

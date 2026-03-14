@@ -1,4 +1,4 @@
-import { Trash2, ShieldCheck } from 'lucide-react';
+import { Trash2, ShieldCheck, Pencil } from 'lucide-react';
 
 const DAY_LABELS = {
   Monday:    'Lun',
@@ -15,7 +15,7 @@ const ROUTE_TYPE_LABELS = {
   individual: { label: 'Solo Almuerzo o Cena', className: 'bg-amber-50 text-amber-700' },
 };
 
-const RouteCard = ({ route, onDelete }) => {
+const RouteCard = ({ route, onDelete, onEdit }) => {
   const isSystem = route.route_type !== null && route.route_type !== undefined;
   const typeLabel = ROUTE_TYPE_LABELS[route.route_type];
 
@@ -53,17 +53,22 @@ const RouteCard = ({ route, onDelete }) => {
         )}
       </div>
 
-      {/* Acción */}
-      {isSystem ? (
-        <ShieldCheck size={18} className="text-slate-300 ml-4 shrink-0" />
-      ) : (
-        <button
-          onClick={() => onDelete(route.id_route)}
-          className="text-red-500 hover:text-red-600 ml-4 transition shrink-0"
-        >
-          <Trash2 size={18} />
-        </button>
-      )}
+      {/* Acciones */}
+      <div className="flex items-center gap-2 ml-4 shrink-0">
+        {onEdit && (
+          <button onClick={() => onEdit(route)}
+            className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
+            <Pencil size={14} />
+          </button>
+        )}
+        {isSystem
+          ? <ShieldCheck size={18} className="text-slate-300" />
+          : <button onClick={() => onDelete(route.id_route)}
+              className="p-1.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:border-red-300 transition">
+              <Trash2 size={14} />
+            </button>
+        }
+      </div>
     </div>
   );
 };

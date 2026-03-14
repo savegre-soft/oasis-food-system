@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 
 const DAY_LABELS = {
   Monday:    'Lun',
@@ -17,7 +17,7 @@ const MEAL_TYPE_STYLES = {
   Dinner: { label: '🌙 Cena',     className: 'bg-indigo-50 text-indigo-700' },
 };
 
-const TemplateCard = ({ template, onDelete }) => {
+const TemplateCard = ({ template, onDelete, onEdit }) => {
   const sortedDays = [...(template.order_template_days || [])].sort(
     (a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)
   );
@@ -73,12 +73,18 @@ const TemplateCard = ({ template, onDelete }) => {
           </div>
         </div>
 
-        <button
-          onClick={() => onDelete(template.id_template)}
-          className="text-red-500 hover:text-red-600 ml-4 mt-1 transition"
-        >
-          <Trash2 size={18} />
-        </button>
+        <div className="flex items-center gap-2 ml-4 mt-1 shrink-0">
+          {onEdit && (
+            <button onClick={() => onEdit(template)}
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
+              <Pencil size={14} />
+            </button>
+          )}
+          <button onClick={() => onDelete(template.id_template)}
+            className="p-1.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:border-red-300 transition">
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
