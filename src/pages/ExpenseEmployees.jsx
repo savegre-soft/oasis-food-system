@@ -99,7 +99,7 @@ const ExpenseEmployees = () => {
 
   return (
     <motion.div
-      className="min-h-screen bg-slate-100 rounded p-8"
+      className="min-h-screen bg-slate-100 my-5 rounded p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >

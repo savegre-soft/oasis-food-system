@@ -37,7 +37,7 @@ const ExpenseStadistic = () => {
   } = useExpenseStatistics(dateRange);
 
   return (
-    <section>
+    <section className="my-5">
 
       <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
         <h1 className="text-3xl font-bold text-slate-800">
