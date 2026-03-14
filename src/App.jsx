@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import Recipes from './pages/Recipes';
 import Routes_page from './pages/Routes';
 import Templates from './pages/Templates';
+import Customer from './pages/customer';
 import Orders from './pages/Orders';
 import ExpenseEmployees from './pages/ExpenseEmployees';
 import ExpenseStadistic from './pages/ExpenseStadistic';
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/entregas" element={<Deliveries />} />
             <Route path="/gastos" element={<Bills />} />
             <Route path="/menus" element={<Menus />} />
+            <Route path="/cliente/:id" element={<Customer />} />
             <Route path="/recetas" element={<Recipes />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
