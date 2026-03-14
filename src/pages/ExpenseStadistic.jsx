@@ -64,7 +64,7 @@ const ExpenseStadistic = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4">
-          <DollarSign size={22} />
+       
           <div>
             <p className="text-sm text-slate-500">Cantidad de Registros</p>
             <p className="text-xl font-semibold">{expenseCount}</p>
@@ -123,7 +123,7 @@ const ExpenseStadistic = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4">
-          <DollarSign size={22} />
+       
           <div>
             <p className="text-sm text-slate-500">Cantidad de Registros</p>
             <p className="text-xl font-semibold">{employeeCount}</p>
