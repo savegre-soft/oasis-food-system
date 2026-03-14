@@ -118,7 +118,7 @@ export default function Customers() {
       {/* Vista GRID */}
       {viewMode === 'grid' && (
         <motion.div
-          className="grid border p-2 shadow border-gray-200 rounded grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+          className="grid  p-2  grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
           initial="hidden"
           animate="visible"
           exit="hidden"

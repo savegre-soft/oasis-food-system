@@ -27,7 +27,7 @@ export default function MainLayout() {
       <Navbar />
 
       {/* Contenido */}
-      <main className="flex-1 max-w-6xl mx-auto w-full p-2 pt-6 pb-8 ">
+      <main className="flex-1 max-w-6xl mx-auto w-full  overflow-auto p-2 pt-6 pb-8 ">
         <Outlet />
       </main>
 
