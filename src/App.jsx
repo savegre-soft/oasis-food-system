@@ -45,9 +45,8 @@ export default function App() {
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/orders" element={<Orders />} />
-            <Route path='/control-gastos' element={<ExpenseStadistic />} />
+            <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/empleados" element={<ExpenseEmployees />} />
-            
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />
@@ -59,7 +58,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/ChangePassword/*" element={<ChangePassword />} />
-          
+
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/*" element={<NotFound />} />
         </Routes>
