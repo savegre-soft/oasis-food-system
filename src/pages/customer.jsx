@@ -78,6 +78,8 @@ const Customer = () => {
       .eq('id_client', Number(id))
       .single();
 
+      console.log(data)
+
     if (error) {
       console.error(error);
       return;
