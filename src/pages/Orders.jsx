@@ -3,6 +3,7 @@ import { ClipboardList, Calendar, History, ChevronLeft, ChevronRight, X, User, U
 import { useApp } from '../context/AppContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { Search } from 'lucide-react';
 import Modal from '../components/Modal';
 import AddOrder from '../components/AddOrder';
 import EditOrder from '../components/EditOrder';
@@ -412,20 +413,20 @@ const TABS = [
   { id: 'week',    label: 'Esta semana', Icon: Calendar },
   { id: 'history', label: 'Histórico',   Icon: History  },
 ];
-
 const Orders = () => {
   const { supabase } = useApp();
 
-  const [allOrders,    setAllOrders]    = useState([]);
-  const [loading,      setLoading]      = useState(false);
-  const [showModal,    setShowModal]    = useState(false);
-  const [activeTab,    setActiveTab]    = useState('week');
-  const [calendarView, setCalendarView] = useState(false);
+  const [search, setSearch] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("week");
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [editingOrder,  setEditingOrder]  = useState(null);
+  const [editingOrder, setEditingOrder] = useState(null);
 
   const getData = async () => {
     setLoading(true);
+
     const { data, error } = await supabase
       .schema("operations")
       .from("orders")
@@ -454,7 +455,7 @@ const Orders = () => {
           )
         )
       `)
-      .order('id_order', { ascending: false });
+      .order("id_order", { ascending: false });
 
     if (error) {
       console.error(error);
@@ -469,6 +470,58 @@ const Orders = () => {
   useEffect(() => {
     getData();
   }, []);
+
+  /* ─────────────────────────────────────────────
+     Pedidos de la próxima semana
+  ───────────────────────────────────────────── */
+
+  const weekOrders = useMemo(() => {
+    return orders.filter(
+      (o) =>
+        o.week_start_date === NEXT_WEEK_START &&
+        o.week_end_date === NEXT_WEEK_END
+    );
+  }, [orders]);
+
+  /* ─────────────────────────────────────────────
+     Historial
+  ───────────────────────────────────────────── */
+
+  const historyOrders = useMemo(() => {
+    return orders.filter(
+      (o) =>
+        o.week_start_date !== NEXT_WEEK_START ||
+        o.week_end_date !== NEXT_WEEK_END
+    );
+  }, [orders]);
+
+  /* ─────────────────────────────────────────────
+     Filtro búsqueda
+  ───────────────────────────────────────────── */
+
+  const filteredWeekOrders = useMemo(() => {
+    if (!search) return weekOrders;
+
+    const q = search.toLowerCase();
+
+    return weekOrders.filter(
+      (o) =>
+        o.clients?.name?.toLowerCase().includes(q) ||
+        o.routes?.name?.toLowerCase().includes(q)
+    );
+  }, [weekOrders, search]);
+
+  const filteredHistoryOrders = useMemo(() => {
+    if (!search) return historyOrders;
+
+    const q = search.toLowerCase();
+
+    return historyOrders.filter(
+      (o) =>
+        o.clients?.name?.toLowerCase().includes(q) ||
+        o.routes?.name?.toLowerCase().includes(q)
+    );
+  }, [historyOrders, search]);
 
   return (
     <>
@@ -493,32 +546,54 @@ const Orders = () => {
 
       <AnimatePresence>
         {selectedOrder && (
-          <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onEdit={(o) => { setSelectedOrder(null); setEditingOrder(o); }} />
+          <OrderDetailModal
+            order={selectedOrder}
+            onClose={() => setSelectedOrder(null)}
+            onEdit={(o) => {
+              setSelectedOrder(null);
+              setEditingOrder(o);
+            }}
+          />
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {editingOrder && (
           <Modal isOpen={!!editingOrder} onClose={() => setEditingOrder(null)}>
-            <EditOrder order={editingOrder} onSuccess={() => { setEditingOrder(null); getData(); }} />
+            <EditOrder
+              order={editingOrder}
+              onSuccess={() => {
+                setEditingOrder(null);
+                getData();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>
 
       <div className="min-h-screen bg-slate-50 p-8">
-        {/* Header */}
+
+        {/* HEADER */}
+
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Pedidos</h1>
-            <p className="text-slate-500 mt-2">Registra y gestiona los pedidos semanales</p>
+            <p className="text-slate-500 mt-2">
+              Registra y gestiona los pedidos semanales
+            </p>
           </div>
-          <button onClick={() => setShowModal(true)}
-            className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium">
-            <ClipboardList size={16} /> Nuevo Pedido
+
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium"
+          >
+            <ClipboardList size={16} />
+            Nuevo Pedido
           </button>
         </div>
 
-        {/* Buscador */}
+        {/* BUSCADOR */}
+
         <div className="mb-6">
           <div className="relative max-w-md">
             <Search
@@ -530,27 +605,44 @@ const Orders = () => {
               type="text"
               placeholder="Buscar por cliente o ruta..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
             />
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* TABS */}
+
         <div className="flex items-center gap-1 mb-6 bg-white border border-slate-100 rounded-2xl p-1 w-fit shadow-sm">
           {TABS.map(({ id, label, Icon }) => {
-            const count  = id === 'week' ? weekOrders.length : historyOrders.length;
+            const count =
+              id === "week"
+                ? filteredWeekOrders.length
+                : filteredHistoryOrders.length;
+
             const active = activeTab === id;
+
             return (
-              <button key={id} onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${active ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                  active
+                    ? "bg-slate-800 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
                 <Icon size={15} />
                 {label}
+
                 {count > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${active ? 'bg-slate-600 text-slate-200' : 'bg-slate-100 text-slate-500'}`}>
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
+                      active
+                        ? "bg-slate-600 text-slate-200"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
                     {count}
                   </span>
                 )}
@@ -559,19 +651,34 @@ const Orders = () => {
           })}
         </div>
 
+        {/* CONTENIDO */}
+
         {loading ? (
           <p className="text-slate-500">Cargando...</p>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
-            <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
-            <p>No hay pedidos registrados</p>
-          </div>
+        ) : activeTab === "week" ? (
+          filteredWeekOrders.length === 0 ? (
+            <div className="text-center py-20 text-slate-400">
+              <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
+              <p>No hay pedidos esta semana</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredWeekOrders.map((order) => (
+                <OrderCard
+                  key={order.id_order}
+                  order={order}
+                  onClick={setSelectedOrder}
+                  onEdit={setEditingOrder}
+                />
+              ))}
+            </div>
+          )
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <OrderCard key={order.id_order} order={order} />
-            ))}
-          </div>
+          <HistoryView
+            orders={filteredHistoryOrders}
+            onOrderClick={setSelectedOrder}
+            onEdit={setEditingOrder}
+          />
         )}
       </div>
     </>
