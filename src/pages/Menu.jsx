@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import Contact from './contact';
 
 const PAGE_SIZE = 6;
 
@@ -14,6 +14,9 @@ const Menu = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedDish, setSelectedDish] = useState(null);
 
   const loadRecipes = async () => {
     setLoading(true);
@@ -54,6 +57,11 @@ const Menu = () => {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const openOrder = (dish) => {
+    setSelectedDish(dish);
+    setOpenModal(true);
+  };
+
   return (
     <div className="py-16">
 
@@ -70,7 +78,6 @@ const Menu = () => {
 
       {/* Filtros */}
       <div className="max-w-xl mx-auto mb-10">
-
         <input
           type="text"
           placeholder="Buscar platos..."
@@ -81,7 +88,6 @@ const Menu = () => {
           }}
           className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600 outline-none"
         />
-
       </div>
 
       {/* Loading */}
@@ -124,14 +130,12 @@ const Menu = () => {
               </div>
 
               <div className="flex justify-end">
-
-                <Link
-                  to={`/ordenar/${dish.id_recipe}`}
+                <button
+                  onClick={() => openOrder(dish)}
                   className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-emerald-700 hover:scale-105 transition"
                 >
                   Ordenar
-                </Link>
-
+                </button>
               </div>
 
             </div>
@@ -141,39 +145,26 @@ const Menu = () => {
 
       </div>
 
-      {/* Paginación */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-12">
+      {/* Modal */}
+      {openModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="px-4 py-2 rounded-lg border disabled:opacity-40"
-          >
-            Anterior
-          </button>
+          <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full relative">
 
-          {Array.from({ length: totalPages }).map((_, i) => (
+            {/* Close */}
             <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`px-4 py-2 rounded-lg border ${
-                page === i + 1
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white'
-              }`}
+              onClick={() => setOpenModal(false)}
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-800 text-xl"
             >
-              {i + 1}
+              ✕
             </button>
-          ))}
 
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-4 py-2 rounded-lg border disabled:opacity-40"
-          >
-            Siguiente
-          </button>
+            <Contact
+              title={`Ordenar: ${selectedDish?.name || ''}`}
+              description="Déjanos tu información y te contactaremos para confirmar tu pedido."
+            />
+
+          </div>
 
         </div>
       )}
@@ -189,12 +180,12 @@ const Menu = () => {
           Haz tu pedido ahora y recibe tu comida fresca en minutos.
         </p>
 
-        <Link
-          to="/ordenar"
+        <button
+          onClick={() => setOpenModal(true)}
           className="inline-block mt-6 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 transition"
         >
           Ordenar Ahora
-        </Link>
+        </button>
 
       </div>
 
