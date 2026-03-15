@@ -21,7 +21,11 @@ import Settings from './pages/Settings';
 import Recipes from './pages/Recipes';
 import Routes_page from './pages/Routes';
 import Templates from './pages/Templates';
-import Orders from './pages/orders';
+import Customer from './pages/customer';
+import Orders from './pages/Orders';
+import ExpenseEmployees from './pages/ExpenseEmployees';
+import ExpenseStadistic from './pages/ExpenseStadistic';
+import ChangePassword from './pages/ChangePassword';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -37,11 +41,14 @@ export default function App() {
             <Route path="/entregas" element={<Deliveries />} />
             <Route path="/gastos" element={<Bills />} />
             <Route path="/menus" element={<Menus />} />
+            <Route path="/cliente/:id" element={<Customer />} />
             <Route path="/recetas" element={<Recipes />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/control-gastos" element={<ExpenseStadistic />} />
+            <Route path="/empleados" element={<ExpenseEmployees />} />
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />
@@ -52,6 +59,8 @@ export default function App() {
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/ChangePassword/*" element={<ChangePassword />} />
+
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/*" element={<NotFound />} />
         </Routes>

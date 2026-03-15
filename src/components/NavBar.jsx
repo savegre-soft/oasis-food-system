@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
   Users,
@@ -12,39 +12,48 @@ import {
   HamburgerIcon,
   Utensils,
   ChevronDown,
-  Handbag
-} from "lucide-react";
+  PersonStanding,
+  Handbag,
+  ChartScatterIcon,
+} from 'lucide-react';
+
+import { useApp } from '../context/AppContext'; // ✅ IMPORTAR CONTEXTO
 
 const links = [
-  { to: "/Main", label: "Home", icon: Home },
-  { to: "/entregas", label: "Entregas", icon: RouteIcon },
-  { to: "/orders", label: "Órdenes", icon: Handbag }
+  { to: '/Main', label: 'Home', icon: Home },
+  { to: '/entregas', label: 'Entregas', icon: RouteIcon },
+  { to: '/orders', label: 'Órdenes', icon: Handbag },
 ];
 
 const gestionLinks = [
-  { to: "/Clientes", label: "Clientes", icon: Users },
-  { to: "/menus", label: "Recetas", icon: HamburgerIcon },
-  { to: "/routes", label: "Rutas", icon: RouteIcon },
-  { to: "/templates", label: "Menús Predefinidos", icon: Utensils }
+  { to: '/Clientes', label: 'Clientes', icon: Users },
+  { to: '/menus', label: 'Recetas', icon: HamburgerIcon },
+  { to: '/routes', label: 'Rutas', icon: RouteIcon },
+  { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
 ];
 
 const financialLinks = [
-  { to: "/Gastos", label: "Gastos", icon: DollarSign }
+  { to: '/Gastos', label: 'Gastos', icon: DollarSign },
+  { to: '/empleados', label: 'Personal', icon: PersonStanding },
+  { to: '/control-gastos', label: 'Control', icon: ChartScatterIcon },
 ];
 
 export default function Navbar() {
   const nav = useNavigate();
+  const { supabase, user } = useApp(); // ✅ USAR CONTEXTO
 
   const [isOpen, setIsOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
 
   const navRef = useRef(null);
 
-  function handleLogout() {
+  async function handleLogout() {
     setOpenMenu(null);
     setIsOpen(false);
-    alert("Sesión cerrada");
-    nav("/login");
+
+    await supabase.auth.signOut(); // ✅ LOGOUT REAL
+
+    nav('/login');
   }
 
   function toggleMenu(menu) {
@@ -58,12 +67,12 @@ export default function Navbar() {
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const baseStyle =
-    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2";
+    'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2';
 
   return (
     <nav
@@ -85,8 +94,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `${baseStyle} ${
                     isActive
-                      ? "bg-white text-green-800 shadow-md"
-                      : "hover:bg-green-700 hover:scale-105"
+                      ? 'bg-white text-green-800 shadow-md'
+                      : 'hover:bg-green-700 hover:scale-105'
                   }`
                 }
               >
@@ -96,7 +105,6 @@ export default function Navbar() {
             );
           })}
 
-          {/* Gestión */}
           <Dropdown
             label="Gestión"
             menuKey="gestion"
@@ -106,7 +114,6 @@ export default function Navbar() {
             baseStyle={baseStyle}
           />
 
-          {/* Finanzas */}
           <Dropdown
             label="Finanzas"
             menuKey="finanzas"
@@ -119,14 +126,19 @@ export default function Navbar() {
           {/* Profile */}
           <div className="relative">
             <button
-              onClick={() => toggleMenu("profile")}
+              onClick={() => toggleMenu('profile')}
               className="p-2 rounded-full hover:bg-green-700 transition"
             >
               <User size={22} />
             </button>
 
-            {openMenu === "profile" && (
-              <div className="absolute right-0 mt-3 w-44 bg-white text-green-800 rounded-xl shadow-xl py-2">
+            {openMenu === 'profile' && (
+              <div className="absolute right-0 mt-3 w-48 bg-white text-green-800 rounded-xl shadow-xl py-2">
+                {/* Usuario logueado */}
+                {user && (
+                  <div className="px-4 py-2 text-xs text-gray-500 border-b">{user.email}</div>
+                )}
+
                 <button className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100">
                   <User size={16} />
                   Perfil
@@ -165,11 +177,7 @@ export default function Navbar() {
                 to={link.to}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `${baseStyle} ${
-                    isActive
-                      ? "bg-white text-green-800"
-                      : "hover:bg-green-700"
-                  }`
+                  `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
                 }
               >
                 <Icon size={18} />
@@ -177,21 +185,27 @@ export default function Navbar() {
               </NavLink>
             );
           })}
+
+          {/* Logout mobile */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-red-300 hover:bg-red-700 rounded-lg"
+          >
+            <LogOut size={18} />
+            Cerrar Sesión
+          </button>
         </div>
       )}
     </nav>
   );
 }
 
-/* COMPONENTE DROPDOWN reutilizable */
+/* Dropdown */
 
 function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
   return (
     <div className="relative">
-      <button
-        onClick={() => toggleMenu(menuKey)}
-        className={`${baseStyle} hover:bg-green-700`}
-      >
+      <button onClick={() => toggleMenu(menuKey)} className={`${baseStyle} hover:bg-green-700`}>
         {label}
         <ChevronDown size={16} />
       </button>

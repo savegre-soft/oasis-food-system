@@ -8,6 +8,32 @@ export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    // Obtener sesión actual al cargar la app
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+
+      setLoading(false);
+    };
+
+    getSession();
+
+    // Escuchar cambios de login / logout
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -15,6 +41,7 @@ export const AppProvider = ({ children }) => {
         session,
         user,
         loading,
+        isAuthenticated: !!session,
       }}
     >
       {children}

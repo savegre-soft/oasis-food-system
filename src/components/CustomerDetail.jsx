@@ -92,6 +92,12 @@ const CustomerDetailModal = ({ customer, onClose }) => {
               )}
             </div>
           </div>
+           <a
+      href={`/cliente/${customer.id_client}`}
+      className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+    >
+      Ver perfil
+    </a>
           <button
             type="button"
             onClick={onClose}

@@ -1,89 +1,109 @@
 import { useEffect, useState } from 'react';
-import { Plus, Search, DollarSign, LayoutGrid, Table } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  DollarSign,
+  LayoutGrid,
+  Table
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { useApp } from '../context/AppContext';
 import ExpenseCard from '../components/ExpenseCard';
 import ExpenseTable from '../components/ExpenseTable';
 import DatePicker from '../components/DatePicker';
-import AddExpensive from '../components/AddExpensive';
 import Modal from '../components/Modal';
+import AddExpenseEmployee from '../components/AddExpenseEmployee';
+
+/* Animaciones */
 
 const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-    },
-  },
+      staggerChildren: 0.08
+    }
+  }
 };
 
 const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0 }
 };
 
-const Bills = () => {
+const ExpenseEmployees = () => {
   const { supabase } = useApp();
 
-  const [gastos, setGastos] = useState([]);
+  const [expensesEmployees, setExpensesEmployees] = useState([]);
   const [search, setSearch] = useState('');
   const [view, setView] = useState('cards');
   const [showModal, setShowModal] = useState(false);
 
   const [dateRange, setDateRange] = useState({
     startDate: null,
-    endDate: null,
+    endDate: null
   });
+
+  /* Obtener datos */
 
   const fetchData = async () => {
     const { data, error } = await supabase
       .schema('operations')
-      .from('expenses')
+      .from('empCost')
       .select('*')
-      .order('expense_date', { ascending: false });
-
+      .order('WorkDate', { ascending: false });
+    console.log(data)
     if (error) {
       console.error(error);
       return;
     }
 
     const formatted = data.map((item) => ({
-      id: item.id_expense,
-      descripcion: item.description,
-      categoria: `Categoria ${item.category_id}`,
-      fecha: item.expense_date,
-      monto: item.amount,
+      id: item.id,
+      descripcion: item.Name,
+      categoria: `Horas: ${item.Hours}`,
+      fecha: item.WorkDate,
+      monto: item.Amount
     }));
 
-    setGastos(formatted);
+    setExpensesEmployees(formatted);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  const gastosFiltrados = gastos
-    .filter((gasto) => gasto.descripcion.toLowerCase().includes(search.toLowerCase()))
-    .filter((gasto) => {
+  /* Filtros */
+
+  const expensesFiltered = expensesEmployees
+    .filter((expense) =>
+      expense.descripcion.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((expense) => {
       if (!dateRange.startDate || !dateRange.endDate) return true;
 
-      const fecha = new Date(gasto.fecha);
+      const fecha = new Date(expense.fecha);
       const start = new Date(dateRange.startDate);
       const end = new Date(dateRange.endDate);
 
       return fecha >= start && fecha <= end;
     });
 
-  const totalGastos = gastosFiltrados.reduce((acc, gasto) => acc + gasto.monto, 0);
+  /* Total */
+
+  const totalExpenses = expensesFiltered.reduce(
+    (acc, expense) => acc + expense.monto,
+    0
+  );
 
   return (
     <motion.div
-      className="min-h-screen bg-slate-100 rounded p-8"
+      className="min-h-screen bg-slate-100 my-5 rounded p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
+
       {/* Modal */}
       <AnimatePresence>
         {showModal && (
@@ -94,20 +114,32 @@ const Bills = () => {
               fetchData();
             }}
           >
-            <AddExpensive />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="p-6"
+            >
+             <AddExpenseEmployee/>
+            </motion.div>
           </Modal>
         )}
       </AnimatePresence>
 
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ y: -25, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
         className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
       >
+
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Control de Gastos</h1>
-          <p className="text-slate-500 mt-1">Administra los gastos de tu negocio</p>
+          <h1 className="text-3xl font-bold text-slate-800">
+            Gastos de Empleados
+          </h1>
+          <p className="text-slate-500 mt-1">
+            Administra los gastos asociados al personal
+          </p>
         </div>
 
         <motion.button
@@ -119,16 +151,18 @@ const Bills = () => {
           <Plus size={18} />
           Nuevo Gasto
         </motion.button>
+
       </motion.div>
 
-      {/* DatePicker */}
+      {/* Date Picker */}
       <DatePicker onChange={setDateRange} />
 
       {/* Resumen */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ y: 15, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
           className="bg-white rounded-2xl shadow-sm p-6 flex items-center gap-4"
         >
           <div className="bg-slate-100 p-3 rounded-xl">
@@ -136,17 +170,24 @@ const Bills = () => {
           </div>
 
           <div>
-            <p className="text-sm text-slate-500">Total Gastado</p>
-            <p className="text-xl font-semibold text-slate-800">₡{totalGastos.toLocaleString()}</p>
+            <p className="text-sm text-slate-500">
+              Total Pagado
+            </p>
+            <p className="text-xl font-semibold text-slate-800">
+              ₡{totalExpenses.toLocaleString()}
+            </p>
           </div>
         </motion.div>
 
         {/* Toggle */}
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+
           <button
             onClick={() => setView('cards')}
             className={`flex items-center gap-2 px-4 py-2 transition ${
-              view === 'cards' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              view === 'cards'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <LayoutGrid size={16} />
@@ -156,13 +197,17 @@ const Bills = () => {
           <button
             onClick={() => setView('table')}
             className={`flex items-center gap-2 px-4 py-2 transition ${
-              view === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              view === 'table'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Table size={16} />
             Tabla
           </button>
+
         </div>
+
       </div>
 
       {/* Buscador */}
@@ -171,11 +216,14 @@ const Bills = () => {
         animate={{ opacity: 1 }}
         className="relative mb-8 max-w-md"
       >
-        <Search size={18} className="absolute left-4 top-3.5 text-slate-400" />
+        <Search
+          size={18}
+          className="absolute left-4 top-3.5 text-slate-400"
+        />
 
         <input
           type="text"
-          placeholder="Buscar gasto..."
+          placeholder="Buscar empleado..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
@@ -184,6 +232,7 @@ const Bills = () => {
 
       {/* Vista */}
       <AnimatePresence mode="wait">
+
         {view === 'cards' ? (
           <motion.div
             key="cards"
@@ -193,21 +242,23 @@ const Bills = () => {
             exit={{ opacity: 0 }}
             className="space-y-4 overflow-auto"
           >
-            {gastosFiltrados.map((gasto) => (
-              <div key={gasto.id}>
-                <ExpenseCard {...gasto} />
+
+            {expensesFiltered.map((expense) => (
+              <div key={expense.id} >
+                <ExpenseCard {...expense} />
               </div>
             ))}
 
-            {gastosFiltrados.length === 0 && (
+            {expensesFiltered.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-center text-slate-500 mt-12"
               >
-                No se encontraron gastos.
+                No se encontraron registros.
               </motion.div>
             )}
+
           </motion.div>
         ) : (
           <motion.div
@@ -216,12 +267,14 @@ const Bills = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <ExpenseTable gastos={gastosFiltrados} />
+            <ExpenseTable gastos={expensesFiltered} />
           </motion.div>
         )}
+
       </AnimatePresence>
+
     </motion.div>
   );
 };
 
-export default Bills;
+export default ExpenseEmployees;
