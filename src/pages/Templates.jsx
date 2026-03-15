@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { AnimatePresence } from 'framer-motion';
 
 import Modal from './../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import AddTemplate from '../components/AddTemplate';
 import TemplateCard from '../components/TemplateCard';
 
@@ -12,7 +13,9 @@ const Templates = () => {
 
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal,        setShowModal]        = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [toDelete,         setToDelete]         = useState(null);
 
   // ===============================
   // OBTENER DATOS
@@ -27,12 +30,14 @@ const Templates = () => {
         id_template,
         name,
         description,
+        meal_type,
         is_active,
         order_template_days (
           id_template_day,
           day_of_week,
           order_template_details (
             id_template_detail,
+            recipe_id,
             quantity,
             recipes (
               id_recipe,
@@ -78,6 +83,14 @@ const Templates = () => {
 
   return (
     <>
+      <ConfirmDialog
+        open={!!toDelete}
+        title="¿Eliminar plantilla?"
+        message="Se eliminará la plantilla y todos sus días y recetas."
+        onConfirm={() => { eliminar(toDelete); setToDelete(null); }}
+        onCancel={() => setToDelete(null)}
+      />
+
       <AnimatePresence>
         {showModal && (
           <Modal isOpen={showModal} onClose={() => { setShowModal(false); getData(); }}>
@@ -86,11 +99,19 @@ const Templates = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {editingTemplate && (
+          <Modal isOpen={!!editingTemplate} onClose={() => setEditingTemplate(null)}>
+            <AddTemplate initialData={editingTemplate} onSuccess={() => { setEditingTemplate(null); getData(); }} />
+          </Modal>
+        )}
+      </AnimatePresence>
+
       <div className="min-h-screen bg-slate-50 p-8">
         {/* Header */}
         <div className="mb-10 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Menús Predefinidos</h1>
+            <h1 className="text-3xl font-bold text-slate-800">Plantillas</h1>
             <p className="text-slate-500 mt-2">Crea y administra menús semanales reutilizables</p>
           </div>
 
@@ -117,7 +138,8 @@ const Templates = () => {
               <TemplateCard
                 key={template.id_template}
                 template={template}
-                onDelete={eliminar}
+                onDelete={setToDelete}
+                onEdit={setEditingTemplate}
               />
             ))}
           </div>

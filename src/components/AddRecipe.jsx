@@ -11,18 +11,24 @@ const CATEGORIES = [
 
 const emptyIngredients = () => ({ protein: [], carb: [], extra: [] });
 
-const AddRecipe = ({ onSuccess }) => {
+const AddRecipe = ({ onSuccess, initialData }) => {
   const { supabase } = useApp();
+  const isEdit = !!initialData;
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [ingredients, setIngredients] = useState(emptyIngredients());
-  const [newItem, setNewItem] = useState({ protein: '', carb: '', extra: '' });
+  const buildInitialIngredients = () => {
+    if (!initialData?.recipe_ingredients) return emptyIngredients();
+    const result = emptyIngredients();
+    for (const ing of initialData.recipe_ingredients) {
+      if (result[ing.category]) result[ing.category].push(ing.name);
+    }
+    return result;
+  };
 
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
-
-  const [loading, setLoading] = useState(false);
+  const [name,        setName]        = useState(initialData?.name        ?? '');
+  const [description, setDescription] = useState(initialData?.description ?? '');
+  const [ingredients, setIngredients] = useState(buildInitialIngredients());
+  const [newItem,     setNewItem]     = useState({ protein: '', carb: '', extra: '' });
+  const [loading,     setLoading]     = useState(false);
 
   const addIngredient = (category) => {
     const val = newItem[category].trim();
@@ -70,95 +76,43 @@ const AddRecipe = ({ onSuccess }) => {
     e.preventDefault();
 
     if (!name.trim()) return;
-
-    const totalIngredients = Object.values(ingredients).flat().length;
-
-    if (totalIngredients === 0) {
-      sileo.error('Agrega al menos un ingrediente');
-      return;
-    }
-
+    if (Object.values(ingredients).flat().length === 0) { sileo.error('Agrega al menos un ingrediente'); return; }
     setLoading(true);
 
-    try {
-      let imageUrl = null;
-
-      // subir imagen
-      if (image) {
-        const fileName = `recipes/${Date.now()}-${image.name}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('Recipes')
-          .upload(fileName, image);
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data } = supabase.storage
-          .from('Recipes')
-          .getPublicUrl(fileName);
-
-        imageUrl = data.publicUrl;
-      }
-
-      // crear receta
-      const { data: recipeData, error: recipeError } = await supabase
-        .schema('operations')
-        .from('recipes')
-        .insert([
-          {
-            name,
-            description,
-            image_url: imageUrl,
-            is_active: true,
-          },
-        ])
-        .select('id_recipe')
-        .single();
-
-      if (recipeError) throw recipeError;
-
-      // ingredientes
-      const rows = [];
-
-      for (const category of ['protein', 'carb', 'extra']) {
-        for (const ingName of ingredients[category]) {
-          rows.push({
-            recipe_id: recipeData.id_recipe,
-            name: ingName,
-            category,
-          });
-        }
-      }
-
-      const { error: ingError } = await supabase
-        .schema('operations')
-        .from('recipe_ingredients')
-        .insert(rows);
-
-      if (ingError) throw ingError;
-
-      sileo.success('Receta guardada correctamente');
-
-      resetForm();
-
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      console.error(error);
-      sileo.error('Error al guardar la receta');
+    let recipeId;
+    if (isEdit) {
+      const { error } = await supabase.schema('operations').from('recipes')
+        .update({ name, description }).eq('id_recipe', initialData.id_recipe);
+      if (error) { sileo.error('Error al actualizar la receta'); console.error(error); setLoading(false); return; }
+      // Replace ingredients
+      await supabase.schema('operations').from('recipe_ingredients').delete().eq('recipe_id', initialData.id_recipe);
+      recipeId = initialData.id_recipe;
+    } else {
+      const { data, error } = await supabase.schema('operations').from('recipes')
+        .insert([{ name, description, is_active: true }]).select('id_recipe').single();
+      if (error) { sileo.error('Error al guardar la receta'); console.error(error); setLoading(false); return; }
+      recipeId = data.id_recipe;
     }
 
+    const rows = [];
+    for (const category of ['protein', 'carb', 'extra'])
+      for (const ingName of ingredients[category])
+        rows.push({ recipe_id: recipeId, name: ingName, category });
+
+    if (rows.length > 0) {
+      const { error } = await supabase.schema('operations').from('recipe_ingredients').insert(rows);
+      if (error) { sileo.error('Error al guardar los ingredientes'); console.error(error); setLoading(false); return; }
+    }
+
+    sileo.success(isEdit ? 'Receta actualizada correctamente' : 'Receta guardada correctamente');
+    if (!isEdit) resetForm();
     setLoading(false);
   };
 
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">
-          Agregar Nueva Receta
-        </h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-6">{isEdit ? 'Editar Receta' : 'Agregar Nueva Receta'}</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -307,7 +261,7 @@ const AddRecipe = ({ onSuccess }) => {
             className="w-full bg-slate-800 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
           >
             <Plus size={18} />
-            {loading ? 'Guardando...' : 'Guardar Receta'}
+            {loading ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Receta'}
           </button>
 
         </form>

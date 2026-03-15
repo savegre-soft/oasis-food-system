@@ -77,22 +77,19 @@ export const groupByRecipe = (orderDays) => {
       }
 
       const m = g.clients[clientName].meals[mealKey];
-      m.quantity    += qty;
-      // Only count macros once per order_day (the Set deduplicates order_days)
-      const isNewOrderDay = !m.orderDayIds.has(orderDay.id_order_day);
-      m.orderDayIds.add(orderDay.id_order_day);
-      if (isNewOrderDay) {
-        const pVal = parseFloat(detail.protein_value_applied);
-        const cVal = parseFloat(detail.carb_value_applied);
-        if (!isNaN(pVal)) {
-          g.totalProtein     = (g.totalProtein     ?? 0) + pVal;
-          g.totalProteinUnit = detail.protein_unit_applied ?? g.totalProteinUnit ?? 'g';
-        }
-        if (!isNaN(cVal)) {
-          g.totalCarb     = (g.totalCarb     ?? 0) + cVal;
-          g.totalCarbUnit = detail.carb_unit_applied ?? g.totalCarbUnit ?? 'g';
-        }
+      m.quantity += qty;
+      // Macros are per-unit — multiply by quantity
+      const pVal = parseFloat(detail.protein_value_applied);
+      const cVal = parseFloat(detail.carb_value_applied);
+      if (!isNaN(pVal)) {
+        g.totalProtein     = (g.totalProtein     ?? 0) + pVal * qty;
+        g.totalProteinUnit = detail.protein_unit_applied ?? g.totalProteinUnit ?? 'g';
       }
+      if (!isNaN(cVal)) {
+        g.totalCarb     = (g.totalCarb     ?? 0) + cVal * qty;
+        g.totalCarbUnit = detail.carb_unit_applied ?? g.totalCarbUnit ?? 'g';
+      }
+      m.orderDayIds.add(orderDay.id_order_day);
     }
   }
 

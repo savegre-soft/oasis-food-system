@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import SafeMap from './SafeMap';
 import L from 'leaflet';
 import { sileo } from 'sileo';
 
@@ -12,15 +11,6 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
-
-const LocationPicker = ({ position, setPosition }) => {
-  useMapEvents({
-    click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-    },
-  });
-  return position ? <Marker position={position} /> : null;
-};
 
 const MACRO_UNITS = ['g', 'oz', 'kg'];
 
@@ -45,30 +35,34 @@ const PlanToggle = ({ value, onChange, name }) => (
   </div>
 );
 
-const AddCustomer = ({ onAdd }) => {
+const AddCustomer = ({ onAdd, initialData }) => {
   const { supabase } = useApp();
+  const isEdit = !!initialData;
+
+  const lm = initialData?.lunch_macro;
+  const dm = initialData?.dinner_macro;
 
   // Cliente
-  const [nombre, setNombre] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [latitude, setLatitude] = useState(null);
-  const [longitude, setLongitude] = useState(null);
-  const [clientType, setClientType] = useState('personal'); // 'personal' | 'family'
-  const [lunchPlanType,  setLunchPlanType]  = useState('nutricional'); // 'estandar' | 'nutricional'
-  const [dinnerPlanType, setDinnerPlanType] = useState('nutricional'); // 'estandar' | 'nutricional'
+  const [nombre,    setNombre]    = useState(initialData?.name           ?? '');
+  const [phone,     setPhone]     = useState(initialData?.phone          ?? '');
+  const [address,   setAddress]   = useState(initialData?.address_detail ?? '');
+  const [latitude,  setLatitude]  = useState(initialData?.latitude       ?? null);
+  const [longitude, setLongitude] = useState(initialData?.longitude      ?? null);
+  const [clientType,     setClientType]     = useState(initialData?.client_type ?? 'personal');
+  const [lunchPlanType,  setLunchPlanType]  = useState(initialData?.plan_type === 'estandar' ? 'estandar' : 'nutricional');
+  const [dinnerPlanType, setDinnerPlanType] = useState(initialData?.plan_type === 'estandar' ? 'estandar' : 'nutricional');
   const [errorMsg, setErrorMsg] = useState('');
 
   // Macros — almuerzo
-  const [lunchProtein, setLunchProtein] = useState('');
-  const [lunchProteinUnit, setLunchProteinUnit] = useState('g');
-  const [lunchCarb, setLunchCarb] = useState('');
-  const [lunchCarbUnit, setLunchCarbUnit] = useState('g');
+  const [lunchProtein,     setLunchProtein]     = useState(String(lm?.protein_value ?? ''));
+  const [lunchProteinUnit, setLunchProteinUnit] = useState(lm?.protein_unit ?? 'g');
+  const [lunchCarb,        setLunchCarb]        = useState(String(lm?.carb_value ?? ''));
+  const [lunchCarbUnit,    setLunchCarbUnit]    = useState(lm?.carb_unit ?? 'g');
   // Macros — cena
-  const [dinnerProtein, setDinnerProtein] = useState('');
-  const [dinnerProteinUnit, setDinnerProteinUnit] = useState('g');
-  const [dinnerCarb, setDinnerCarb] = useState('');
-  const [dinnerCarbUnit, setDinnerCarbUnit] = useState('g');
+  const [dinnerProtein,     setDinnerProtein]     = useState(String(dm?.protein_value ?? ''));
+  const [dinnerProteinUnit, setDinnerProteinUnit] = useState(dm?.protein_unit ?? 'g');
+  const [dinnerCarb,        setDinnerCarb]        = useState(String(dm?.carb_value ?? ''));
+  const [dinnerCarbUnit,    setDinnerCarbUnit]    = useState(dm?.carb_unit ?? 'g');
 
   // Localización
   const [countries, setCountries] = useState([]);
@@ -167,99 +161,70 @@ const AddCustomer = ({ onAdd }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nombre.trim()) return;
-
     setLoading(true);
     setErrorMsg('');
 
     try {
-      let lunchProfileId = null;
-      let dinnerProfileId = null;
-
-      if (clientType === 'personal') {
-        // 1a. Crear perfil de almuerzo
-        const { data: lunchData, error: lunchError } = await supabase
-          .schema('operations')
-          .from('macro_profiles')
-          .insert([{
-            name: `${nombre.trim()} — Almuerzo`,
-            protein_value: parseFloat(lunchProtein),
-            protein_unit: lunchProteinUnit,
-            carb_value: parseFloat(lunchCarb),
-            carb_unit: lunchCarbUnit,
-            is_active: true,
-          }])
-          .select('id_macro_profile')
-          .single();
-
-        if (lunchError) {
-          sileo.error('Error al guardar el perfil de almuerzo');
-          console.error(lunchError);
-          setLoading(false);
-          
-          return;
+      if (isEdit) {
+        // ── Edit mode ──────────────────────────────────────────────────────
+        if (clientType === 'personal') {
+          // Update existing macro profiles
+          if (initialData.lunch_macro_profile_id) {
+            await supabase.schema('operations').from('macro_profiles').update({
+              protein_value: parseFloat(lunchProtein), protein_unit: lunchProteinUnit,
+              carb_value: parseFloat(lunchCarb), carb_unit: lunchCarbUnit,
+            }).eq('id_macro_profile', initialData.lunch_macro_profile_id);
+          }
+          if (initialData.dinner_macro_profile_id) {
+            await supabase.schema('operations').from('macro_profiles').update({
+              protein_value: parseFloat(dinnerProtein), protein_unit: dinnerProteinUnit,
+              carb_value: parseFloat(dinnerCarb), carb_unit: dinnerCarbUnit,
+            }).eq('id_macro_profile', initialData.dinner_macro_profile_id);
+          }
         }
-        lunchProfileId = lunchData.id_macro_profile;
-
-        // 1b. Crear perfil de cena
-        const { data: dinnerData, error: dinnerError } = await supabase
-          .schema('operations')
-          .from('macro_profiles')
-          .insert([{
-            name: `${nombre.trim()} — Cena`,
-            protein_value: parseFloat(dinnerProtein),
-            protein_unit: dinnerProteinUnit,
-            carb_value: parseFloat(dinnerCarb),
-            carb_unit: dinnerCarbUnit,
-            is_active: true,
-          }])
-          .select('id_macro_profile')
-          .single();
-
-        if (dinnerError) {
-          sileo.error('Error al guardar el perfil de cena');
-          console.error(dinnerError);
-          setLoading(false);
-          return;
-        }
-        dinnerProfileId = dinnerData.id_macro_profile;
-      }
-
-      // 2. Crear cliente
-      const { error: clientError } = await supabase
-        .schema('operations')
-        .from('clients')
-        .insert([{
-          name: nombre,
-          phone,
-          address_detail: address,
-          district_id: selectedDistrict || null,
-          latitude,
-          longitude,
-          lunch_macro_profile_id: lunchProfileId,
-          dinner_macro_profile_id: dinnerProfileId,
-          client_type: clientType,
+        const { error } = await supabase.schema('operations').from('clients').update({
+          name: nombre, phone, address_detail: address,
+          district_id: selectedDistrict || null, latitude, longitude,
           plan_type: derivedPlanType,
-          is_active: true,
+        }).eq('id_client', initialData.id_client);
+        if (error) { sileo.error('Error al actualizar el cliente'); console.error(error); setErrorMsg(error.message); setLoading(false); return; }
+        sileo.success('Cliente actualizado exitosamente');
+        if (onAdd) onAdd();
+      } else {
+        // ── Create mode ────────────────────────────────────────────────────
+        let lunchProfileId = null;
+        let dinnerProfileId = null;
+
+        if (clientType === 'personal') {
+          const { data: lunchData, error: lunchError } = await supabase.schema('operations').from('macro_profiles')
+            .insert([{ name: `${nombre.trim()} — Almuerzo`, protein_value: parseFloat(lunchProtein), protein_unit: lunchProteinUnit, carb_value: parseFloat(lunchCarb), carb_unit: lunchCarbUnit, is_active: true }])
+            .select('id_macro_profile').single();
+          if (lunchError) { sileo.error('Error al guardar el perfil de almuerzo'); console.error(lunchError); setLoading(false); return; }
+          lunchProfileId = lunchData.id_macro_profile;
+
+          const { data: dinnerData, error: dinnerError } = await supabase.schema('operations').from('macro_profiles')
+            .insert([{ name: `${nombre.trim()} — Cena`, protein_value: parseFloat(dinnerProtein), protein_unit: dinnerProteinUnit, carb_value: parseFloat(dinnerCarb), carb_unit: dinnerCarbUnit, is_active: true }])
+            .select('id_macro_profile').single();
+          if (dinnerError) { sileo.error('Error al guardar el perfil de cena'); console.error(dinnerError); setLoading(false); return; }
+          dinnerProfileId = dinnerData.id_macro_profile;
+        }
+
+        const { error: clientError } = await supabase.schema('operations').from('clients').insert([{
+          name: nombre, phone, address_detail: address,
+          district_id: selectedDistrict || null, latitude, longitude,
+          lunch_macro_profile_id: lunchProfileId, dinner_macro_profile_id: dinnerProfileId,
+          client_type: clientType, plan_type: derivedPlanType, is_active: true,
           created_at: new Date().toISOString(),
         }]);
-
-      if (clientError) {
-        sileo.error('Error al guardar el cliente');
-        console.error(clientError);
-        setErrorMsg(clientError.message);
-        setLoading(false);
-        return;
+        if (clientError) { sileo.error('Error al guardar el cliente'); console.error(clientError); setErrorMsg(clientError.message); setLoading(false); return; }
+        sileo.success('Cliente agregado exitosamente');
+        resetForm();
+        if (onAdd) onAdd();
       }
-
-      sileo.success('Cliente agregado exitosamente');
-      resetForm();
-      if (onAdd) onAdd();
-
     } catch (err) {
       console.error(err);
       sileo.error('Error inesperado');
     }
-
     setLoading(false);
   };
 
@@ -267,8 +232,8 @@ const AddCustomer = ({ onAdd }) => {
   const labelClass = 'block text-sm font-medium text-slate-600 mb-1';
 
   return (
-    <div className="p-8 bg-slate-50 flex flex-col items-center">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Agregar Cliente</h1>
+    <div className="p-8 bg-slate-50 flex flex-col items-center" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false">
+      <h1 className="text-3xl font-bold mb-8 text-gray-800">{isEdit ? 'Editar Cliente' : 'Agregar Cliente'}</h1>
 
       <form
         onSubmit={handleSubmit}
@@ -446,7 +411,7 @@ const AddCustomer = ({ onAdd }) => {
             disabled={loading}
             className="bg-slate-800 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
           >
-            {loading ? 'Guardando...' : 'Guardar Cliente'}
+            {loading ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Cliente'}
           </button>
         </div>
 
@@ -454,13 +419,14 @@ const AddCustomer = ({ onAdd }) => {
         <div className="flex flex-col">
           <label className="mb-2 font-medium text-slate-600 text-sm">Ubicación en el mapa</label>
           <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex-1">
-            <MapContainer center={[9.9333, -84.0833]} zoom={10} style={{ height: '100%', minHeight: '420px', width: '100%' }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <LocationPicker
-                position={latitude && longitude ? [latitude, longitude] : null}
-                setPosition={(pos) => { setLatitude(pos[0]); setLongitude(pos[1]); }}
-              />
-            </MapContainer>
+            <SafeMap
+              lat={latitude ?? 9.9333}
+              lng={longitude ?? -84.0833}
+              zoom={latitude ? 15 : 10}
+              height="420px"
+              interactive={true}
+              onClick={(lat, lng) => { setLatitude(lat); setLongitude(lng); }}
+            />
           </div>
           {latitude && longitude && (
             <p className="mt-2 text-xs text-slate-500">Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}</p>

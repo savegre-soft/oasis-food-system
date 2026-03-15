@@ -34,7 +34,7 @@ const getWeekRange = () => {
   const day    = today.getDay();
   const diff   = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diff);
+  monday.setDate(today.getDate() + diff + 7); // next week
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -42,6 +42,64 @@ const getWeekRange = () => {
     weekStart: monday.toISOString().split('T')[0],
     weekEnd:   sunday.toISOString().split('T')[0],
   };
+};
+
+// ── Route delivery slot helpers ───────────────────────────────────────────────
+//
+// Given the sorted delivery-day names of a route (e.g. ['Sunday','Tuesday'])
+// and the week's Monday date, build an array of slots:
+//   { label, dateFrom (ISO), dateTo (ISO) }
+//
+// Rule: slot N covers days from (slot[N-1].date + 1 day) to slot[N].date.
+// For the first slot we wrap around: start = slot[last] of PREVIOUS week + 1.
+//
+// Cycle order for delivery slots: Sunday starts the week (index -1),
+// then Mon(0)…Sat(5). Matches getDateForDay in AddOrder.
+const cycleIdx = (d) => d === 'Sunday' ? -1 : DAY_ORDER.indexOf(d);
+
+// Absolute ISO date of a named day within the week starting on weekMonday.
+const isoOfDay = (name, weekMonday) => {
+  const d = new Date(weekMonday);
+  if (name === 'Sunday') {
+    d.setDate(weekMonday.getDate() - 1); // Sunday precedes Monday
+  } else {
+    d.setDate(weekMonday.getDate() + DAY_ORDER.indexOf(name)); // Mon=0…Sat=5
+  }
+  return d.toISOString().split('T')[0];
+};
+
+// Build delivery slots from route delivery day names.
+// Each slot's dateFrom/dateTo = the exact delivery_date stored in order_days
+// for that slot (a single date, not a range), because Production filters by
+// delivery_date == slot date.
+//
+// The slot LABEL shows which meal days it covers, but the DB query uses
+// the exact delivery_date value.
+//
+// Slot order follows cycleIdx (Sun first, then Mon–Sat).
+const buildDeliverySlots = (deliveryDayNames, weekMonday) => {
+  const sorted = [...deliveryDayNames].sort((a, b) => cycleIdx(a) - cycleIdx(b));
+
+  return sorted.map((name, i) => {
+    const deliveryDate = isoOfDay(name, weekMonday);
+
+    // Label: show which meal days this delivery covers
+    // From: day after previous delivery (cycle order), To: day before next delivery
+    const prevName = i === 0 ? null : sorted[i - 1];
+    const nextName = sorted[i + 1] ?? null;
+
+    const prevDate = prevName ? isoOfDay(prevName, weekMonday) : null;
+    const nextDate = nextName ? isoOfDay(nextName, weekMonday) : null;
+
+    // dateFrom/dateTo for DB query = exact delivery_date (single day)
+    return {
+      name,
+      label:        DAY_LABELS[name] ?? name,
+      deliveryDate, // exact date stored in order_days.delivery_date
+      prevDate,     // for display: meal days start after this
+      nextDate,     // for display: meal days end before this
+    };
+  });
 };
 
 // ── Supabase select fragment ──────────────────────────────────────────────────
@@ -54,7 +112,7 @@ const ORDER_DAY_SELECT = `
   orders (
     id_order,
     classification,
-    clients ( id_client, name )
+    clients ( id_client, name, client_type )
   ),
   order_day_details (
     id_order_day_detail,
@@ -77,43 +135,89 @@ const Production = () => {
   const { supabase }           = useApp();
   const { weekStart, weekEnd } = getWeekRange();
 
-  const [activeTab,     setActiveTab]     = useState('cocina');
-  const [availableDays, setAvailableDays] = useState([]);
-  const [selectedDay,   setSelectedDay]   = useState(null);
-  const [loadingDays,   setLoadingDays]   = useState(false);
-  const [loading,       setLoading]       = useState(false);
+  const [activeTab,     setActiveTab]    = useState('cocina');
+  const [clientFilter,  setClientFilter] = useState('todos');
 
-  // Each view has its own data slice
-  const [pendingDays,   setPendingDays]   = useState([]);  // PENDING  → Cocina + Empaque
-  const [packedDays,    setPackedDays]    = useState([]);  // PACKED   → Empaque
-  const [deliveredDays, setDeliveredDays] = useState([]);  // DELIVERED → Entrega
+  // Route-based slot selector
+  const [slots,        setSlots]        = useState([]);  // [{ name, label, dateFrom, dateTo }]
+  const [selectedSlot, setSelectedSlot] = useState(null); // slot object
 
-  // ── Available days (PENDING ∪ PACKED) ─────────────────────────────────────
+  const [loadingDays, setLoadingDays] = useState(false);
+  const [loading,     setLoading]     = useState(false);
+
+  const [pendingDays,   setPendingDays]   = useState([]);
+  const [packedDays,    setPackedDays]    = useState([]);
+  const [deliveredDays, setDeliveredDays] = useState([]);
+
+  // ── Load routes → build delivery slots ───────────────────────────────────
 
   const getAvailableDays = async () => {
     setLoadingDays(true);
-    const { data, error } = await supabase
+
+    // 1. Fetch all active routes with their delivery days
+    const { data: routes, error } = await supabase
+      .schema('operations')
+      .from('routes')
+      .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+      .eq('is_active', true);
+
+    if (error) { console.error(error); setLoadingDays(false); return; }
+
+    // 2. Collect all unique delivery-day names across all routes
+    const allDayNames = [...new Set(
+      (routes ?? []).flatMap((r) => (r.route_delivery_days ?? []).map((d) => d.day_of_week))
+    )];
+
+    if (allDayNames.length === 0) {
+      // Fallback: use actual delivery_dates from order_days
+      const { data: fallback } = await supabase
+        .schema('operations')
+        .from('order_days')
+        .select('delivery_date, day_of_week')
+        .in('status', ['PENDING', 'PACKED', 'DELIVERED'])
+        .gte('delivery_date', weekStart)
+        .lte('delivery_date', weekEnd);
+
+      const uniqueDates = [...new Set((fallback ?? []).map((d) => d.delivery_date))].sort();
+      const fallbackSlots = uniqueDates.map((dateStr) => {
+        const d = new Date(dateStr + 'T00:00:00');
+        const name = DAY_ORDER[d.getDay() === 0 ? 6 : d.getDay() - 1];
+        return { name, label: DAY_LABELS[name] ?? name, deliveryDate: dateStr };
+      });
+      setSlots(fallbackSlots);
+      if (fallbackSlots.length > 0 && !selectedSlot) setSelectedSlot(fallbackSlots[0]);
+      setLoadingDays(false);
+      return;
+    }
+
+    // 3. Build slots from route delivery days
+    const weekMonday = new Date(weekStart + 'T00:00:00');
+    const allSlots   = buildDeliverySlots(allDayNames, weekMonday);
+
+    // 4. Filter to slots that actually have order_days in their date range this week
+    const { data: activeDates } = await supabase
       .schema('operations')
       .from('order_days')
-      .select('day_of_week')
+      .select('delivery_date')
       .in('status', ['PENDING', 'PACKED', 'DELIVERED'])
       .gte('delivery_date', weekStart)
       .lte('delivery_date', weekEnd);
 
-    if (error) { console.error(error); setLoadingDays(false); return; }
+    const activeDateSet = new Set((activeDates ?? []).map((d) => d.delivery_date));
 
-    const unique = [...new Set((data ?? []).map((d) => d.day_of_week))]
-      .sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
+    const activeSlots = allSlots.filter((slot) =>
+      activeDateSet.has(slot.deliveryDate)
+    );
 
-    setAvailableDays(unique);
-    if (unique.length > 0 && !selectedDay) setSelectedDay(unique[0]);
+    setSlots(activeSlots);
+    if (activeSlots.length > 0 && !selectedSlot) setSelectedSlot(activeSlots[0]);
     setLoadingDays(false);
   };
 
-  // ── Data for selected day ─────────────────────────────────────────────────
+  // ── Data for selected slot (date range) ──────────────────────────────────
 
   const getData = async () => {
-    if (!selectedDay) return;
+    if (!selectedSlot) return;
     setLoading(true);
 
     const base = (status) =>
@@ -121,10 +225,8 @@ const Production = () => {
         .schema('operations')
         .from('order_days')
         .select(ORDER_DAY_SELECT)
-        .eq('day_of_week', selectedDay)
+        .eq('delivery_date', selectedSlot.deliveryDate)
         .eq('status', status)
-        .gte('delivery_date', weekStart)
-        .lte('delivery_date', weekEnd)
         .order('id_order_day');
 
     const [pendingRes, packedRes, deliveredRes] = await Promise.all([
@@ -143,15 +245,12 @@ const Production = () => {
     setLoading(false);
   };
 
-  useEffect(() => { getAvailableDays(); }, []);
-  useEffect(() => { getData(); },          [selectedDay]);
+  useEffect(() => { getAvailableDays(); },  []);
+  useEffect(() => { getData(); },           [selectedSlot]);
 
   // ── Refresh both ──────────────────────────────────────────────────────────
 
-  const refresh = async () => {
-    await getAvailableDays();
-    await getData();
-  };
+  const refresh = async () => { await getAvailableDays(); await getData(); };
 
   // ── Status transitions ────────────────────────────────────────────────────
 
@@ -173,10 +272,21 @@ const Production = () => {
 
   // ── Tab badge counts ──────────────────────────────────────────────────────
 
+  // ── Client-type filter ───────────────────────────────────────────────────
+
+  const filterByClient = (days) => {
+    if (clientFilter === 'todos') return days;
+    return days.filter((d) => d.orders?.clients?.client_type === clientFilter);
+  };
+
+  const pendingFiltered   = filterByClient(pendingDays);
+  const packedFiltered    = filterByClient(packedDays);
+  const deliveredFiltered = filterByClient(deliveredDays);
+
   const counts = {
-    cocina:  pendingDays.length,
-    empaque: packedDays.length + pendingDays.length,
-    entrega: deliveredDays.length,
+    cocina:  pendingFiltered.length,
+    empaque: packedFiltered.length + pendingFiltered.length,
+    entrega: deliveredFiltered.length,
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -197,26 +307,51 @@ const Production = () => {
 
       {loadingDays ? (
         <p className="text-slate-400 text-sm">Cargando días...</p>
-      ) : availableDays.length === 0 ? (
+      ) : slots.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <Truck size={40} className="mx-auto mb-3 opacity-30" />
           <p>No hay pedidos activos esta semana</p>
         </div>
       ) : (
         <>
-          {/* Day selector */}
+          {/* Delivery slot selector */}
           <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-6">
-            {availableDays.map((day) => (
+            {slots.map((slot) => {
+              const isActive = selectedSlot?.name === slot.name;
+              const delivLabel = new Date(slot.deliveryDate + 'T00:00:00')
+                .toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
+              return (
+                <button
+                  key={slot.name}
+                  onClick={() => setSelectedSlot(slot)}
+                  className={`flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  <span>{slot.label}</span>
+                  <span className="text-xs font-normal opacity-60">{delivLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Client type filter */}
+          <div className="flex gap-1 mb-4">
+            {[
+              { id: 'todos',    label: '🌐 Todos'      },
+              { id: 'personal', label: '👤 Personales'  },
+              { id: 'family',   label: '👨‍👩‍👧 Familiares' },
+            ].map(({ id, label }) => (
               <button
-                key={day}
-                onClick={() => setSelectedDay(day)}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-                  selectedDay === day
-                    ? 'bg-white shadow text-slate-800'
-                    : 'text-slate-600 hover:text-slate-800'
+                key={id}
+                onClick={() => setClientFilter(id)}
+                className={`px-4 py-1.5 rounded-xl text-xs font-medium transition border ${
+                  clientFilter === id
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
                 }`}
               >
-                {DAY_LABELS[day] ?? day}
+                {label}
               </button>
             ))}
           </div>
@@ -257,21 +392,21 @@ const Production = () => {
             <div>
               {activeTab === 'cocina'  && (
                 <CocinaView
-                  orderDays={pendingDays}
+                  orderDays={pendingFiltered}
                   onPack={markPacked}
                   DAY_LABELS={DAY_LABELS}
                 />
               )}
               {activeTab === 'empaque' && (
                 <EmpaqueView
-                  pendingDays={pendingDays}
-                  packedDays={packedDays}
+                  pendingDays={pendingFiltered}
+                  packedDays={packedFiltered}
                   onDeliver={markDelivered}
                 />
               )}
               {activeTab === 'entrega' && (
                 <EntregaView
-                  orderDays={deliveredDays}
+                  orderDays={deliveredFiltered}
                 />
               )}
             </div>

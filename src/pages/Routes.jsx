@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { AnimatePresence } from 'framer-motion';
 
 import Modal from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import AddRoute from '../components/AddRoute';
 import RouteCard from '../components/RouteCard';
 
@@ -13,7 +14,9 @@ const Routes = () => {
   const [systemRoutes, setSystemRoutes] = useState([]);
   const [customRoutes, setCustomRoutes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal,    setShowModal]    = useState(false);
+  const [editingRoute, setEditingRoute] = useState(null);
+  const [toDelete,     setToDelete]     = useState(null);
 
   // ===============================
   // OBTENER DATOS
@@ -58,17 +61,9 @@ const Routes = () => {
   // ELIMINAR (soft delete — solo rutas personalizadas)
   // ===============================
   const eliminar = async (id) => {
-    const { error } = await supabase
-      .schema('operations')
-      .from('routes')
-      .update({ is_active: false })
-      .eq('id_route', id);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
+    const { error } = await supabase.schema('operations').from('routes')
+      .update({ is_active: false }).eq('id_route', id);
+    if (error) { console.error(error); return; }
     getData();
   };
 
@@ -78,6 +73,22 @@ const Routes = () => {
         {showModal && (
           <Modal isOpen={showModal} onClose={() => { setShowModal(false); getData(); }}>
             <AddRoute onSuccess={() => { setShowModal(false); getData(); }} />
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="¿Eliminar ruta?"
+        message="Esta acción no se puede deshacer."
+        onConfirm={() => { eliminar(toDelete); setToDelete(null); }}
+        onCancel={() => setToDelete(null)}
+      />
+
+      <AnimatePresence>
+        {editingRoute && (
+          <Modal isOpen={!!editingRoute} onClose={() => setEditingRoute(null)}>
+            <AddRoute initialData={editingRoute} onSuccess={() => { setEditingRoute(null); getData(); }} />
           </Modal>
         )}
       </AnimatePresence>
@@ -138,7 +149,7 @@ const Routes = () => {
               ) : (
                 <div className="space-y-3">
                   {customRoutes.map((route) => (
-                    <RouteCard key={route.id_route} route={route} onDelete={eliminar} />
+                    <RouteCard key={route.id_route} route={route} onDelete={setToDelete} onEdit={setEditingRoute} />
                   ))}
                 </div>
               )}

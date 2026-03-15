@@ -13,12 +13,15 @@ const DAYS = [
   { value: 'Sunday',    label: 'Domingo' },
 ];
 
-const AddRoute = ({ onSuccess }) => {
+const AddRoute = ({ onSuccess, initialData }) => {
   const { supabase } = useApp();
+  const isEdit = !!initialData;
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedDays, setSelectedDays] = useState([]);
+  const [name,         setName]         = useState(initialData?.name        ?? '');
+  const [description,  setDescription]  = useState(initialData?.description ?? '');
+  const [selectedDays, setSelectedDays] = useState(
+    initialData?.route_delivery_days?.map(d => d.day_of_week) ?? []
+  );
   const [loading, setLoading] = useState(false);
 
   const toggleDay = (day) => {
@@ -30,41 +33,31 @@ const AddRoute = ({ onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-
     setLoading(true);
 
-    const { data: routeData, error: routeError } = await supabase
-      .schema('operations')
-      .from('routes')
-      .insert([{ name, description, is_active: true, route_type: null }])
-      .select('id_route')
-      .single();
-
-    if (routeError) {
-      sileo.error('Error al guardar la ruta');
-      console.error(routeError);
-      setLoading(false);
-      return;
+    let routeId;
+    if (isEdit) {
+      const { error } = await supabase.schema('operations').from('routes')
+        .update({ name, description }).eq('id_route', initialData.id_route);
+      if (error) { sileo.error('Error al actualizar la ruta'); console.error(error); setLoading(false); return; }
+      // Replace delivery days
+      await supabase.schema('operations').from('route_delivery_days').delete().eq('route_id', initialData.id_route);
+      routeId = initialData.id_route;
+    } else {
+      const { data, error } = await supabase.schema('operations').from('routes')
+        .insert([{ name, description, is_active: true, route_type: null }]).select('id_route').single();
+      if (error) { sileo.error('Error al guardar la ruta'); console.error(error); setLoading(false); return; }
+      routeId = data.id_route;
     }
 
     if (selectedDays.length > 0) {
-      const { error: daysError } = await supabase
-        .schema('operations')
-        .from('route_delivery_days')
-        .insert(selectedDays.map((day) => ({ route_id: routeData.id_route, day_of_week: day })));
-
-      if (daysError) {
-        sileo.error('Ruta creada pero hubo un error al guardar los días');
-        console.error(daysError);
-        setLoading(false);
-        return;
-      }
+      const { error } = await supabase.schema('operations').from('route_delivery_days')
+        .insert(selectedDays.map(day => ({ route_id: routeId, day_of_week: day })));
+      if (error) { sileo.error('Error al guardar los días'); console.error(error); setLoading(false); return; }
     }
 
-    sileo.success('Ruta agregada correctamente');
-    setName('');
-    setDescription('');
-    setSelectedDays([]);
+    sileo.success(isEdit ? 'Ruta actualizada correctamente' : 'Ruta agregada correctamente');
+    if (!isEdit) { setName(''); setDescription(''); setSelectedDays([]); }
     setLoading(false);
     if (onSuccess) onSuccess();
   };
@@ -76,7 +69,7 @@ const AddRoute = ({ onSuccess }) => {
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">Agregar Nueva Ruta</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-6">{isEdit ? 'Editar Ruta' : 'Agregar Nueva Ruta'}</h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -136,7 +129,7 @@ const AddRoute = ({ onSuccess }) => {
             className="w-full bg-slate-800 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
           >
             <Plus size={18} />
-            {loading ? 'Guardando...' : 'Guardar Ruta'}
+            {loading ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Ruta'}
           </button>
         </form>
       </div>

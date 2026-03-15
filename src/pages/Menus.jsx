@@ -129,6 +129,14 @@ const Menus = () => {
 
       </AnimatePresence>
 
+      <AnimatePresence>
+        {editingRecipe && (
+          <Modal isOpen={!!editingRecipe} onClose={() => setEditingRecipe(null)}>
+            <AddRecipe initialData={editingRecipe} onSuccess={() => { setEditingRecipe(null); getData(); }} />
+          </Modal>
+        )}
+      </AnimatePresence>
+
       <div className="min-h-screen bg-slate-50 p-8">
 
         {/* Header */}
