@@ -39,13 +39,8 @@ const salesData = [
 ];
 
 export default function Main() {
-  const {
-    clientCount,
-    clientsPerDistrict,
-    clientLocations,
-    loading,
-    error,
-  } = useDashboardData();
+  const { clientCount, clientsPerDistrict, clientLocations, loading, totalOrders, error } =
+    useDashboardData();
 
   if (loading) {
     return (
@@ -71,19 +66,12 @@ export default function Main() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-gray-500">Clientes</h2>
-          <p className="text-3xl font-bold mt-2">
-            {clientCount.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-gray-500">Ventas</h2>
-          <p className="text-3xl font-bold mt-2">$12,340</p>
+          <p className="text-3xl font-bold mt-2">{clientCount.toLocaleString()}</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-gray-500">Pedidos</h2>
-          <p className="text-3xl font-bold mt-2">320</p>
+          <p className="text-3xl font-bold mt-2">{totalOrders}</p>
         </div>
       </div>
 
@@ -91,9 +79,7 @@ export default function Main() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Ventas */}
         <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">
-            Ventas Mensuales
-          </h2>
+          <h2 className="text-xl font-semibold mb-4">Ventas Mensuales</h2>
 
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={salesData}>
@@ -101,21 +87,14 @@ export default function Main() {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="ventas"
-                stroke="#3b82f6"
-                strokeWidth={3}
-              />
+              <Line type="monotone" dataKey="ventas" stroke="#3b82f6" strokeWidth={3} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         {/* Clientes por distrito */}
         <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">
-            Clientes por Distrito
-          </h2>
+          <h2 className="text-xl font-semibold mb-4">Clientes por Distrito</h2>
 
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={clientsPerDistrict}>
@@ -131,22 +110,13 @@ export default function Main() {
 
       {/* Mapa */}
       <div className="relative z-0 bg-white p-6 rounded-2xl shadow">
-        <h2 className="text-xl font-semibold mb-4">
-          Mapa de Clientes
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">Mapa de Clientes</h2>
 
-        <MapContainer
-          center={[9.9333, -84.0833]}
-          zoom={10}
-          className="h-[400px] w-full rounded-xl"
-        >
+        <MapContainer center={[9.9333, -84.0833]} zoom={10} className="h-[400px] w-full rounded-xl">
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           {clientLocations.map((c) => (
-            <Marker
-              key={c.id_client}
-              position={[c.latitude, c.longitude]}
-            >
+            <Marker key={c.id_client} position={[c.latitude, c.longitude]}>
               <Popup>
                 <strong>{c.name}</strong>
                 <br />

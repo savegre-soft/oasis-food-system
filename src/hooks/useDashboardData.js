@@ -11,6 +11,8 @@ export const useDashboardData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [totalOrders, setTotalOrders] = useState(0);
+
   // Obtener cantidad total de clientes
   const fetchClientCount = async () => {
     const { count, error } = await supabase
@@ -23,6 +25,20 @@ export const useDashboardData = () => {
     setClientCount(count || 0);
   };
 
+  const fetchTotalOrders = async () => {
+    try {
+      const { count, error } = await supabase
+        .schema('operations')
+        .from('orders')
+        .select('id_order', { count: 'exact', head: true });
+
+      if (error) throw error;
+
+      setTotalOrders(count || 0);
+    } catch (err) {
+      console.error('Error fetching total orders:', err.message);
+    }
+  };
   // Clientes por distrito + ubicaciones
   const fetchDistrictsAndClients = async () => {
     // Distritos
@@ -71,7 +87,7 @@ export const useDashboardData = () => {
     const init = async () => {
       try {
         setLoading(true);
-        await Promise.all([fetchClientCount(), fetchDistrictsAndClients()]);
+        await Promise.all([fetchClientCount(), fetchDistrictsAndClients(), fetchTotalOrders()]);
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -86,6 +102,7 @@ export const useDashboardData = () => {
   return {
     clientCount,
     districts,
+    totalOrders,
     clientsPerDistrict,
     clientLocations,
     loading,
