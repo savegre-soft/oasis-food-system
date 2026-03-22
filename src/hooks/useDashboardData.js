@@ -7,6 +7,7 @@ export const useDashboardData = () => {
   const [clientCount, setClientCount] = useState(0);
   const [districts, setDistricts] = useState([]);
   const [clientsPerDistrict, setClientsPerDistrict] = useState([]);
+  const [ordersByDate, setOrdersByDate] = useState([]);
   const [clientLocations, setClientLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,6 +24,15 @@ export const useDashboardData = () => {
     if (error) throw error;
 
     setClientCount(count || 0);
+  };
+
+  const fetchOrdersByDate = async () => {
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('orders')
+      .select('id_order, week_start_date,week_end_date');
+
+    setOrdersByDate(data);
   };
 
   const fetchTotalOrders = async () => {
@@ -87,7 +97,7 @@ export const useDashboardData = () => {
     const init = async () => {
       try {
         setLoading(true);
-        await Promise.all([fetchClientCount(), fetchDistrictsAndClients(), fetchTotalOrders()]);
+        await Promise.all([fetchClientCount(), fetchDistrictsAndClients(), fetchTotalOrders(), fetchOrdersByDate()]);
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -104,6 +114,7 @@ export const useDashboardData = () => {
     districts,
     totalOrders,
     clientsPerDistrict,
+    ordersByDate,
     clientLocations,
     loading,
     error,
