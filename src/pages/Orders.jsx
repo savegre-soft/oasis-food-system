@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { ClipboardList, Calendar, History, ChevronLeft, ChevronRight, X, User, Users, Pencil } from 'lucide-react';
+import { ClipboardList, Calendar, History, ChevronLeft, ChevronRight, X, User, Users, Pencil, Search } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -207,10 +207,10 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
 const OrderCard = ({ order, onClick, onEdit }) => {
   const st = STATUS_STYLES[order.status] ?? { label: order.status, cls: 'bg-slate-100 text-slate-600 border-slate-200' };
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition">
-      <div className="flex items-start gap-4">
-        <button type="button" onClick={() => onClick(order)} className="flex-1 text-left min-w-0">
-          <div className="space-y-2">
+    <div className="group relative bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition">
+      <button type="button" onClick={() => onClick(order)} className="w-full text-left">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-slate-800">{order.clients?.name}</p>
               <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full border ${st.cls}`}>{st.label}</span>
@@ -236,20 +236,18 @@ const OrderCard = ({ order, onClick, onEdit }) => {
               </div>
             )}
           </div>
-        </button>
-        <div className="flex items-center gap-2 shrink-0">
-          {onEdit && (
-            <button type="button" onClick={() => onEdit(order)}
-              className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
-              <Pencil size={14} />
-            </button>
-          )}
-          <button type="button" onClick={() => onClick(order)}
-            className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
-            <ChevronRight size={14} />
-          </button>
+          <ChevronRight size={16} className="text-slate-300 shrink-0 mt-1" />
         </div>
-      </div>
+      </button>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onEdit(order); }}
+          className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium bg-slate-800 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 transition shadow-md opacity-0 group-hover:opacity-100"
+        >
+          <Pencil size={12} /> Editar
+        </button>
+      )}
     </div>
   );
 };
@@ -427,8 +425,8 @@ const Orders = () => {
   const getData = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .schema("operations")
-      .from("orders")
+      .schema('operations')
+      .from('orders')
       .select(`
         id_order,
         week_start_date,
@@ -454,39 +452,50 @@ const Orders = () => {
           )
         )
       `)
-      .order('id_order', { ascending: false });
+      .order('week_start_date', { ascending: false })
+      .order('id_order',        { ascending: false });
 
-    if (error) {
-      console.error(error);
-      setLoading(false);
-      return;
-    }
-
-    setOrders(data);
+    if (error) { console.error(error); setLoading(false); return; }
+    setAllOrders(data ?? []);
     setLoading(false);
   };
 
-  useEffect(() => {
-    getData();
-  }, []);
+  useEffect(() => { getData(); }, []);
+
+  // "Esta semana" = orders for the upcoming delivery week (next week).
+  // If none exist yet, fall back to the most recent week found in data.
+  const currentWeekOrders = useMemo(() =>
+    allOrders.filter((o) => o.week_start_date === NEXT_WEEK_START && o.week_end_date === NEXT_WEEK_END),
+    [allOrders]);
+
+  const latestWeekStart = useMemo(() => {
+    if (currentWeekOrders.length > 0) return NEXT_WEEK_START;
+    // fallback: most recent week_start_date in data
+    const dates = allOrders.map((o) => o.week_start_date).filter(Boolean);
+    return dates.length > 0 ? [...dates].sort().reverse()[0] : null;
+  }, [allOrders, currentWeekOrders]);
+
+  const weekOrders = useMemo(() =>
+    allOrders.filter((o) => o.week_start_date === latestWeekStart),
+    [allOrders, latestWeekStart]);
+
+  const historyOrders = useMemo(() =>
+    allOrders.filter((o) => o.week_start_date !== latestWeekStart),
+    [allOrders, latestWeekStart]);
+
+  const weekLabel = useMemo(() => {
+    if (!latestWeekStart) return '';
+    const ws = weekOrders[0]?.week_start_date ?? latestWeekStart;
+    const we = weekOrders[0]?.week_end_date ?? NEXT_WEEK_END;
+    return `${fmtDate(ws, { day: '2-digit', month: 'long' })} — ${fmtDate(we, { day: '2-digit', month: 'long', year: 'numeric' })}`;
+  }, [weekOrders, latestWeekStart]);
 
   return (
     <>
       <AnimatePresence>
         {showModal && (
-          <Modal
-            isOpen={showModal}
-            onClose={() => {
-              setShowModal(false);
-              getData();
-            }}
-          >
-            <AddOrder
-              onSuccess={() => {
-                setShowModal(false);
-                getData();
-              }}
-            />
+          <Modal isOpen={showModal} onClose={() => { setShowModal(false); getData(); }}>
+            <AddOrder onSuccess={() => { setShowModal(false); getData(); }} />
           </Modal>
         )}
       </AnimatePresence>
@@ -510,33 +519,12 @@ const Orders = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Pedidos</h1>
-            <p className="text-slate-500 mt-2">Registra y gestiona los pedidos semanales</p>
+            <p className="text-slate-500 mt-1">Gestiona y consulta los pedidos semanales</p>
           </div>
           <button onClick={() => setShowModal(true)}
             className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium">
             <ClipboardList size={16} /> Nuevo Pedido
           </button>
-        </div>
-
-        {/* Buscador */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-
-            <input
-              type="text"
-              placeholder="Buscar por cliente o ruta..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
-            />
-          </div>
         </div>
 
         {/* Tabs */}
@@ -560,18 +548,56 @@ const Orders = () => {
         </div>
 
         {loading ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : orders.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
-            <ClipboardList size={40} className="mx-auto mb-3 opacity-30" />
-            <p>No hay pedidos registrados</p>
-          </div>
+          <p className="text-slate-400 text-sm">Cargando...</p>
         ) : (
-          <div className="space-y-4">
-            {orders.map((order) => (
-              <OrderCard key={order.id_order} order={order} />
-            ))}
-          </div>
+          <AnimatePresence mode="wait">
+
+            {activeTab === 'week' && (
+              <motion.div key="week" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="text-xs text-slate-400 uppercase tracking-wide font-medium">Semana de entrega</p>
+                    <p className="text-sm font-semibold text-slate-700 mt-0.5">{weekLabel}</p>
+                  </div>
+                  {weekOrders.length > 0 && (
+                    <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+                      <button onClick={() => setCalendarView(false)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${!calendarView ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        <ClipboardList size={13} /> Lista
+                      </button>
+                      <button onClick={() => setCalendarView(true)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${calendarView ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        <Calendar size={13} /> Calendario
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {weekOrders.length === 0 ? (
+                  <div className="text-center py-20 text-slate-400">
+                    <Calendar size={40} className="mx-auto mb-3 opacity-30" />
+                    <p>No hay pedidos para esta semana</p>
+                    <p className="text-xs mt-1 text-slate-300">{weekLabel}</p>
+                  </div>
+                ) : calendarView ? (
+                  <CalendarView orders={weekOrders} onOrderClick={setSelectedOrder} />
+                ) : (
+                  <div className="space-y-3">
+                    {weekOrders.map((order) => (
+                      <OrderCard key={order.id_order} order={order} onClick={setSelectedOrder} onEdit={setEditingOrder} />
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === 'history' && (
+              <motion.div key="history" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
+                <HistoryView orders={historyOrders} onOrderClick={setSelectedOrder} onEdit={setEditingOrder} />
+              </motion.div>
+            )}
+
+          </AnimatePresence>
         )}
       </div>
     </>

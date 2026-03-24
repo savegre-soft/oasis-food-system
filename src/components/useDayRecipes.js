@@ -88,7 +88,7 @@ export const useDayRecipes = () => {
         recipe_id:   String(det.recipe_id ?? det.recipes?.id_recipe ?? ''),
         recipe_name: det.recipes?.name ?? '',
         quantity:    det.quantity ?? 1,
-        isExtra:     false,
+        isExtra:     true,   // treat all existing recipes as extras so extraCount works in EditOrder
       }));
     });
     setDayRecipes(recipes);

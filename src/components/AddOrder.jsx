@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
 import MacroPanel from './MacroPanel';
 import OrderAdjustments from './OrderAdjustments';
+import RecipeIngredientEditor from './RecipeIngredientEditor';
 import { useDayRecipes } from './useDayRecipes';
 import { useMacros } from './useMacros';
 import {
@@ -13,9 +14,13 @@ import {
   getDateForDay,
 } from './orderUtils';
 
+// ── Constants ────────────────────────────────────────────────────────────────
+const STANDARD_MACRO = { protein_value: 120, protein_unit: 'g', carb_value: 120, carb_unit: 'g' };
+
 // ── Step labels ───────────────────────────────────────────────────────────────
 const PERSONAL_STEPS = ['Cliente', 'Menú', 'Ajustes', 'Confirmar'];
 const FAMILY_STEPS   = ['Cliente', 'Ajustes', 'Confirmar'];
+const EXPRESS_STEPS  = ['Cliente', 'Menú', 'Confirmar'];
 
 // ── AddOrder ──────────────────────────────────────────────────────────────────
 const AddOrder = ({ onSuccess }) => {
@@ -46,7 +51,13 @@ const AddOrder = ({ onSuccess }) => {
   const [allRecipes,          setAllRecipes]          = useState([]);
   const [extraMealTypes,      setExtraMealTypes]      = useState({});
 
-  const [loading, setLoading] = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [isExpress,      setIsExpress]      = useState(false);
+  // Express: direct recipe list [{recipe_id, recipe_name, quantity}]
+  const [expressRecipes,            setExpressRecipes]            = useState([]);
+  const [expressType,               setExpressType]               = useState('Lunch'); // 'Lunch' | 'Dinner'
+  const [expressIngredientOverrides,setExpressIngredientOverrides]= useState({}); // { idx: {protein,carb,extra} }
+  const [expressMacros,             setExpressMacros]             = useState({ protein_value: '', protein_unit: 'g', carb_value: '', carb_unit: 'g' });
 
   const familyClient = selectedClient ? isFamily(selectedClient) : false;
 
@@ -97,6 +108,19 @@ const AddOrder = ({ onSuccess }) => {
     if (lm) setLunchMacros({ protein_value: lm.protein_value, protein_unit: lm.protein_unit, carb_value: lm.carb_value, carb_unit: lm.carb_unit });
     if (dm) setDinnerMacros({ protein_value: dm.protein_value, protein_unit: dm.protein_unit, carb_value: dm.carb_value, carb_unit: dm.carb_unit });
   }, [selectedClient]);
+
+  // ── Auto-load expressMacros from client profile when type changes ─────────
+  useEffect(() => {
+    if (!selectedClient || !isExpress) return;
+    const macro = expressType === 'Dinner'
+      ? selectedClient.dinner_macro
+      : selectedClient.lunch_macro;
+    if (macro) {
+      setExpressMacros({ protein_value: macro.protein_value, protein_unit: macro.protein_unit, carb_value: macro.carb_value, carb_unit: macro.carb_unit });
+    } else {
+      setExpressMacros(STANDARD_MACRO);
+    }
+  }, [selectedClient, expressType, isExpress]);
 
   // ── Load family templates ─────────────────────────────────────────────────
   useEffect(() => {
@@ -210,6 +234,7 @@ const AddOrder = ({ onSuccess }) => {
   const canGoNext = () => {
     if (step === 1) return !!selectedClient;
     if (step === 2) {
+      if (isExpress) return expressRecipes.some(r => r.recipe_id);
       if (!menuType) return false;
       if (menuType === 'Lunch')  return !!selectedLunchTemplate;
       if (menuType === 'Dinner') return !!selectedDinnerTemplate;
@@ -224,11 +249,16 @@ const AddOrder = ({ onSuccess }) => {
       setStep(3);
       return;
     }
+    if (step === 2 && isExpress) {
+      setStep(4); // skip adjustments step
+      return;
+    }
     setStep(s => s + 1);
   };
 
   const goBack = () => {
     if (step === 3 && familyClient) { setStep(1); return; }
+    if (step === 4 && isExpress)    { setStep(2); return; }
     setStep(s => s - 1);
   };
 
@@ -237,9 +267,15 @@ const AddOrder = ({ onSuccess }) => {
     setLoading(true);
     const weekStartStr   = toDateString(weekStart);
     const weekEndStr     = toDateString(weekEnd);
-    const activeDays     = DAYS_ORDER.filter(d => (dayRecipes[d] ?? []).some(r => r.recipe_id));
-    const menuTypes      = familyClient ? ['Family'] : menuType === 'both' ? ['Lunch','Dinner'] : [menuType];
+    const todayDayName   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
+    const activeDays     = isExpress
+      ? [todayDayName]
+      : DAYS_ORDER.filter(d => (dayRecipes[d] ?? []).some(r => r.recipe_id));
+    const menuTypes      = isExpress ? [expressType]
+      : familyClient ? ['Family']
+      : menuType === 'both' ? ['Lunch','Dinner'] : [menuType];
     const routeDelDays   = (resolvedRoute?.route_delivery_days ?? []).map(d => d.day_of_week);
+    const todayStr = new Date().toISOString().split('T')[0];
 
     for (const type of menuTypes) {
       const templateId = type === 'Lunch'   ? selectedLunchTemplate?.id_template
@@ -252,14 +288,14 @@ const AddOrder = ({ onSuccess }) => {
           template_id:              templateId ?? null,
           week_start_date:          weekStartStr,
           week_end_date:            weekEndStr,
-          route_id:                 resolvedRoute?.id_route ?? null,
+          route_id:                 isExpress ? null : (resolvedRoute?.id_route ?? null),
           classification:           type,
           status:                   'PENDING',
           macro_profile_snapshot_id:(type === 'Dinner' ? selectedClient?.dinner_macro_profile_id : selectedClient?.lunch_macro_profile_id) ?? null,
-          protein_snapshot:         (type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null,
-          protein_unit_snapshot:    (type === 'Dinner' ? dinnerMacros?.protein_unit  : lunchMacros?.protein_unit)  ?? null,
-          carb_snapshot:            (type === 'Dinner' ? dinnerMacros?.carb_value    : lunchMacros?.carb_value)    ?? null,
-          carb_unit_snapshot:       (type === 'Dinner' ? dinnerMacros?.carb_unit     : lunchMacros?.carb_unit)     ?? null,
+          protein_snapshot:         isExpress ? expressMacros.protein_value : (type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null,
+          protein_unit_snapshot:    isExpress ? expressMacros.protein_unit  : (type === 'Dinner' ? dinnerMacros?.protein_unit  : lunchMacros?.protein_unit)  ?? null,
+          carb_snapshot:            isExpress ? expressMacros.carb_value    : (type === 'Dinner' ? dinnerMacros?.carb_value    : lunchMacros?.carb_value)    ?? null,
+          carb_unit_snapshot:       isExpress ? expressMacros.carb_unit     : (type === 'Dinner' ? dinnerMacros?.carb_unit     : lunchMacros?.carb_unit)     ?? null,
         }])
         .select('id_order').single();
 
@@ -269,17 +305,17 @@ const AddOrder = ({ onSuccess }) => {
 
       for (const day of activeDays) {
         const { data: dayData, error: dayErr } = await supabase.schema('operations').from('order_days')
-          .insert([{ order_id: orderId, day_of_week: day, delivery_date: getDateForDay(day, weekStart, routeDelDays), status: 'PENDING' }])
+          .insert([{ order_id: orderId, day_of_week: day, delivery_date: isExpress ? todayStr : getDateForDay(day, weekStart, routeDelDays), status: 'PENDING' }])
           .select('id_order_day').single();
         if (dayErr) { sileo.error(`Error al crear el día ${DAY_LABELS[day]}`); console.error(dayErr); setLoading(false); return; }
 
-        const details = (dayRecipes[day] ?? []).filter(r => r.recipe_id);
+        const details = (isExpress ? expressRecipes : (dayRecipes[day] ?? [])).filter(r => r.recipe_id);
         if (!details.length) continue;
 
         const { data: detData, error: detErr } = await supabase.schema('operations').from('order_day_details')
           .insert(details.map((r, i) => {
             const effectiveType = r.isExtra ? (extraMealTypes[`${day}-${i}`] ?? type) : type;
-            const eff = getEffectiveMacros(day, effectiveType);
+            const eff = isExpress ? expressMacros : getEffectiveMacros(day, effectiveType);
             return {
               order_day_id:          dayData.id_order_day,
               recipe_id:             r.recipe_id,
@@ -295,7 +331,7 @@ const AddOrder = ({ onSuccess }) => {
 
         const overrideRows = [];
         (detData ?? []).forEach((det, i) => {
-          const ov = ingredientOverrides[`${day}-${i}`];
+          const ov = isExpress ? expressIngredientOverrides[i] : ingredientOverrides[`${day}-${i}`];
           if (!ov) return;
           for (const cat of ['protein','carb','extra']) {
             for (const name of ov[cat] ?? []) overrideRows.push({ order_day_detail_id: det.id_order_day_detail, name, category: cat });
@@ -314,7 +350,7 @@ const AddOrder = ({ onSuccess }) => {
   };
 
   // ── Step label helpers ────────────────────────────────────────────────────
-  const stepLabels = familyClient ? FAMILY_STEPS : PERSONAL_STEPS;
+  const stepLabels = familyClient ? FAMILY_STEPS : isExpress ? EXPRESS_STEPS : PERSONAL_STEPS;
   const totalSteps = stepLabels.length;
   // Map logical step (1-4) to display position for personal, (1,3,4→1,2,3) for family
   const displayStep = familyClient
@@ -367,11 +403,33 @@ const AddOrder = ({ onSuccess }) => {
               </button>
             ))}
           </div>
+
+          {/* Express order toggle — solo para clientes personales */}
+          {selectedClient && !familyClient && (
+            <button
+              type="button"
+              onClick={() => setIsExpress(p => !p)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition text-sm font-medium ${
+                isExpress
+                  ? 'bg-amber-50 border-amber-400 text-amber-800'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Zap size={16} className={isExpress ? 'text-amber-500' : 'text-slate-400'} />
+                <span>Pedido Express</span>
+              </div>
+              <div className={`flex flex-col items-end text-xs ${isExpress ? 'text-amber-600' : 'text-slate-400'}`}>
+                <span>{isExpress ? 'Activo — entrega hoy' : 'Entrega según ruta'}</span>
+                {isExpress && <span className="text-[10px] opacity-70">Sin plantilla ni ruta fija</span>}
+              </div>
+            </button>
+          )}
         </div>
       )}
 
-      {/* ── Step 2: Menu (personal only) ── */}
-      {step === 2 && !familyClient && (
+      {/* ── Step 2: Menu (personal) or Express recipe picker ── */}
+      {step === 2 && !familyClient && !isExpress && (
         <div className="space-y-5">
           {/* Menu type */}
           <div>
@@ -419,6 +477,146 @@ const AddOrder = ({ onSuccess }) => {
         </div>
       )}
 
+      {/* ── Step 2 Express: direct recipe picker ── */}
+      {step === 2 && isExpress && (
+        <div className="space-y-5">
+
+          {/* Lunch / Dinner toggle */}
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-2">Tipo de comida</label>
+            <div className="flex gap-2">
+              {[['Lunch','☀️ Almuerzo'],['Dinner','🌙 Cena']].map(([val, lbl]) => (
+                <button key={val} type="button" onClick={() => setExpressType(val)}
+                  className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
+                    expressType === val
+                      ? val === 'Lunch' ? 'bg-amber-50 border-amber-400 text-amber-900' : 'bg-indigo-50 border-indigo-400 text-indigo-900'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                  }`}
+                >{lbl}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Macros override */}
+          <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-700">Macros del pedido</p>
+              <div className="flex gap-2">
+                {/* Reload from client profile */}
+                {(() => {
+                  const clientMacro = expressType === 'Lunch' ? selectedClient?.lunch_macro : selectedClient?.dinner_macro;
+                  const isClientActive = clientMacro &&
+                    String(expressMacros?.protein_value) === String(clientMacro.protein_value) &&
+                    String(expressMacros?.carb_value) === String(clientMacro.carb_value);
+                  return clientMacro ? (
+                    <button type="button"
+                      onClick={() => {
+                        const m = expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
+                        setExpressMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit });
+                      }}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                        isClientActive
+                          ? 'bg-slate-800 text-white border-slate-800'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                      }`}
+                    >👤 Del cliente</button>
+                  ) : null;
+                })()}
+                {/* Standard macro */}
+                {(() => {
+                  const isStdActive = expressMacros &&
+                    String(expressMacros.protein_value) === '120' && expressMacros.protein_unit === 'g' &&
+                    String(expressMacros.carb_value) === '120' && expressMacros.carb_unit === 'g';
+                  return (
+                    <button type="button"
+                      onClick={() => setExpressMacros({ ...STANDARD_MACRO })}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                        isStdActive
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      }`}
+                    >⭐ Estándar (120g)</button>
+                  );
+                })()}
+              </div>
+            </div>
+            <MacroPanel
+              label={expressType === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
+              colorClass={expressType === 'Lunch' ? 'amber' : 'indigo'}
+              macros={expressMacros}
+              onUpdate={(field, value) => setExpressMacros(prev => ({ ...prev, [field]: value }))}
+            />
+          </div>
+
+          {/* Recipe list */}
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-2">Recetas para hoy</label>
+            <div className="space-y-3">
+              {expressRecipes.map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <select
+                      value={item.recipe_id || ''}
+                      onChange={(e) => {
+                        const found = allRecipes.find(r => String(r.id_recipe) === String(e.target.value));
+                        setExpressRecipes(prev => {
+                          const updated = [...prev];
+                          updated[idx] = { ...updated[idx], recipe_id: e.target.value, recipe_name: found?.name ?? '' };
+                          return updated;
+                        });
+                        if (e.target.value) fetchRecipeIngredients([e.target.value]);
+                      }}
+                      className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                    >
+                      <option value="">Seleccionar receta</option>
+                      {allRecipes.map(r => (
+                        <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number" min="1"
+                      value={item.quantity}
+                      onChange={(e) => setExpressRecipes(prev => {
+                        const updated = [...prev];
+                        updated[idx] = { ...updated[idx], quantity: e.target.value };
+                        return updated;
+                      })}
+                      className="w-16 px-2 py-2 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
+                    />
+                    <button type="button"
+                      onClick={() => {
+                        setExpressRecipes(prev => prev.filter((_, i) => i !== idx));
+                        setExpressIngredientOverrides(prev => {
+                          const next = { ...prev };
+                          delete next[idx];
+                          return next;
+                        });
+                      }}
+                      className="text-red-400 hover:text-red-600 transition p-1"
+                    >✕</button>
+                  </div>
+                  {/* Ingredient override editor */}
+                  {item.recipe_id && (
+                    <RecipeIngredientEditor
+                      recipeName={item.recipe_name}
+                      baseIngredients={recipeIngredients[item.recipe_id] ?? { protein: [], carb: [], extra: [] }}
+                      value={expressIngredientOverrides[idx] ?? null}
+                      onChange={(val) => setExpressIngredientOverrides(prev => ({ ...prev, [idx]: val }))}
+                    />
+                  )}
+                </div>
+              ))}
+              <button type="button"
+                onClick={() => setExpressRecipes(prev => [...prev, { recipe_id: '', recipe_name: '', quantity: 1 }])}
+                className="flex items-center gap-1.5 text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition"
+              >
+                + Agregar receta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Step 3: Adjustments ── */}
       {step === 3 && (
         <OrderAdjustments
@@ -449,6 +647,18 @@ const AddOrder = ({ onSuccess }) => {
           onToggleDay={toggleDay}
           extraMealTypes={extraMealTypes}
           onExtraMealTypeChange={(key, cls) => setExtraMealTypes(p => ({ ...p, [key]: cls }))}
+          clientLunchMacro={selectedClient?.lunch_macro}
+          clientDinnerMacro={selectedClient?.dinner_macro}
+          onApplyStandardLunch={() => setLunchMacros({ ...STANDARD_MACRO })}
+          onApplyStandardDinner={() => setDinnerMacros({ ...STANDARD_MACRO })}
+          onApplyClientLunch={() => {
+            const m = selectedClient?.lunch_macro;
+            if (m) setLunchMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit });
+          }}
+          onApplyClientDinner={() => {
+            const m = selectedClient?.dinner_macro;
+            if (m) setDinnerMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit });
+          }}
         />
       )}
 
@@ -460,6 +670,11 @@ const AddOrder = ({ onSuccess }) => {
             <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${familyClient ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}`}>
               {familyClient ? '👨‍👩‍👧 Familiar' : '👤 Personal'}
             </span>
+            {isExpress && (
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 flex items-center gap-1">
+                <Zap size={10} /> Express
+              </span>
+            )}
           </div>
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Semana</p>
@@ -468,14 +683,30 @@ const AddOrder = ({ onSuccess }) => {
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Menú</p>
             <p className="text-sm text-slate-700">
-              {familyClient ? (selectedFamilyTemplate?.name ? `Familiar — ${selectedFamilyTemplate.name}` : 'Familiar')
+              {isExpress
+                ? (expressType === 'Lunch' ? '☀️ Almuerzo Express' : '🌙 Cena Express')
+                : familyClient ? (selectedFamilyTemplate?.name ? `Familiar — ${selectedFamilyTemplate.name}` : 'Familiar')
                 : menuType === 'both' ? 'Almuerzo + Cena'
                 : menuType === 'Lunch' ? 'Solo Almuerzo' : 'Solo Cena'}
             </p>
           </div>
+          {isExpress && expressRecipes.filter(r => r.recipe_id).length > 0 && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-2">Recetas</p>
+              <div className="space-y-1">
+                {expressRecipes.filter(r => r.recipe_id).map((r, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">×{r.quantity}</span>
+                    <span className="text-sm text-slate-700">{r.recipe_name || 'Receta'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-1">Ruta</p>
-            <p className="text-sm font-medium text-slate-800">{resolvedRoute?.name ?? 'Sin ruta'}</p>
+            <p className="text-sm font-medium text-slate-800">{isExpress ? '⚡ Entrega hoy (sin ruta)' : (resolvedRoute?.name ?? 'Sin ruta')}</p>
             {resolvedRoute?.route_delivery_days?.length > 0 && (
               <div className="flex gap-1 mt-1 flex-wrap">
                 {resolvedRoute.route_delivery_days.map((d, i) => (
@@ -486,12 +717,24 @@ const AddOrder = ({ onSuccess }) => {
               </div>
             )}
           </div>
-          {!familyClient && (lunchMacros || dinnerMacros) && (
+          {isExpress && expressMacros?.protein_value && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros</p>
+              <p className="text-sm text-slate-700">
+                {expressType === 'Lunch' ? '☀️' : '🌙'} {expressMacros.protein_value}{expressMacros.protein_unit} prot · {expressMacros.carb_value}{expressMacros.carb_unit} carbos
+              </p>
+            </div>
+          )}
+          {!familyClient && !isExpress && (lunchMacros || dinnerMacros) && (
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros globales</p>
               <p className="text-sm text-slate-700">
-                {lunchMacros && <span>☀️ {lunchMacros.protein_value}{lunchMacros.protein_unit} prot · {lunchMacros.carb_value}{lunchMacros.carb_unit} carbos</span>}
-                {dinnerMacros && <span className="ml-2">🌙 {dinnerMacros.protein_value}{dinnerMacros.protein_unit} prot · {dinnerMacros.carb_value}{dinnerMacros.carb_unit} carbos</span>}
+                {(menuType === 'Lunch' || menuType === 'both') && lunchMacros && (
+                  <span>☀️ {lunchMacros.protein_value}{lunchMacros.protein_unit} prot · {lunchMacros.carb_value}{lunchMacros.carb_unit} carbos</span>
+                )}
+                {(menuType === 'Dinner' || menuType === 'both') && dinnerMacros && (
+                  <span className={menuType === 'both' ? 'ml-2' : ''}>🌙 {dinnerMacros.protein_value}{dinnerMacros.protein_unit} prot · {dinnerMacros.carb_value}{dinnerMacros.carb_unit} carbos</span>
+                )}
               </p>
             </div>
           )}

@@ -1,4 +1,9 @@
 import { RefreshCw } from 'lucide-react';
+
+const STANDARD_MACRO = { protein_value: 120, protein_unit: 'g', carb_value: 120, carb_unit: 'g' };
+
+// Helper: are the current macros equal to standard values?
+const isStandard = (m) => m && String(m.protein_value) === '120' && m.protein_unit === 'g' && String(m.carb_value) === '120' && m.carb_unit === 'g';
 import MacroPanel from './MacroPanel';
 import RouteSelector from './RouteSelector';
 import DayRecipeBlock from './DayRecipeBlock';
@@ -40,6 +45,14 @@ const OrderAdjustments = ({
   onOverrideChange,
   onToggleDay,
 
+  // Macro quick-set helpers
+  clientLunchMacro,     // raw macro profile from client (for "Del cliente" button)
+  clientDinnerMacro,
+  onApplyStandardLunch, // () => void  — set lunch macros to 120/120
+  onApplyStandardDinner,
+  onApplyClientLunch,   // () => void  — restore client profile macros
+  onApplyClientDinner,
+
   // Extras (AddOrder-specific)
   extraMealTypes       = {},
   onExtraMealTypeChange,
@@ -75,7 +88,7 @@ const OrderAdjustments = ({
       {/* Base macros */}
       {!isFamilyClient && (lunchMacros || dinnerMacros) && (
         <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <p className="text-sm font-semibold text-slate-700">Macros del pedido</p>
               <p className="text-xs text-slate-400">Base por tipo de comida. Puedes sobreescribir por día.</p>
@@ -89,20 +102,67 @@ const OrderAdjustments = ({
             </button>
           </div>
 
+          {/* Quick-set macro buttons per column */}
           <div className={`grid gap-3 ${menuType === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {/* Lunch quick-set */}
             {lunchMacros && (menuType === 'Lunch' || menuType === 'both') && (
-              <MacroPanel
-                label="☀️ Almuerzo" colorClass="amber"
-                macros={lunchMacros}
-                onUpdate={onUpdateLunchMacro}
-              />
+              <div className="space-y-2">
+                <div className="flex gap-1.5 flex-wrap">
+                  {clientLunchMacro && onApplyClientLunch && (
+                    <button type="button" onClick={onApplyClientLunch}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                        !isStandard(lunchMacros) && String(lunchMacros?.protein_value) === String(clientLunchMacro.protein_value)
+                          ? 'bg-slate-800 text-white border-slate-800'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                      }`}
+                    >👤 Del cliente</button>
+                  )}
+                  {onApplyStandardLunch && (
+                    <button type="button" onClick={onApplyStandardLunch}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                        isStandard(lunchMacros)
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      }`}
+                    >⭐ Estándar (120g)</button>
+                  )}
+                </div>
+                <MacroPanel
+                  label="☀️ Almuerzo" colorClass="amber"
+                  macros={lunchMacros}
+                  onUpdate={onUpdateLunchMacro}
+                />
+              </div>
             )}
+            {/* Dinner quick-set */}
             {dinnerMacros && (menuType === 'Dinner' || menuType === 'both') && (
-              <MacroPanel
-                label="🌙 Cena" colorClass="indigo"
-                macros={dinnerMacros}
-                onUpdate={onUpdateDinnerMacro}
-              />
+              <div className="space-y-2">
+                <div className="flex gap-1.5 flex-wrap">
+                  {clientDinnerMacro && onApplyClientDinner && (
+                    <button type="button" onClick={onApplyClientDinner}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                        !isStandard(dinnerMacros) && String(dinnerMacros?.protein_value) === String(clientDinnerMacro.protein_value)
+                          ? 'bg-slate-800 text-white border-slate-800'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                      }`}
+                    >👤 Del cliente</button>
+                  )}
+                  {onApplyStandardDinner && (
+                    <button type="button" onClick={onApplyStandardDinner}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                        isStandard(dinnerMacros)
+                          ? 'bg-indigo-500 text-white border-indigo-500'
+                          : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                      }`}
+                    >⭐ Estándar (120g)</button>
+                  )}
+                </div>
+                <MacroPanel
+                  label="🌙 Cena" colorClass="indigo"
+                  macros={dinnerMacros}
+                  onUpdate={onUpdateDinnerMacro}
+                />
+              </div>
             )}
           </div>
         </div>
