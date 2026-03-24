@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, ChefHat, Package } from 'lucide-react';
+import { Truck, ChefHat, Package, Zap } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
@@ -25,16 +25,23 @@ const TABS = [
   { id: 'cocina',  label: 'Cocina',  Icon: ChefHat },
   { id: 'empaque', label: 'Empaque', Icon: Package  },
   { id: 'entrega', label: 'Entrega', Icon: Truck    },
+  { id: 'express', label: 'Express', Icon: Zap      },
 ];
 
-// ── Week range ────────────────────────────────────────────────────────────────
+const EXPRESS_SUBTABS = [
+  { id: 'cocina',  label: 'Cocina',  Icon: ChefHat },
+  { id: 'empaque', label: 'Empaque', Icon: Package  },
+  { id: 'entrega', label: 'Entrega', Icon: Truck    },
+];
+
+// ── Week range ─────────────────────────────────────────────────────────────────
 
 const getWeekRange = () => {
   const today  = new Date();
   const day    = today.getDay();
   const diff   = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diff + 7); // next week
+  monday.setDate(today.getDate() + diff + 7);
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -44,65 +51,29 @@ const getWeekRange = () => {
   };
 };
 
-// ── Route delivery slot helpers ───────────────────────────────────────────────
-//
-// Given the sorted delivery-day names of a route (e.g. ['Sunday','Tuesday'])
-// and the week's Monday date, build an array of slots:
-//   { label, dateFrom (ISO), dateTo (ISO) }
-//
-// Rule: slot N covers days from (slot[N-1].date + 1 day) to slot[N].date.
-// For the first slot we wrap around: start = slot[last] of PREVIOUS week + 1.
-//
-// Cycle order for delivery slots: Sunday starts the week (index -1),
-// then Mon(0)…Sat(5). Matches getDateForDay in AddOrder.
+// ── Delivery slot helpers ──────────────────────────────────────────────────────
+
 const cycleIdx = (d) => d === 'Sunday' ? -1 : DAY_ORDER.indexOf(d);
 
-// Absolute ISO date of a named day within the week starting on weekMonday.
 const isoOfDay = (name, weekMonday) => {
   const d = new Date(weekMonday);
   if (name === 'Sunday') {
-    d.setDate(weekMonday.getDate() - 1); // Sunday precedes Monday
+    d.setDate(weekMonday.getDate() - 1);
   } else {
-    d.setDate(weekMonday.getDate() + DAY_ORDER.indexOf(name)); // Mon=0…Sat=5
+    d.setDate(weekMonday.getDate() + DAY_ORDER.indexOf(name));
   }
   return d.toISOString().split('T')[0];
 };
 
-// Build delivery slots from route delivery day names.
-// Each slot's dateFrom/dateTo = the exact delivery_date stored in order_days
-// for that slot (a single date, not a range), because Production filters by
-// delivery_date == slot date.
-//
-// The slot LABEL shows which meal days it covers, but the DB query uses
-// the exact delivery_date value.
-//
-// Slot order follows cycleIdx (Sun first, then Mon–Sat).
 const buildDeliverySlots = (deliveryDayNames, weekMonday) => {
   const sorted = [...deliveryDayNames].sort((a, b) => cycleIdx(a) - cycleIdx(b));
-
-  return sorted.map((name, i) => {
+  return sorted.map((name) => {
     const deliveryDate = isoOfDay(name, weekMonday);
-
-    // Label: show which meal days this delivery covers
-    // From: day after previous delivery (cycle order), To: day before next delivery
-    const prevName = i === 0 ? null : sorted[i - 1];
-    const nextName = sorted[i + 1] ?? null;
-
-    const prevDate = prevName ? isoOfDay(prevName, weekMonday) : null;
-    const nextDate = nextName ? isoOfDay(nextName, weekMonday) : null;
-
-    // dateFrom/dateTo for DB query = exact delivery_date (single day)
-    return {
-      name,
-      label:        DAY_LABELS[name] ?? name,
-      deliveryDate, // exact date stored in order_days.delivery_date
-      prevDate,     // for display: meal days start after this
-      nextDate,     // for display: meal days end before this
-    };
+    return { name, label: DAY_LABELS[name] ?? name, deliveryDate };
   });
 };
 
-// ── Supabase select fragment ──────────────────────────────────────────────────
+// ── Supabase select ────────────────────────────────────────────────────────────
 
 const ORDER_DAY_SELECT = `
   id_order_day,
@@ -112,6 +83,7 @@ const ORDER_DAY_SELECT = `
   orders (
     id_order,
     classification,
+    route_id,
     clients ( id_client, name, client_type )
   ),
   order_day_details (
@@ -129,32 +101,135 @@ const ORDER_DAY_SELECT = `
   )
 `;
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Helper components ──────────────────────────────────────────────────────────
+
+const SlotButton = ({ slot, isActive, onSelect }) => {
+  const delivLabel = new Date(slot.deliveryDate + 'T00:00:00')
+    .toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
+  const cls = 'flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition '
+    + (isActive ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800');
+  return (
+    <button onClick={() => onSelect(slot)} className={cls}>
+      <span>{slot.label}</span>
+      <span className="text-xs font-normal opacity-60">{delivLabel}</span>
+    </button>
+  );
+};
+
+const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
+  const cls = 'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border '
+    + (isActive ? 'bg-slate-800 border-slate-800 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
+  const badgeCls = 'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center '
+    + (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
+  return (
+    <button key={id} onClick={() => onSelect(id)} className={cls}>
+      <Icon size={15} />
+      {label}
+      {count > 0 && <span className={badgeCls}>{count}</span>}
+    </button>
+  );
+};
+
+const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
+  const cls = 'px-4 py-1.5 rounded-xl text-xs font-medium transition border '
+    + (isActive ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400');
+  return (
+    <button onClick={() => onSelect(id)} className={cls}>{label}</button>
+  );
+};
+
+const EmptyState = ({ icon, text }) => (
+  <div className="text-center py-16 text-slate-400">
+    <div className="mx-auto mb-3 opacity-30 flex justify-center">{icon}</div>
+    <p>{text}</p>
+  </div>
+);
+
+// ── ExpressView ────────────────────────────────────────────────────────────────
+
+const ExpressView = ({ pendingDays, packedDays, deliveredDays, onPack, onDeliver, expressTab, setExpressTab, todayStr }) => {
+  const subCounts = {
+    cocina:  pendingDays.length,
+    empaque: pendingDays.length + packedDays.length,
+    entrega: deliveredDays.length,
+  };
+
+  const todayLabel = new Date(todayStr + 'T00:00:00')
+    .toLocaleDateString('es-CR', { weekday: 'long', day: '2-digit', month: 'long' });
+
+  return (
+    <div className="space-y-5">
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-center gap-3">
+        <Zap size={18} className="text-amber-500 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-amber-800">Pedidos Express</p>
+          <p className="text-xs text-amber-600">Entrega hoy · {todayLabel}</p>
+        </div>
+        <div className="ml-auto">
+          <span className="bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+            {pendingDays.length + packedDays.length} activos
+          </span>
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        {EXPRESS_SUBTABS.map(({ id, label, Icon }) => (
+          <TabButton
+            key={id}
+            id={id}
+            label={label}
+            Icon={Icon}
+            isActive={expressTab === id}
+            count={subCounts[id] ?? 0}
+            onSelect={setExpressTab}
+          />
+        ))}
+      </div>
+
+      {expressTab === 'cocina' && (
+        pendingDays.length === 0
+          ? <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
+          : <CocinaView orderDays={pendingDays} onPack={onPack} DAY_LABELS={DAY_LABELS} />
+      )}
+      {expressTab === 'empaque' && (
+        pendingDays.length === 0 && packedDays.length === 0
+          ? <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
+          : <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onDeliver={onDeliver} />
+      )}
+      {expressTab === 'entrega' && (
+        deliveredDays.length === 0
+          ? <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
+          : <EntregaView orderDays={deliveredDays} />
+      )}
+    </div>
+  );
+};
+
+// ── Main component ─────────────────────────────────────────────────────────────
 
 const Production = () => {
   const { supabase }           = useApp();
   const { weekStart, weekEnd } = getWeekRange();
+  const todayStr               = new Date().toISOString().split('T')[0];
 
-  const [activeTab,     setActiveTab]    = useState('cocina');
-  const [clientFilter,  setClientFilter] = useState('todos');
+  const [activeTab,    setActiveTab]    = useState('cocina');
+  const [expressTab,   setExpressTab]   = useState('cocina');
+  const [clientFilter, setClientFilter] = useState('todos');
 
-  // Route-based slot selector
-  const [slots,        setSlots]        = useState([]);  // [{ name, label, dateFrom, dateTo }]
-  const [selectedSlot, setSelectedSlot] = useState(null); // slot object
+  const [slots,        setSlots]        = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const [loadingDays, setLoadingDays] = useState(false);
-  const [loading,     setLoading]     = useState(false);
-
+  const [loadingDays,   setLoadingDays]   = useState(false);
+  const [loading,       setLoading]       = useState(false);
   const [pendingDays,   setPendingDays]   = useState([]);
   const [packedDays,    setPackedDays]    = useState([]);
   const [deliveredDays, setDeliveredDays] = useState([]);
 
-  // ── Load routes → build delivery slots ───────────────────────────────────
+  // ── Load routes → build delivery slots ──────────────────────────────────────
 
   const getAvailableDays = async () => {
     setLoadingDays(true);
 
-    // 1. Fetch all active routes with their delivery days
     const { data: routes, error } = await supabase
       .schema('operations')
       .from('routes')
@@ -163,13 +238,11 @@ const Production = () => {
 
     if (error) { console.error(error); setLoadingDays(false); return; }
 
-    // 2. Collect all unique delivery-day names across all routes
     const allDayNames = [...new Set(
       (routes ?? []).flatMap((r) => (r.route_delivery_days ?? []).map((d) => d.day_of_week))
     )];
 
     if (allDayNames.length === 0) {
-      // Fallback: use actual delivery_dates from order_days
       const { data: fallback } = await supabase
         .schema('operations')
         .from('order_days')
@@ -180,7 +253,7 @@ const Production = () => {
 
       const uniqueDates = [...new Set((fallback ?? []).map((d) => d.delivery_date))].sort();
       const fallbackSlots = uniqueDates.map((dateStr) => {
-        const d = new Date(dateStr + 'T00:00:00');
+        const d    = new Date(dateStr + 'T00:00:00');
         const name = DAY_ORDER[d.getDay() === 0 ? 6 : d.getDay() - 1];
         return { name, label: DAY_LABELS[name] ?? name, deliveryDate: dateStr };
       });
@@ -190,31 +263,30 @@ const Production = () => {
       return;
     }
 
-    // 3. Build slots from route delivery days
-    const weekMonday = new Date(weekStart + 'T00:00:00');
-    const allSlots   = buildDeliverySlots(allDayNames, weekMonday);
+    const weekMonday  = new Date(weekStart + 'T00:00:00');
+    const allSlots    = buildDeliverySlots(allDayNames, weekMonday);
+    const queryFrom   = new Date(weekMonday);
+    queryFrom.setDate(weekMonday.getDate() - 1);
+    const queryFromStr = queryFrom.toISOString().split('T')[0];
+    const effectiveFrom = todayStr < queryFromStr ? todayStr : queryFromStr;
 
-    // 4. Filter to slots that actually have order_days in their date range this week
     const { data: activeDates } = await supabase
       .schema('operations')
       .from('order_days')
       .select('delivery_date')
       .in('status', ['PENDING', 'PACKED', 'DELIVERED'])
-      .gte('delivery_date', weekStart)
+      .gte('delivery_date', effectiveFrom)
       .lte('delivery_date', weekEnd);
 
     const activeDateSet = new Set((activeDates ?? []).map((d) => d.delivery_date));
-
-    const activeSlots = allSlots.filter((slot) =>
-      activeDateSet.has(slot.deliveryDate)
-    );
+    const activeSlots   = allSlots.filter((slot) => activeDateSet.has(slot.deliveryDate));
 
     setSlots(activeSlots);
     if (activeSlots.length > 0 && !selectedSlot) setSelectedSlot(activeSlots[0]);
     setLoadingDays(false);
   };
 
-  // ── Data for selected slot (date range) ──────────────────────────────────
+  // ── Fetch order days for selected slot ────────────────────────────────────────
 
   const getData = async () => {
     if (!selectedSlot) return;
@@ -239,20 +311,45 @@ const Production = () => {
     if (packedRes.error)    console.error(packedRes.error);
     if (deliveredRes.error) console.error(deliveredRes.error);
 
-    setPendingDays(pendingRes.data     ?? []);
-    setPackedDays(packedRes.data       ?? []);
+    setPendingDays(pendingRes.data   ?? []);
+    setPackedDays(packedRes.data     ?? []);
     setDeliveredDays(deliveredRes.data ?? []);
     setLoading(false);
   };
 
-  useEffect(() => { getAvailableDays(); },  []);
-  useEffect(() => { getData(); },           [selectedSlot]);
+  // ── Express: fetch today's orders regardless of slot ─────────────────────────
 
-  // ── Refresh both ──────────────────────────────────────────────────────────
+  const [expressPendingAll,   setExpressPendingAll]   = useState([]);
+  const [expressPackedAll,    setExpressPackedAll]    = useState([]);
+  const [expressDeliveredAll, setExpressDeliveredAll] = useState([]);
 
-  const refresh = async () => { await getAvailableDays(); await getData(); };
+  const getExpressData = async () => {
+    const base = (status) =>
+      supabase
+        .schema('operations')
+        .from('order_days')
+        .select(ORDER_DAY_SELECT)
+        .eq('delivery_date', todayStr)
+        .eq('status', status)
+        .order('id_order_day');
 
-  // ── Status transitions ────────────────────────────────────────────────────
+    const [p, k, d] = await Promise.all([base('PENDING'), base('PACKED'), base('DELIVERED')]);
+    const isExpress = (row) => row.orders?.route_id === null;
+    setExpressPendingAll((p.data   ?? []).filter(isExpress));
+    setExpressPackedAll((k.data    ?? []).filter(isExpress));
+    setExpressDeliveredAll((d.data ?? []).filter(isExpress));
+  };
+
+  useEffect(() => { getAvailableDays(); getExpressData(); }, []);
+  useEffect(() => { getData(); }, [selectedSlot]);
+
+  const refresh = async () => {
+    await getAvailableDays();
+    await getData();
+    await getExpressData();
+  };
+
+  // ── Status transitions ─────────────────────────────────────────────────────────
 
   const updateStatus = async (orderDayId, newStatus, successMsg) => {
     const { error } = await supabase
@@ -262,7 +359,6 @@ const Production = () => {
       .eq('id_order_day', orderDayId);
 
     if (error) { sileo.error('Error al actualizar el estado'); console.error(error); return; }
-
     sileo.success(successMsg);
     await refresh();
   };
@@ -270,146 +366,124 @@ const Production = () => {
   const markPacked    = (id) => updateStatus(id, 'PACKED',    '📦 Marcado como empacado');
   const markDelivered = (id) => updateStatus(id, 'DELIVERED', '🚚 Entrega registrada');
 
-  // ── Tab badge counts ──────────────────────────────────────────────────────
-
-  // ── Client-type filter ───────────────────────────────────────────────────
+  // ── Filters ────────────────────────────────────────────────────────────────────
 
   const filterByClient = (days) => {
     if (clientFilter === 'todos') return days;
     return days.filter((d) => d.orders?.clients?.client_type === clientFilter);
   };
 
-  const pendingFiltered   = filterByClient(pendingDays);
-  const packedFiltered    = filterByClient(packedDays);
-  const deliveredFiltered = filterByClient(deliveredDays);
+  // Normal tabs exclude express (route_id = null + today)
+  const isExpressDay = (d) => d.orders?.route_id === null && d.delivery_date === todayStr;
+  const normalPending   = filterByClient(pendingDays.filter(d => !isExpressDay(d)));
+  const normalPacked    = filterByClient(packedDays.filter(d => !isExpressDay(d)));
+  const normalDelivered = filterByClient(deliveredDays.filter(d => !isExpressDay(d)));
 
   const counts = {
-    cocina:  pendingFiltered.length,
-    empaque: packedFiltered.length + pendingFiltered.length,
-    entrega: deliveredFiltered.length,
+    cocina:  normalPending.length,
+    empaque: normalPacked.length + normalPending.length,
+    entrega: normalDelivered.length,
+    express: expressPendingAll.length + expressPackedAll.length,
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-
-      {/* Page header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
         <p className="text-slate-500 mt-1">
-          Semana del{' '}
+          {'Semana del '}
           {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })}
-          {' '}al{' '}
+          {' al '}
           {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
       {loadingDays ? (
         <p className="text-slate-400 text-sm">Cargando días...</p>
-      ) : slots.length === 0 ? (
-        <div className="text-center py-20 text-slate-400">
-          <Truck size={40} className="mx-auto mb-3 opacity-30" />
-          <p>No hay pedidos activos esta semana</p>
-        </div>
       ) : (
         <>
-          {/* Delivery slot selector */}
-          <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-6">
-            {slots.map((slot) => {
-              const isActive = selectedSlot?.name === slot.name;
-              const delivLabel = new Date(slot.deliveryDate + 'T00:00:00')
-                .toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-              return (
-                <button
-                  key={slot.name}
-                  onClick={() => setSelectedSlot(slot)}
-                  className={`flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition ${
-                    isActive ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                >
-                  <span>{slot.label}</span>
-                  <span className="text-xs font-normal opacity-60">{delivLabel}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Client type filter */}
-          <div className="flex gap-1 mb-4">
-            {[
-              { id: 'todos',    label: '🌐 Todos'      },
-              { id: 'personal', label: '👤 Personales'  },
-              { id: 'family',   label: '👨‍👩‍👧 Familiares' },
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => setClientFilter(id)}
-                className={`px-4 py-1.5 rounded-xl text-xs font-medium transition border ${
-                  clientFilter === id
-                    ? 'bg-slate-800 text-white border-slate-800'
-                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Slot selector + client filter — hidden in express tab */}
+          {activeTab !== 'express' && (
+            <>
+              {slots.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <Truck size={40} className="mx-auto mb-3 opacity-30" />
+                  <p>No hay pedidos activos esta semana</p>
+                </div>
+              ) : (
+                <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-6">
+                  {slots.map((slot) => (
+                    <SlotButton
+                      key={slot.name}
+                      slot={slot}
+                      isActive={selectedSlot?.name === slot.name}
+                      onSelect={setSelectedSlot}
+                    />
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-1 mb-4">
+                {[
+                  { id: 'todos',    label: '🌐 Todos'      },
+                  { id: 'personal', label: '👤 Personales'  },
+                  { id: 'family',   label: '👨‍👩‍👧 Familiares' },
+                ].map(({ id, label }) => (
+                  <ClientFilterButton
+                    key={id}
+                    id={id}
+                    label={label}
+                    isActive={clientFilter === id}
+                    onSelect={setClientFilter}
+                  />
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Tab bar */}
           <div className="flex gap-2 mb-8">
-            {TABS.map(({ id, label, Icon }) => {
-              const isActive = activeTab === id;
-              const count    = counts[id];
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border ${
-                    isActive
-                      ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'
-                  }`}
-                >
-                  <Icon size={15} />
-                  {label}
-                  {count > 0 && (
-                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
-                      isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            {TABS.map(({ id, label, Icon }) => (
+              <TabButton
+                key={id}
+                id={id}
+                label={label}
+                Icon={Icon}
+                isActive={activeTab === id}
+                count={counts[id] ?? 0}
+                onSelect={setActiveTab}
+              />
+            ))}
           </div>
 
-          {/* Active view */}
-          {loading ? (
+          {/* Views */}
+          {loading && activeTab !== 'express' ? (
             <p className="text-slate-500 text-sm">Cargando...</p>
           ) : (
-            <div>
-              {activeTab === 'cocina'  && (
-                <CocinaView
-                  orderDays={pendingFiltered}
-                  onPack={markPacked}
-                  DAY_LABELS={DAY_LABELS}
-                />
+            <>
+              {activeTab === 'cocina' && (
+                <CocinaView orderDays={normalPending} onPack={markPacked} DAY_LABELS={DAY_LABELS} />
               )}
               {activeTab === 'empaque' && (
-                <EmpaqueView
-                  pendingDays={pendingFiltered}
-                  packedDays={packedFiltered}
-                  onDeliver={markDelivered}
-                />
+                <EmpaqueView pendingDays={normalPending} packedDays={normalPacked} onDeliver={markDelivered} />
               )}
               {activeTab === 'entrega' && (
-                <EntregaView
-                  orderDays={deliveredFiltered}
+                <EntregaView orderDays={normalDelivered} />
+              )}
+              {activeTab === 'express' && (
+                <ExpressView
+                  pendingDays={expressPendingAll}
+                  packedDays={expressPackedAll}
+                  deliveredDays={expressDeliveredAll}
+                  onPack={markPacked}
+                  onDeliver={markDelivered}
+                  expressTab={expressTab}
+                  setExpressTab={setExpressTab}
+                  todayStr={todayStr}
                 />
               )}
-            </div>
+            </>
           )}
         </>
       )}

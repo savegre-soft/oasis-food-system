@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Check, Pencil } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
@@ -11,6 +11,9 @@ import {
   getDateForDay,
 } from './orderUtils';
 
+// Route type thresholds mirror AddOrder logic
+const ROUTE_THRESHOLD = 3; // >= 3 extras → complete route
+
 const EditOrder = ({ order, onSuccess }) => {
   const { supabase }    = useApp();
   const isFamilyClient  = isFamily(order.clients);
@@ -18,7 +21,9 @@ const EditOrder = ({ order, onSuccess }) => {
   const [loading,     setLoading]     = useState(false);
   const [allRecipes,  setAllRecipes]  = useState([]);
   const [allRoutes,   setAllRoutes]   = useState([]);
-  const [resolvedRoute, setResolvedRoute] = useState(order.routes ?? null);
+  const [resolvedRoute,        setResolvedRoute]        = useState(order.routes ?? null);
+  const [routeManuallyChanged, setRouteManuallyChanged] = useState(false);
+  const recipesLoaded = useRef(false); // don't auto-resolve route until recipes are loaded
 
   // ── Hooks ─────────────────────────────────────────────────────────────────
   const {
@@ -33,6 +38,9 @@ const EditOrder = ({ order, onSuccess }) => {
     updateDayMacro, resetDayMacro, resetAllDayMacros,
     getEffectiveMacros, isDayOverridden,
   } = useMacros();
+
+  // Derived: count of extra (user-added) recipes — drives auto route resolution
+  const extraCount = Object.values(dayRecipes).flat().filter(r => r.isExtra && r.recipe_id).length;
 
   // ── Load data ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -50,6 +58,26 @@ const EditOrder = ({ order, onSuccess }) => {
     fetchRoutes();
   }, []);
 
+  // ── Auto-resolve route when extraCount crosses threshold ────────────────────
+  useEffect(() => {
+    if (!recipesLoaded.current || routeManuallyChanged || isFamilyClient) return;
+    const isComplete    = menuType === 'both' || extraCount >= ROUTE_THRESHOLD;
+    const preferredType = isComplete ? 'complete' : 'individual';
+
+    const doResolve = async () => {
+      let { data } = await supabase.schema('operations').from('routes')
+        .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+        .eq('route_type', preferredType).eq('is_active', true).limit(1).maybeSingle();
+      if (!data) {
+        ({ data } = await supabase.schema('operations').from('routes')
+          .select('id_route, name, route_type, route_delivery_days(day_of_week)')
+          .eq('is_active', true).limit(1).maybeSingle());
+      }
+      if (data) setResolvedRoute(data);
+    };
+    doResolve();
+  }, [extraCount, menuType, routeManuallyChanged, isFamilyClient]);
+
   // ── Pre-fill from order ───────────────────────────────────────────────────
   useEffect(() => {
     // Macros
@@ -59,6 +87,7 @@ const EditOrder = ({ order, onSuccess }) => {
 
     // Recipes
     loadFromOrderDays(order.order_days ?? []);
+    recipesLoaded.current = true;
   }, [order]);
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -141,7 +170,7 @@ const EditOrder = ({ order, onSuccess }) => {
         menuType={menuType}
         resolvedRoute={resolvedRoute}
         allRoutes={allRoutes}
-        onRouteChange={setResolvedRoute}
+        onRouteChange={(r) => { setResolvedRoute(r); setRouteManuallyChanged(true); }}
         showRouteChange={true}
         lunchMacros={lunchMacros}
         dinnerMacros={dinnerMacros}

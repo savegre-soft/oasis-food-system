@@ -55,7 +55,7 @@ export const getDateForDay = (dayOfWeek, weekStart, routeDeliveryDays) => {
     return toDateString(getAbsoluteDate(best, weekStart));
   }
   const mealSlot   = DAYS_ORDER.indexOf(dayOfWeek);
-  const candidates = sorted.filter(d => cycleIdx(d) <= mealSlot);
+  const candidates = sorted.filter(d => cycleIdx(d) < mealSlot);  // strict <: meal day belongs to the PRECEDING slot
   if (candidates.length > 0) {
     return toDateString(getAbsoluteDate(candidates[candidates.length - 1], weekStart));
   }
