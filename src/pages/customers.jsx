@@ -70,6 +70,8 @@ export default function Customers() {
       <ConfirmDialog
         open={!!toReactivate}
         title="¿Reactivar cliente?"
+        confirmLabel="Reactivar"
+        confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition"
         message="El cliente volverá a aparecer en la lista de activos."
         onConfirm={() => {
           reactivar(toReactivate);
@@ -259,8 +261,9 @@ export default function Customers() {
                       setSelectedCustomer(customer);
                       setShowDetail(true);
                     }}
-                    onEdit={(customer) => setEditingCustomer(customer)}
-                    onDelete={(id) => setToDelete(id)}
+                    onEdit={activeTab === 'inactive' ? undefined : (customer) => setEditingCustomer(customer)}
+                    onDelete={activeTab === 'inactive' ? undefined : (id) => setToDelete(id)}
+                    onReactivate={activeTab === 'inactive' ? (id) => setToReactivate(id) : undefined}
                   />
                 </motion.div>
               ))}
