@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import LogoUrl from './../assets/Oasis-logo.png'
 
 const PublicNavBar = () => {
   const [open, setOpen] = useState(false);
@@ -8,7 +9,7 @@ const PublicNavBar = () => {
   const links = [
     { name: 'Inicio', path: '/' },
     { name: 'Menú', path: '/menu' },
-    { name: 'Promociones', path: '/promociones' },
+   // { name: 'Promociones', path: '/promociones' },
     { name: 'Contacto', path: '/contacto' },
     { name: 'Login', path: '/login' },
   ];
@@ -18,7 +19,7 @@ const PublicNavBar = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="text-2xl font-bold tracking-wide hover:opacity-90 transition">
-          Oasis Food
+         <img src={LogoUrl} className='w-12' />
         </Link>
 
         {/* Desktop Menu */}

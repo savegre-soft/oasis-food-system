@@ -1,4 +1,3 @@
-// src/pages/Main.jsx
 import {
   LineChart,
   Line,
@@ -10,8 +9,8 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { useApp } from '../context/AppContext';
-import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -20,8 +19,10 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
-// Configurar icono por defecto de Leaflet para que se vea
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useMemo } from 'react';
 
+// Fix iconos leaflet
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -29,80 +30,55 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const salesData = [
-  { name: 'Ene', ventas: 400, usuarios: 240 },
-  { name: 'Feb', ventas: 300, usuarios: 139 },
-  { name: 'Mar', ventas: 500, usuarios: 380 },
-  { name: 'Abr', ventas: 478, usuarios: 390 },
-  { name: 'May', ventas: 589, usuarios: 480 },
-  { name: 'Jun', ventas: 439, usuarios: 380 },
-];
 
 export default function Main() {
-  const { supabase } = useApp();
+  const {
+    clientCount,
+    clientsPerDistrict,
+    clientLocations,
+    loading,
+    totalOrders,
+    ordersByDate,
+    error,
+  } = useDashboardData();
 
-  const [clientCount, setClientCount] = useState(0);
-  const [districts, setDistricts] = useState([]);
-  const [clientsPerDistrict, setClientsPerDistrict] = useState([]);
-  const [clientLocations, setClientLocations] = useState([]);
+  // 🔥 Transformar ordersByDate para la gráfica
+  const ordersChartData = useMemo(() => {
+    if (!ordersByDate) return [];
 
-  // Obtener cantidad total de clientes
-  useEffect(() => {
-    const fetchClientCount = async () => {
-      try {
-        const { count, error } = await supabase
-          .schema('operations')
-          .from('clients')
-          .select('id', { count: 'exact', head: true });
-        if (error) throw error;
-        setClientCount(count || 0);
-      } catch (err) {
-        console.error('Error fetching clients count:', err.message);
+    const grouped = {};
+
+    ordersByDate.forEach((order) => {
+      const key = `${order.week_start_date} - ${order.week_end_date}`;
+
+      if (!grouped[key]) {
+        grouped[key] = 0;
       }
-    };
-    fetchClientCount();
-  }, [supabase]);
 
-  // Clientes por distrito y ubicaciones GPS
-  useEffect(() => {
-    const fetchDistrictsAndClients = async () => {
-      try {
-        // Obtener distritos
-        const { data: districtData, error: districtError } = await supabase
-          .schema('operations')
-          .from('districts')
-          .select('*');
-        if (districtError) throw districtError;
-        setDistricts(districtData || []);
+      grouped[key]++;
+    });
 
-        // Obtener clientes con nombre y GPS
-        const { data: clientsData, error: clientsError } = await supabase
-          .schema('operations')
-          .from('clients')
-          .select('id, name, district_id, latitude, longitude');
-        if (clientsError) throw clientsError;
+    return Object.keys(grouped).map((week) => ({
+      week,
+      pedidos: grouped[week],
+    }));
+  }, [ordersByDate]);
 
-        // Contar clientes por distrito
-        const counts = {};
-        const locations = [];
-        clientsData.forEach((c) => {
-          if (c.district_id) counts[c.district_id] = (counts[c.district_id] || 0) + 1;
-          if (c.latitude && c.longitude) locations.push(c);
-        });
+  if (loading) {
+    return (
+      <div className="p-6">
+        <p className="text-gray-500">Cargando dashboard...</p>
+      </div>
+    );
+  }
 
-        const chartData = districtData.map((d) => ({
-          name: d.name,
-          clientes: counts[d.id] || 0,
-        }));
-
-        setClientsPerDistrict(chartData);
-        setClientLocations(locations);
-      } catch (err) {
-        console.error('Error fetching clients per district:', err);
-      }
-    };
-    fetchDistrictsAndClients();
-  }, [supabase]);
+  if (error) {
+    return (
+      <div className="p-6">
+        <p className="text-red-500">Error: {error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-100 rounded min-h-screen">
@@ -114,35 +90,20 @@ export default function Main() {
           <h2 className="text-gray-500">Clientes</h2>
           <p className="text-3xl font-bold mt-2">{clientCount.toLocaleString()}</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-gray-500">Ventas</h2>
-          <p className="text-3xl font-bold mt-2">$12,340</p>
-        </div>
+
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-gray-500">Pedidos</h2>
-          <p className="text-3xl font-bold mt-2">320</p>
+          <p className="text-3xl font-bold mt-2">{totalOrders}</p>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Ventas Mensuales */}
-        <div className="bg-white p-6 rounded-2xl shadow">
-          <h2 className="text-xl font-semibold mb-4">Ventas Mensuales</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="ventas" stroke="#3b82f6" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Clientes por Distrito */}
+ 
+        {/* Clientes por distrito */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Clientes por Distrito</h2>
+
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={clientsPerDistrict}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -155,7 +116,22 @@ export default function Main() {
         </div>
       </div>
 
-      {/* Mapa con Marcadores */}
+      {/* 🔥 Nueva gráfica de pedidos */}
+      <div className="bg-white p-6 rounded-2xl shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4">Pedidos por Semana</h2>
+
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={ordersChartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="week" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="pedidos" stroke="#10b981" strokeWidth={3} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Mapa */}
       <div className="relative z-0 bg-white p-6 rounded-2xl shadow">
         <h2 className="text-xl font-semibold mb-4">Mapa de Clientes</h2>
 
@@ -163,11 +139,20 @@ export default function Main() {
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
           {clientLocations.map((c) => (
-            <Marker key={c.id} position={[c.latitude, c.longitude]}>
+            <Marker key={c.id_client} position={[c.latitude, c.longitude]}>
               <Popup>
-                <strong>{c.name}</strong>
-                <br />
-                Distrito ID: {c.district_id}
+                <div className="p-1">
+                  <h3 className="text-sm font-semibold text-gray-800">{c.name}</h3>
+
+                  <p className="text-xs text-gray-500 mb-2">Cliente registrado</p>
+
+                  <Link
+                    to={`/cliente/${c.id_client}`}
+                    className="inline-block text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition"
+                  >
+                    Ver detalles →
+                  </Link>
+                </div>
               </Popup>
             </Marker>
           ))}

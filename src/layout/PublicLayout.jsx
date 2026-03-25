@@ -10,10 +10,31 @@ export default function PublicLayout() {
         <Outlet />
       </main>
 
-      <footer className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white text-center py-6 text-sm shadow-inner">
-        <div className="max-w-6xl mx-auto px-4">
-          <p className="font-medium">© {new Date().getFullYear()} Oasis Food</p>
-          <p className="text-emerald-100 text-xs mt-1">Sabor fresco todos los días 🌿</p>
+      <footer className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white mt-16">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          {/* Contenido */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Marca */}
+            <div className="text-center md:text-left">
+              <p className="text-lg font-semibold tracking-wide">Oasis Food</p>
+              <p className="text-emerald-100 text-sm mt-1">Sabor fresco todos los días 🌿</p>
+            </div>
+
+            {/* Links */}
+            <div className="flex items-center gap-6 text-sm text-emerald-100">
+              <a className="hover:text-white transition">Inicio</a>
+              <a className="hover:text-white transition">Menú</a>
+              <a className="hover:text-white transition">Contacto</a>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-white/20 my-5" />
+
+          {/* Copyright */}
+          <div className="text-center text-xs text-emerald-100">
+            © {new Date().getFullYear()} Oasis Food · Todos los derechos reservados
+          </div>
         </div>
       </footer>
     </div>

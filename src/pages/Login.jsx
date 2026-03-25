@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
+import LogoUrl from '../assets/Oasis-logo.png';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -81,27 +82,21 @@ const Login = () => {
             transition={{ delay: 0.2, type: 'spring' }}
             className="flex justify-center mb-4"
           >
-            <div className="bg-emerald-100 p-3 rounded-2xl">
-              <Leaf className="text-emerald-600" size={28} />
-            </div>
+            
+              <img src={LogoUrl} className="w-20" />
+      
           </motion.div>
 
-          <h1 className="text-2xl font-bold text-gray-800">
-            Oasis Food Operativo
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-800">Oasis Food Operativo</h1>
 
-          <p className="text-gray-500 mt-2 text-sm">
-            Accede a tu plataforma operativa
-          </p>
+          <p className="text-gray-500 mt-2 text-sm">Accede a tu plataforma operativa</p>
         </div>
 
         {/* Form */}
         <form className="space-y-5" onSubmit={handleSubmit}>
           {/* Email */}
           <div>
-            <label className="text-sm text-gray-600">
-              Correo electrónico
-            </label>
+            <label className="text-sm text-gray-600">Correo electrónico</label>
 
             <div className="flex items-center mt-1 border rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-emerald-500 transition">
               <Mail className="text-gray-400 mr-2" size={18} />
@@ -119,14 +114,9 @@ const Login = () => {
           {/* Password */}
           <div>
             <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600">
-                Contraseña
-              </label>
+              <label className="text-sm text-gray-600">Contraseña</label>
 
-              <Link
-                to="/forgot-password"
-                className="text-xs text-emerald-600 hover:underline"
-              >
+              <Link to="/forgot-password" className="text-xs text-emerald-600 hover:underline">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -161,19 +151,14 @@ const Login = () => {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-500">
             ¿No tienes cuenta?{' '}
-            <Link
-              to="/register"
-              className="text-emerald-600 font-semibold hover:underline"
-            >
+            <Link to="/register" className="text-emerald-600 font-semibold hover:underline">
               Crear cuenta
             </Link>
           </p>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 mt-6">
-          © 2026 Oasis Food Operativo
-        </p>
+        <p className="text-center text-xs text-gray-400 mt-6">© 2026 Oasis Food Operativo</p>
       </motion.div>
     </div>
   );
