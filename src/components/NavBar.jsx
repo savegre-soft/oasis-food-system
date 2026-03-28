@@ -33,6 +33,7 @@ const gestionLinks = [
 ];
 
 const financialLinks = [
+  { to: '/pagos', label: 'Pagos', icon: DollarSign },
   { to: '/Gastos', label: 'Gastos', icon: DollarSign },
   { to: '/empleados', label: 'Personal', icon: PersonStanding },
   { to: '/control-gastos', label: 'Control', icon: ChartScatterIcon },
