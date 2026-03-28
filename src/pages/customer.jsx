@@ -26,8 +26,6 @@ const getNextWeekRange = () => {
   };
 };
 
-
-
 // Orders section with tabs
 const OrdersSection = ({ clientId }) => {
   const [orders, setOrders] = useState([]);
