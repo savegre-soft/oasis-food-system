@@ -48,7 +48,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+
             <Route path="/orders" element={<Orders />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />
@@ -64,6 +64,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/ChangePassword/*" element={<ChangePassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/*" element={<NotFound />} />
