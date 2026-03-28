@@ -20,6 +20,7 @@ import Menus from './pages/Menus';
 import Settings from './pages/Settings';
 import Recipes from './pages/Recipes';
 import Routes_page from './pages/Routes';
+import ResetPassword from './pages/ResetPassword';
 import Templates from './pages/Templates';
 import Customer from './pages/customer';
 import Orders from './pages/Orders';
@@ -47,9 +48,10 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
-            <Route path='/pagos' element={<Payments/>} />
+            <Route path="/pagos" element={<Payments />} />
             <Route path="/empleados" element={<ExpenseEmployees />} />
           </Route>
           <Route element={<PublicLayout />}>
