@@ -1,3 +1,18 @@
+import { useState } from "react";
+import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
+import OrderBlock from '../components/orders/OrderBlock';
+
+const formatWeek = (start, end) => {
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  const opts = { day: '2-digit', month: 'short' };
+  return (
+    s.toLocaleDateString('es-CR', opts) +
+    ' — ' +
+    e.toLocaleDateString('es-CR', { ...opts, year: 'numeric' })
+  );
+};
+
 
 
 // History view — grouped by week
