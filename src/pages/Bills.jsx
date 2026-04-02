@@ -32,6 +32,11 @@ const Bills = () => {
   const [view, setView] = useState('cards');
   const [showModal, setShowModal] = useState(false);
 
+  const closeModal =()=>{
+    setShowModal(false)
+    fetchData()
+  }
+
   const [dateRange, setDateRange] = useState({
     startDate: null,
     endDate: null,
@@ -94,7 +99,7 @@ const Bills = () => {
               fetchData();
             }}
           >
-            <AddExpensive />
+            <AddExpensive  onAdded={closeModal}/>
           </Modal>
         )}
       </AnimatePresence>
