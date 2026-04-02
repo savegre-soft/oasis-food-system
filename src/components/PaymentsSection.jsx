@@ -3,21 +3,35 @@ import PaymentAdd from './payment/PaymentAdd';
 import PaymentTable from './payment/PaymentTable';
 import Modal from '../components/Modal';
 import { AnimatePresence } from 'framer-motion';
+import { useApp } from '../context/AppContext';
 
 const PaymentSection = ({ clientId }) => {
   const [showModal, setShowModal] = useState(false);
   const [payments, setPayments] = useState([]);
 
-  const getData = async () => {
-    // TODO: reemplazar con tu lógica real (ej: supabase)
-    // ejemplo:
-    // const { data } = await supabase
-    //   .from('payments')
-    //   .select('*')
-    //   .eq('client_id', clientId);
+  const { supabase } = useApp();
 
-    // setPayments(data || []);
-    setPayments([]); // placeholder
+  const getData = async () => {
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('Payments')
+      .select(
+        `
+      *,
+      PaymentsType (
+        id,
+        name
+      )
+    `
+      )
+      .eq('ClientId', clientId);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setPayments(data || []);
   };
 
   useEffect(() => {
@@ -49,9 +63,7 @@ const PaymentSection = ({ clientId }) => {
 
       <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
         <div className="flex justify-between items-center">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-            Pagos
-          </p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Pagos</p>
 
           <button
             onClick={() => setShowModal(true)}
