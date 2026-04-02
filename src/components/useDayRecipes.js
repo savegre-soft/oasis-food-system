@@ -18,7 +18,7 @@ export const useDayRecipes = () => {
   // ── Fetch ingredients for a list of recipe IDs ───────────────────────────
 
   const fetchRecipeIngredients = useCallback(async (ids) => {
-    const toFetch = ids.filter(id => id && !recipeIngredients[id]);
+    const toFetch = ids.filter(id => id && !recipeIngredients[String(id)]);
     if (toFetch.length === 0) return;
     const { data } = await supabase
       .schema('operations')
@@ -26,10 +26,12 @@ export const useDayRecipes = () => {
       .select('id_recipe_ingredient, recipe_id, name, category')
       .in('recipe_id', toFetch);
     if (!data) return;
+    // Normalize keys to String for consistent lookup regardless of number/string source
     const grouped = {};
-    toFetch.forEach(id => { grouped[id] = { protein: [], carb: [], extra: [] }; });
+    toFetch.forEach(id => { grouped[String(id)] = { protein: [], carb: [], extra: [] }; });
     data.forEach(ing => {
-      if (grouped[ing.recipe_id]) grouped[ing.recipe_id][ing.category]?.push(ing.name);
+      const key = String(ing.recipe_id);
+      if (grouped[key]) grouped[key][ing.category]?.push(ing.name);
     });
     setRecipeIngredients(prev => ({ ...prev, ...grouped }));
   }, [supabase, recipeIngredients]);

@@ -139,13 +139,35 @@ const OrderBlock = ({ order }) => {
                     <span className={'text-xs font-medium px-2 py-0.5 rounded-full ' + st.bg}>{st.label}</span>
                   </div>
                   {(od.order_day_details ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1 ml-5">
-                      {od.order_day_details.map((det, i) => (
-                        <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                          {det.recipes?.name ?? 'Receta'}
-                          {det.quantity > 1 ? ' ×' + det.quantity : ''}
-                        </span>
-                      ))}
+                    <div className="ml-5 space-y-1">
+                      {od.order_day_details.map((det, i) => {
+                        const ovRows   = det.order_day_recipe_overrides ?? [];
+                        const hasOv    = ovRows.length > 0;
+                        const ingRows  = hasOv ? ovRows : (det.recipes?.recipe_ingredients ?? []);
+                        const bycat    = { protein: [], carb: [], extra: [] };
+                        ingRows.forEach(r => { if (bycat[r.category]) bycat[r.category].push(r.name); });
+                        const hasIngs  = ['protein','carb','extra'].some(c => bycat[c].length > 0);
+                        return (
+                          <div key={i}>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-medium text-slate-600">
+                                {det.recipes?.name ?? 'Receta'}
+                                {det.quantity > 1 ? ' ×' + det.quantity : ''}
+                              </span>
+                              {hasOv && (
+                                <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">modificada</span>
+                              )}
+                            </div>
+                            {hasIngs && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {bycat.protein.map((n, j) => <span key={'p'+j} className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full">{n}</span>)}
+                                {bycat.carb.map((n, j)    => <span key={'c'+j} className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full">{n}</span>)}
+                                {bycat.extra.map((n, j)   => <span key={'e'+j} className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full">{n}</span>)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -271,7 +293,11 @@ const OrdersSection = ({ clientId }) => {
               id_order_day_detail,
               recipe_id,
               quantity,
-              recipes ( id_recipe, name )
+              recipes (
+                id_recipe, name,
+                recipe_ingredients ( name, category )
+              ),
+              order_day_recipe_overrides ( name, category )
             )
           )
         `)

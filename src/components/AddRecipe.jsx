@@ -29,6 +29,8 @@ const AddRecipe = ({ onSuccess, initialData }) => {
   const [ingredients, setIngredients] = useState(buildInitialIngredients());
   const [newItem,     setNewItem]     = useState({ protein: '', carb: '', extra: '' });
   const [loading,     setLoading]     = useState(false);
+  const [image,       setImage]       = useState(null);
+  const [preview,     setPreview]     = useState(null);
 
   const addIngredient = (category) => {
     const val = newItem[category].trim();

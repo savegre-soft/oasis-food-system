@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Truck, ChefHat, Package, Zap } from 'lucide-react';
+import { Truck, ChefHat, Package, Zap, Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
 import CocinaView  from '../components/Kitchen';
+import ProductionPrintReport from '../components/ProductionPrintReport';
 import EmpaqueView from '../components/Package';
 import EntregaView from '../components/Delivered';
 
@@ -214,6 +215,7 @@ const Production = () => {
 
   const [activeTab,    setActiveTab]    = useState('cocina');
   const [expressTab,   setExpressTab]   = useState('cocina');
+  const [showPrint,    setShowPrint]    = useState(false);
   const [clientFilter, setClientFilter] = useState('todos');
 
   const [slots,        setSlots]        = useState([]);
@@ -390,14 +392,44 @@ const Production = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
-        <p className="text-slate-500 mt-1">
-          {'Semana del '}
-          {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })}
-          {' al '}
-          {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
-        </p>
+      {/* Print report */}
+      {showPrint && activeTab !== 'express' && (
+        <ProductionPrintReport
+          orderDays={[...pendingDays, ...packedDays, ...deliveredDays]}
+          slotLabel={selectedSlot?.label}
+          weekLabel={
+            new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })
+            + ' al '
+            + new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })
+          }
+          onClose={() => setShowPrint(false)}
+        />
+      )}
+      {showPrint && activeTab === 'express' && (
+        <ProductionPrintReport
+          orderDays={[...expressPendingAll, ...expressPackedAll, ...expressDeliveredAll]}
+          slotLabel="Express"
+          weekLabel={new Date(todayStr + 'T00:00:00').toLocaleDateString('es-CR', { weekday: 'long', day: '2-digit', month: 'long' })}
+          onClose={() => setShowPrint(false)}
+        />
+      )}
+
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
+          <p className="text-slate-500 mt-1">
+            {'Semana del '}
+            {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })}
+            {' al '}
+            {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowPrint(true)}
+          className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+        >
+          <Printer size={15} /> Imprimir resumen
+        </button>
       </div>
 
       {loadingDays ? (

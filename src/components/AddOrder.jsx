@@ -309,12 +309,16 @@ const AddOrder = ({ onSuccess }) => {
           .select('id_order_day').single();
         if (dayErr) { sileo.error(`Error al crear el día ${DAY_LABELS[day]}`); console.error(dayErr); setLoading(false); return; }
 
-        const details = (isExpress ? expressRecipes : (dayRecipes[day] ?? [])).filter(r => r.recipe_id);
-        if (!details.length) continue;
+        // For express, preserve original index for override lookup
+        const sourceRecipes = isExpress ? expressRecipes : (dayRecipes[day] ?? []);
+        const detailsWithIdx = sourceRecipes
+          .map((r, origIdx) => ({ r, origIdx }))
+          .filter(({ r }) => r.recipe_id);
+        if (!detailsWithIdx.length) continue;
 
         const { data: detData, error: detErr } = await supabase.schema('operations').from('order_day_details')
-          .insert(details.map((r, i) => {
-            const effectiveType = r.isExtra ? (extraMealTypes[`${day}-${i}`] ?? type) : type;
+          .insert(detailsWithIdx.map(({ r, origIdx }, i) => {
+            const effectiveType = r.isExtra ? (extraMealTypes[`${day}-${origIdx}`] ?? type) : type;
             const eff = isExpress ? expressMacros : getEffectiveMacros(day, effectiveType);
             return {
               order_day_id:          dayData.id_order_day,
@@ -331,7 +335,10 @@ const AddOrder = ({ onSuccess }) => {
 
         const overrideRows = [];
         (detData ?? []).forEach((det, i) => {
-          const ov = isExpress ? expressIngredientOverrides[i] : ingredientOverrides[`${day}-${i}`];
+          const origIdx = detailsWithIdx[i]?.origIdx;
+          const ov = isExpress
+            ? expressIngredientOverrides[origIdx]
+            : ingredientOverrides[`${day}-${origIdx}`];
           if (!ov) return;
           for (const cat of ['protein','carb','extra']) {
             for (const name of ov[cat] ?? []) overrideRows.push({ order_day_detail_id: det.id_order_day_detail, name, category: cat });
@@ -561,10 +568,10 @@ const AddOrder = ({ onSuccess }) => {
                         const found = allRecipes.find(r => String(r.id_recipe) === String(e.target.value));
                         setExpressRecipes(prev => {
                           const updated = [...prev];
-                          updated[idx] = { ...updated[idx], recipe_id: e.target.value, recipe_name: found?.name ?? '' };
+                          updated[idx] = { ...updated[idx], recipe_id: e.target.value ? Number(e.target.value) : '', recipe_name: found?.name ?? '' };
                           return updated;
                         });
-                        if (e.target.value) fetchRecipeIngredients([e.target.value]);
+                        if (e.target.value) fetchRecipeIngredients([String(e.target.value)]);
                       }}
                       className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
                     >
@@ -599,7 +606,7 @@ const AddOrder = ({ onSuccess }) => {
                   {item.recipe_id && (
                     <RecipeIngredientEditor
                       recipeName={item.recipe_name}
-                      baseIngredients={recipeIngredients[item.recipe_id] ?? { protein: [], carb: [], extra: [] }}
+                      baseIngredients={recipeIngredients[String(item.recipe_id)] ?? { protein: [], carb: [], extra: [] }}
                       value={expressIngredientOverrides[idx] ?? null}
                       onChange={(val) => setExpressIngredientOverrides(prev => ({ ...prev, [idx]: val }))}
                     />
@@ -740,15 +747,36 @@ const AddOrder = ({ onSuccess }) => {
           )}
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-2">Días con recetas</p>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {DAYS_ORDER.filter(d => (dayRecipes[d] ?? []).some(r => r.recipe_id)).map(day => (
                 <div key={day} className="flex items-start gap-2">
-                  <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium min-w-[48px] text-center shrink-0">
+                  <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium min-w-[48px] text-center shrink-0 mt-0.5">
                     {DAY_SHORT[day]}
                   </span>
-                  <p className="text-xs text-slate-600">
-                    {dayRecipes[day].filter(r => r.recipe_id).map(r => r.recipe_name || 'Receta').join(', ')}
-                  </p>
+                  <div className="space-y-1.5 flex-1">
+                    {dayRecipes[day].filter(r => r.recipe_id).map((r, idx) => {
+                      const ov  = ingredientOverrides[`${day}-${idx}`];
+                      const base = recipeIngredients[String(r.recipe_id)] ?? { protein: [], carb: [], extra: [] };
+                      const ings = ov ?? base;
+                      const hasIngs = ['protein','carb','extra'].some(c => (ings[c] ?? []).length > 0);
+                      return (
+                        <div key={idx}>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-medium text-slate-700">{r.recipe_name || 'Receta'}</span>
+                            {r.quantity > 1 && <span className="text-xs text-slate-400">×{r.quantity}</span>}
+                            {ov && <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">modificada</span>}
+                          </div>
+                          {hasIngs && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(ings.protein ?? []).map((n, i) => <span key={'p'+i} className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full">{n}</span>)}
+                              {(ings.carb    ?? []).map((n, i) => <span key={'c'+i} className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full">{n}</span>)}
+                              {(ings.extra   ?? []).map((n, i) => <span key={'e'+i} className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded-full">{n}</span>)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ))}
             </div>
