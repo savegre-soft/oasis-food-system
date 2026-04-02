@@ -238,7 +238,7 @@ const Customer = () => {
 
       {/* Pagos */}
 
-      <PaymentSection />
+      <PaymentSection clientId={Number(id)} />
 
       {/* Orders */}
       <OrdersSection clientId={Number(id)} />
