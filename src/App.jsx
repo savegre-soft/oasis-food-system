@@ -20,12 +20,14 @@ import Menus from './pages/Menus';
 import Settings from './pages/Settings';
 import Recipes from './pages/Recipes';
 import Routes_page from './pages/Routes';
+import ResetPassword from './pages/ResetPassword';
 import Templates from './pages/Templates';
 import Customer from './pages/customer';
 import Orders from './pages/Orders';
 import ExpenseEmployees from './pages/ExpenseEmployees';
 import ExpenseStadistic from './pages/ExpenseStadistic';
 import ChangePassword from './pages/ChangePassword';
+import Payments from './pages/Payments';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -46,8 +48,10 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
+
             <Route path="/orders" element={<Orders />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
+            <Route path="/pagos" element={<Payments />} />
             <Route path="/empleados" element={<ExpenseEmployees />} />
           </Route>
           <Route element={<PublicLayout />}>
@@ -60,6 +64,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/ChangePassword/*" element={<ChangePassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/*" element={<NotFound />} />
