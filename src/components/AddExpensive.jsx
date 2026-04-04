@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
-const AddExpensive = () => {
+const AddExpensive = ({onAdded}) => {
   const { supabase, user } = useApp();
 
   const today = new Date().toISOString().split('T')[0];
@@ -85,6 +85,7 @@ const AddExpensive = () => {
 
       sileo.success('Gasto agregado correctamente');
 
+      onAdded?.()
       resetForm();
     } catch (error) {
       console.error(error);

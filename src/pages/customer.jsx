@@ -44,6 +44,7 @@ const getNextWeekRange = () => {
   };
 };
 
+<<<<<<< HEAD
 const formatWeek = (start, end) => {
   const s = new Date(start + 'T00:00:00');
   const e = new Date(end   + 'T00:00:00');
@@ -259,6 +260,8 @@ const HistoryView = ({ orders }) => {
   );
 };
 
+=======
+>>>>>>> 6f91f4bff93adc336729237732d5dc1ffb1fb4b0
 // Orders section with tabs
 const OrdersSection = ({ clientId }) => {
   const [orders,      setOrders]      = useState([]);
@@ -441,6 +444,10 @@ const Customer = () => {
           )}
         </div>
       )}
+
+      {/* Pagos */}
+
+      <PaymentSection clientId={Number(id)} />
 
       {/* Orders */}
       <OrdersSection clientId={Number(id)} />
