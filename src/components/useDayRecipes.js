@@ -102,7 +102,7 @@ export const useDayRecipes = () => {
   return {
     dayRecipes,        setDayRecipes,
     recipeIngredients,
-    ingredientOverrides,
+    ingredientOverrides, setIngredientOverrides,
     expandedDays,
     addRecipeToDay,
     updateRecipeInDay,

@@ -63,7 +63,7 @@ const AddOrder = ({ onSuccess }) => {
 
   // ── Hooks ────────────────────────────────────────────────────────────────────
   const {
-    dayRecipes, recipeIngredients, ingredientOverrides, expandedDays,
+    dayRecipes, recipeIngredients, ingredientOverrides, setIngredientOverrides, expandedDays,
     addRecipeToDay, updateRecipeInDay, removeRecipeFromDay,
     setOverride, toggleDay, setDayRecipes, fetchRecipeIngredients,
   } = useDayRecipes();
@@ -99,6 +99,25 @@ const AddOrder = ({ onSuccess }) => {
     };
     fetchClients(); fetchRoutes(); fetchAllRecipes();
   }, []);
+
+  // ── Reset when client changes — clears step + all order state ───────────────
+  useEffect(() => {
+    if (!selectedClient) return;  // don't reset on initial null
+    setStep(1);
+    setMenuType(null);
+    setSelectedLunchTemplate(null);
+    setSelectedDinnerTemplate(null);
+    setSelectedFamilyTemplate(null);
+    setResolvedRoute(null);
+    setRouteManuallyChanged(false);
+    setIsExpress(false);
+    setExpressRecipes([]);
+    setExpressIngredientOverrides({});
+    const emptyDays = {};
+    DAYS_ORDER.forEach(d => { emptyDays[d] = []; });
+    setDayRecipes(emptyDays);
+    setIngredientOverrides({});
+  }, [selectedClient]);
 
   // ── Set macros when client selected ──────────────────────────────────────
   useEffect(() => {
@@ -262,6 +281,29 @@ const AddOrder = ({ onSuccess }) => {
     setStep(s => s - 1);
   };
 
+  // ── Reset wizard ─────────────────────────────────────────────────────────────
+  const resetWizard = () => {
+    setStep(1);
+    setSelectedClient(null);
+    setClientSearch('');
+    setMenuType(null);
+    setSelectedLunchTemplate(null);
+    setSelectedDinnerTemplate(null);
+    setSelectedFamilyTemplate(null);
+    setResolvedRoute(null);
+    setRouteManuallyChanged(false);
+    setExtraMealTypes({});
+    setIsExpress(false);
+    setExpressRecipes([]);
+    setExpressType('Lunch');
+    setExpressIngredientOverrides({});
+    setExpressMacros({ protein_value: '', protein_unit: 'g', carb_value: '', carb_unit: 'g' });
+    const emptyDays = {};
+    DAYS_ORDER.forEach(d => { emptyDays[d] = []; });
+    setDayRecipes(emptyDays);
+    setIngredientOverrides({});
+  };
+
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setLoading(true);
@@ -353,6 +395,8 @@ const AddOrder = ({ onSuccess }) => {
 
     sileo.success('Pedido registrado correctamente');
     setLoading(false);
+    // Full reset so wizard is clean if modal re-opens or user starts again
+    resetWizard();
     if (onSuccess) onSuccess();
   };
 
