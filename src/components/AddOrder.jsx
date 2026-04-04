@@ -128,6 +128,15 @@ const AddOrder = ({ onSuccess }) => {
     if (dm) setDinnerMacros({ protein_value: dm.protein_value, protein_unit: dm.protein_unit, carb_value: dm.carb_value, carb_unit: dm.carb_unit });
   }, [selectedClient]);
 
+  // ── Reset dayRecipes when switching between express/normal ─────────────────
+  useEffect(() => {
+    const emptyDays = {};
+    DAYS_ORDER.forEach(d => { emptyDays[d] = []; });
+    setDayRecipes(emptyDays);
+    setIngredientOverrides({});
+    setStep(prev => prev > 2 ? 2 : prev); // snap back to step 2 max if past it
+  }, [isExpress]);
+
   // ── Auto-load expressMacros from client profile when type changes ─────────
   useEffect(() => {
     if (!selectedClient || !isExpress) return;
