@@ -18,9 +18,9 @@ import {
 const STANDARD_MACRO = { protein_value: 120, protein_unit: 'g', carb_value: 120, carb_unit: 'g' };
 
 // ── Step labels ───────────────────────────────────────────────────────────────
-const PERSONAL_STEPS = ['Cliente', 'Menú', 'Ajustes', 'Confirmar'];
-const FAMILY_STEPS   = ['Cliente', 'Ajustes', 'Confirmar'];
-const EXPRESS_STEPS  = ['Cliente', 'Menú', 'Confirmar'];
+const PERSONAL_STEPS = ['Cliente', 'Menú', 'Ajustes', 'Pago', 'Confirmar'];
+const FAMILY_STEPS   = ['Cliente', 'Ajustes', 'Pago', 'Confirmar'];
+const EXPRESS_STEPS  = ['Cliente', 'Menú', 'Pago', 'Confirmar'];
 
 // ── AddOrder ──────────────────────────────────────────────────────────────────
 const AddOrder = ({ onSuccess }) => {
@@ -52,6 +52,14 @@ const AddOrder = ({ onSuccess }) => {
   const [extraMealTypes,      setExtraMealTypes]      = useState({});
 
   const [loading,   setLoading]   = useState(false);
+
+  // ── Payment step state ────────────────────────────────────────────────────
+  const [paymentType,   setPaymentType]   = useState('weekly');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate,   setPaymentDate]   = useState(() => new Date().toISOString().split('T')[0]);
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [paymentNotes,  setPaymentNotes]  = useState('');
+
   const [isExpress,      setIsExpress]      = useState(false);
   // Express: direct recipe list [{recipe_id, recipe_name, quantity}]
   const [expressRecipes,            setExpressRecipes]            = useState([]);
@@ -245,6 +253,14 @@ const AddOrder = ({ onSuccess }) => {
     if (ids.length) fetchRecipeIngredients(ids);
   }, [selectedFamilyTemplate, familyClient]);
 
+  // ── Auto-suggest payment type when entering payment step ─────────────────
+  useEffect(() => {
+    if (step !== 4) return;
+    const suggested = isExpress ? 'express' : (familyClient || menuType === 'both') ? 'monthly' : 'weekly';
+    setPaymentType(suggested);
+    setPaymentDate(new Date().toISOString().split('T')[0]);
+  }, [step]);
+
   // ── Resolve family route ──────────────────────────────────────────────────
   const resolveFamilyRoute = async () => {
     let { data } = await supabase.schema('operations').from('routes')
@@ -268,6 +284,7 @@ const AddOrder = ({ onSuccess }) => {
       if (menuType === 'Dinner') return !!selectedDinnerTemplate;
       return !!selectedLunchTemplate && !!selectedDinnerTemplate;
     }
+    if (step === 4) return !!paymentAmount && Number(paymentAmount) >= 0;
     return true;
   };
 
@@ -307,6 +324,11 @@ const AddOrder = ({ onSuccess }) => {
     setExpressType('Lunch');
     setExpressIngredientOverrides({});
     setExpressMacros({ protein_value: '', protein_unit: 'g', carb_value: '', carb_unit: 'g' });
+    setPaymentType('weekly');
+    setPaymentAmount('');
+    setPaymentDate(new Date().toISOString().split('T')[0]);
+    setPaymentStatus('pending');
+    setPaymentNotes('');
     const emptyDays = {};
     DAYS_ORDER.forEach(d => { emptyDays[d] = []; });
     setDayRecipes(emptyDays);
@@ -316,6 +338,7 @@ const AddOrder = ({ onSuccess }) => {
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setLoading(true);
+    const createdOrderIds = [];
     const weekStartStr   = toDateString(weekStart);
     const weekEndStr     = toDateString(weekEnd);
     const todayDayName   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
@@ -353,6 +376,7 @@ const AddOrder = ({ onSuccess }) => {
       if (orderError) { sileo.error('Error al crear el pedido'); console.error(orderError); setLoading(false); return; }
 
       const orderId = orderData.id_order;
+      createdOrderIds.push(orderId);
 
       for (const day of activeDays) {
         const { data: dayData, error: dayErr } = await supabase.schema('operations').from('order_days')
@@ -402,6 +426,32 @@ const AddOrder = ({ onSuccess }) => {
       }
     }
 
+    // ── Crear pago y vincular órdenes ──────────────────────────────────────
+    if (paymentAmount !== '' && createdOrderIds.length > 0) {
+      const { data: pd, error: pe } = await supabase
+        .schema('operations')
+        .from('payments')
+        .insert([{
+          client_id:    selectedClient.id_client,
+          payment_type: paymentType,
+          amount:       Number(paymentAmount),
+          currency:     'CRC',
+          payment_date: paymentDate,
+          status:       paymentStatus,
+          notes:        paymentNotes || null,
+        }])
+        .select('id_payment')
+        .single();
+
+      if (pe) {
+        console.error('Error al registrar el pago:', pe);
+      } else {
+        const links = createdOrderIds.map(oid => ({ payment_id: pd.id_payment, order_id: oid }));
+        const { error: lke } = await supabase.schema('operations').from('payment_orders').insert(links);
+        if (lke) console.error('Error vinculando pago con órdenes:', lke);
+      }
+    }
+
     sileo.success('Pedido registrado correctamente');
     setLoading(false);
     // Full reset so wizard is clean if modal re-opens or user starts again
@@ -412,11 +462,14 @@ const AddOrder = ({ onSuccess }) => {
   // ── Step label helpers ────────────────────────────────────────────────────
   const stepLabels = familyClient ? FAMILY_STEPS : isExpress ? EXPRESS_STEPS : PERSONAL_STEPS;
   const totalSteps = stepLabels.length;
-  // Map logical step (1-4) to display position for personal, (1,3,4→1,2,3) for family
+  // Map logical step (1-5) to display position
+  // personal: 1→1,2→2,3→3,4→4,5→5  family: 1→1,3→2,4→3,5→4  express: 1→1,2→2,4→3,5→4
   const displayStep = familyClient
-    ? (step === 1 ? 1 : step === 3 ? 2 : 3)
-    : step;
-  const maxStep = familyClient ? (step === 4 ? 3 : displayStep) : step;
+    ? (step === 1 ? 1 : step === 3 ? 2 : step === 4 ? 3 : 4)
+    : isExpress
+      ? (step === 1 ? 1 : step === 2 ? 2 : step === 4 ? 3 : 4)
+      : step;
+  const maxStep = displayStep;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -722,8 +775,80 @@ const AddOrder = ({ onSuccess }) => {
         />
       )}
 
-      {/* ── Step 4: Confirm ── */}
+      {/* ── Step 4: Payment ── */}
       {step === 4 && (
+        <div className="space-y-5">
+          <p className="text-sm text-slate-500">Registra el pago asociado a este pedido.</p>
+
+          {/* Tipo de pago */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">Tipo de pago</label>
+            <div className="flex gap-2">
+              {[['monthly','Mensual'],['weekly','Semanal'],['express','Express']].map(([val, lbl]) => (
+                <button key={val} type="button" onClick={() => setPaymentType(val)}
+                  className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${paymentType === val ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'}`}
+                >{lbl}</button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {paymentType === 'monthly' ? 'Cubre hasta 4 órdenes del mes' : paymentType === 'weekly' ? 'Cubre 1 orden semanal' : 'Entrega del día, cobro inmediato'}
+            </p>
+          </div>
+
+          {/* Monto */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">Monto (₡)</label>
+            <input
+              type="number" min="0" step="1" placeholder="0"
+              value={paymentAmount}
+              onChange={e => setPaymentAmount(e.target.value)}
+              className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+            />
+          </div>
+
+          {/* Fecha de pago */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">Fecha de pago</label>
+            <input
+              type="date"
+              value={paymentDate}
+              onChange={e => setPaymentDate(e.target.value)}
+              className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+            />
+          </div>
+
+          {/* Estado */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">Estado</label>
+            <div className="flex gap-2">
+              {[['pending','Pendiente'],['cancelled','Cancelado']].map(([val, lbl]) => (
+                <button key={val} type="button" onClick={() => setPaymentStatus(val)}
+                  className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
+                    paymentStatus === val
+                      ? val === 'pending' ? 'bg-yellow-50 border-yellow-400 text-yellow-800' : 'bg-red-50 border-red-400 text-red-800'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                  }`}
+                >{lbl}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notas */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">Notas <span className="normal-case text-slate-400">(opcional)</span></label>
+            <textarea
+              rows={2}
+              placeholder="Observaciones del pago…"
+              value={paymentNotes}
+              onChange={e => setPaymentNotes(e.target.value)}
+              className="border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 resize-none"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 5: Confirm ── */}
+      {step === 5 && (
         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <p className="font-semibold text-slate-800">{selectedClient?.name}</p>
@@ -844,7 +969,7 @@ const AddOrder = ({ onSuccess }) => {
               <ChevronLeft size={16} /> Atrás
             </button>
           : <div />}
-        {step < 4
+        {step < 5
           ? <button type="button" onClick={goNext} disabled={!canGoNext()} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition text-sm font-medium disabled:opacity-40">
               Siguiente <ChevronRight size={16} />
             </button>
