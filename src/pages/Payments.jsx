@@ -1,17 +1,18 @@
-import { useEffect, useState } from 'react';
-import { DollarSign, TrendingUp, Clock, Search, Pencil, Check, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { DollarSign, TrendingUp, Clock, Search, Pencil, Check, X, Eye } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 
 import { useApp } from '../context/AppContext';
 import DatePicker from '../components/DatePicker';
+import OrderDetailModal from '../components/OrderDetailModal';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const getWeekRange = () => {
   const now = new Date();
   const day = now.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday
+  const diff = day === 0 ? -6 : 1 - day;
   const start = new Date(now);
   start.setDate(now.getDate() + diff);
   start.setHours(0, 0, 0, 0);
@@ -49,7 +50,10 @@ const Payments = () => {
   const [search,        setSearch]        = useState('');
   const [dateRange,     setDateRange]     = useState({ startDate: null, endDate: null });
   const [editingStatus, setEditingStatus] = useState(null); // { id, status }
-  const [statusFilter,  setStatusFilter]  = useState('all'); // 'all' | 'pending' | 'cancelled'
+  const [statusFilter,  setStatusFilter]  = useState('all');
+
+  // Order detail modal
+  const [viewingOrder,  setViewingOrder]  = useState(null); // full order object
 
   const fetchPayments = async () => {
     const { data, error } = await supabase
@@ -59,7 +63,18 @@ const Payments = () => {
         id_payment, client_id, payment_type, amount, currency,
         payment_date, status, notes, created_at,
         clients(name),
-        payment_orders(id_payment_order, order_id)
+        payment_orders(
+          id_payment_order, order_id,
+          orders(
+            id_order, week_start_date, week_end_date, classification, status,
+            clients(id_client, name, client_type),
+            routes(id_route, name, route_delivery_days(day_of_week)),
+            order_days(
+              id_order_day, day_of_week, delivery_date, status,
+              order_day_details(id_order_day_detail, recipe_id, quantity, recipes(id_recipe, name))
+            )
+          )
+        )
       `)
       .order('payment_date', { ascending: false });
 
@@ -116,6 +131,16 @@ const Payments = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
+      {/* Order Detail Modal */}
+      <AnimatePresence>
+        {viewingOrder && (
+          <OrderDetailModal
+            order={viewingOrder}
+            onClose={() => setViewingOrder(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.div
         initial={{ y: -25, opacity: 0 }}
@@ -196,6 +221,7 @@ const Payments = () => {
         onStatusEdit={setEditingStatus}
         onStatusSave={handleStatusSave}
         onStatusCancel={() => setEditingStatus(null)}
+        onViewOrder={setViewingOrder}
         emptyMessage={tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'}
       />
     </motion.div>
@@ -218,9 +244,14 @@ const SummaryCard = ({ icon, label, value, colorClass }) => (
   </motion.div>
 );
 
+// ── PaymentTable ──────────────────────────────────────────────────────────────
+
 const PaymentTable = ({
-  payments, editingStatus, onStatusEdit, onStatusSave, onStatusCancel, emptyMessage,
+  payments, editingStatus, onStatusEdit, onStatusSave, onStatusCancel, onViewOrder, emptyMessage,
 }) => {
+  // Which monthly payment is expanded (showing its order list)
+  const [expandedPayment, setExpandedPayment] = useState(null);
+
   if (payments.length === 0) {
     return (
       <motion.div
@@ -251,91 +282,138 @@ const PaymentTable = ({
               <th className="px-5 py-4 text-right font-semibold">Monto</th>
               <th className="px-5 py-4 text-center font-semibold">Órdenes</th>
               <th className="px-5 py-4 text-center font-semibold">Estado</th>
-              <th className="px-5 py-4 text-center font-semibold w-16"></th>
+              <th className="px-5 py-4 text-center font-semibold w-20"></th>
             </tr>
           </thead>
           <tbody>
             {payments.map((p, i) => {
-              const isEditing = editingStatus?.id === p.id_payment;
+              const isEditing  = editingStatus?.id === p.id_payment;
+              const isMonthly  = p.payment_type === 'monthly';
+              const orders     = (p.payment_orders ?? []).map(po => po.orders).filter(Boolean);
+              const isExpanded = expandedPayment === p.id_payment;
+
               return (
-                <tr
-                  key={p.id_payment}
-                  className={`border-t border-slate-100 transition ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}
-                >
-                  {/* Cliente */}
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-slate-800">{p.clients?.name ?? `Cliente ${p.client_id}`}</p>
-                    {p.notes && <p className="text-xs text-slate-400 mt-0.5">{p.notes}</p>}
-                  </td>
+                <React.Fragment key={p.id_payment}>
+                  <tr
+                    className={`border-t border-slate-100 transition ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}
+                  >
+                    {/* Cliente */}
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-slate-800">{p.clients?.name ?? `Cliente ${p.client_id}`}</p>
+                      {p.notes && <p className="text-xs text-slate-400 mt-0.5">{p.notes}</p>}
+                    </td>
 
-                  {/* Tipo */}
-                  <td className="px-5 py-3.5">
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${TYPE_COLOR[p.payment_type] ?? 'bg-slate-100 text-slate-600'}`}>
-                      {TYPE_LABEL[p.payment_type] ?? p.payment_type}
-                    </span>
-                  </td>
-
-                  {/* Fecha */}
-                  <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
-                    {formatDate(p.payment_date)}
-                  </td>
-
-                  {/* Monto */}
-                  <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
-                    {p.currency ?? 'CRC'} {Number(p.amount).toLocaleString()}
-                  </td>
-
-                  {/* Órdenes */}
-                  <td className="px-5 py-3.5 text-center">
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">
-                      {p.payment_orders?.length ?? 0}
-                    </span>
-                  </td>
-
-                  {/* Estado */}
-                  <td className="px-5 py-3.5 text-center">
-                    {isEditing ? (
-                      <div className="flex items-center justify-center gap-1">
-                        <select
-                          value={editingStatus.status}
-                          onChange={e => onStatusEdit({ id: p.id_payment, status: e.target.value })}
-                          className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
-                        >
-                          <option value="pending">Pendiente</option>
-                          <option value="cancelled">Cancelado</option>
-                        </select>
-                        <button
-                          onClick={() => onStatusSave(p.id_payment, editingStatus.status)}
-                          className="p-1 text-green-600 hover:text-green-700 transition"
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          onClick={onStatusCancel}
-                          className="p-1 text-red-400 hover:text-red-600 transition"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                        {STATUS_LABEL[p.status] ?? p.status}
+                    {/* Tipo */}
+                    <td className="px-5 py-3.5">
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${TYPE_COLOR[p.payment_type] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {TYPE_LABEL[p.payment_type] ?? p.payment_type}
                       </span>
-                    )}
-                  </td>
+                    </td>
 
-                  {/* Acción */}
-                  <td className="px-5 py-3.5 text-center">
-                    {!isEditing && (
-                      <button
-                        onClick={() => onStatusEdit({ id: p.id_payment, status: p.status })}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                    {/* Fecha */}
+                    <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
+                      {formatDate(p.payment_date)}
+                    </td>
+
+                    {/* Monto */}
+                    <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
+                      {p.currency ?? 'CRC'} {Number(p.amount).toLocaleString()}
+                    </td>
+
+                    {/* Órdenes */}
+                    <td className="px-5 py-3.5 text-center">
+                      {isMonthly && orders.length > 0 ? (
+                        <button
+                          onClick={() => setExpandedPayment(isExpanded ? null : p.id_payment)}
+                          className={`text-xs px-2.5 py-1 rounded-full font-medium transition ${isExpanded ? 'bg-violet-600 text-white' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
+                        >
+                          {orders.length}/4 ver
+                        </button>
+                      ) : (
+                        <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">
+                          {orders.length}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Estado */}
+                    <td className="px-5 py-3.5 text-center">
+                      {isEditing ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <select
+                            value={editingStatus.status}
+                            onChange={e => onStatusEdit({ id: p.id_payment, status: e.target.value })}
+                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
+                          >
+                            <option value="pending">Pendiente</option>
+                            <option value="cancelled">Cancelado</option>
+                          </select>
+                          <button
+                            onClick={() => onStatusSave(p.id_payment, editingStatus.status)}
+                            className="p-1 text-green-600 hover:text-green-700 transition"
+                          >
+                            <Check size={14} />
+                          </button>
+                          <button
+                            onClick={onStatusCancel}
+                            className="p-1 text-red-400 hover:text-red-600 transition"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {STATUS_LABEL[p.status] ?? p.status}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Acción */}
+                    <td className="px-5 py-3.5 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {/* Ver orden — solo si tiene exactamente 1 orden (weekly/express) */}
+                        {!isMonthly && orders.length === 1 && !isEditing && (
+                          <button
+                            onClick={() => onViewOrder(orders[0])}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Ver orden"
+                          >
+                            <Eye size={14} />
+                          </button>
+                        )}
+                        {!isEditing && (
+                          <button
+                            onClick={() => onStatusEdit({ id: p.id_payment, status: p.status })}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                            title="Editar estado"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Expanded monthly orders list */}
+                  {isMonthly && isExpanded && (
+                    <tr key={`${p.id_payment}-orders`} className="bg-violet-50">
+                      <td colSpan={7} className="px-5 py-3">
+                        <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
+                          Órdenes asociadas ({orders.length}/4)
+                        </p>
+                        <div className="space-y-1.5">
+                          {orders.map((order) => (
+                            <OrderMiniRow
+                              key={order.id_order}
+                              order={order}
+                              onView={() => onViewOrder(order)}
+                            />
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -355,5 +433,42 @@ const PaymentTable = ({
     </motion.div>
   );
 };
+
+// ── OrderMiniRow — compact order row inside expanded monthly payment ───────────
+
+const ORDER_STATUS_LABEL = { PENDING: 'Pendiente', PACKED: 'Empacado', DELIVERED: 'Entregado', CANCELLED: 'Cancelado' };
+const ORDER_STATUS_COLOR = {
+  PENDING:   'bg-amber-100 text-amber-700',
+  PACKED:    'bg-blue-100 text-blue-700',
+  DELIVERED: 'bg-green-100 text-green-700',
+  CANCELLED: 'bg-red-100 text-red-600',
+};
+const CLS_LABEL = { Lunch: 'Almuerzo', Dinner: 'Cena', Family: 'Familiar', both: 'Almuerzo + Cena' };
+
+const fmtShort = (str) => str
+  ? new Date(str + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'short' })
+  : '—';
+
+const OrderMiniRow = ({ order, onView }) => (
+  <div className="flex items-center justify-between gap-3 bg-white rounded-xl px-3 py-2 shadow-sm">
+    <div className="flex items-center gap-2 min-w-0">
+      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${ORDER_STATUS_COLOR[order.status] ?? 'bg-slate-100 text-slate-600'}`}>
+        {ORDER_STATUS_LABEL[order.status] ?? order.status}
+      </span>
+      <span className="text-xs font-medium text-slate-700 truncate">
+        {CLS_LABEL[order.classification] ?? order.classification}
+      </span>
+      <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
+        {fmtShort(order.week_start_date)} — {fmtShort(order.week_end_date)}
+      </span>
+    </div>
+    <button
+      onClick={onView}
+      className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium shrink-0 transition"
+    >
+      <Eye size={12} /> Ver detalle
+    </button>
+  </div>
+);
 
 export default Payments;
