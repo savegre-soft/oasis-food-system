@@ -261,9 +261,15 @@ export default function Customers() {
                       setSelectedCustomer(customer);
                       setShowDetail(true);
                     }}
-                    onEdit={activeTab === 'inactive' ? undefined : (customer) => setEditingCustomer(customer)}
+                    onEdit={
+                      activeTab === 'inactive'
+                        ? undefined
+                        : (customer) => setEditingCustomer(customer)
+                    }
                     onDelete={activeTab === 'inactive' ? undefined : (id) => setToDelete(id)}
-                    onReactivate={activeTab === 'inactive' ? (id) => setToReactivate(id) : undefined}
+                    onReactivate={
+                      activeTab === 'inactive' ? (id) => setToReactivate(id) : undefined
+                    }
                   />
                 </motion.div>
               ))}

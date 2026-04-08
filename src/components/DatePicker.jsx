@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState } from 'react';
 
 const DatePicker = ({ startDate, endDate, onChange }) => {
-  const [mode, setMode] = useState("day");
+  const [mode, setMode] = useState('day');
 
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
   const getWeekRange = (date) => {
     const d = new Date(date);
@@ -31,7 +31,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
     let end;
 
     switch (value) {
-      case "day":
+      case 'day':
         start = new Date();
         start.setHours(0, 0, 0, 0);
 
@@ -41,12 +41,12 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case "week":
+      case 'week':
         ({ start, end } = getWeekRange(now));
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case "last_week":
+      case 'last_week':
         const lastWeek = new Date(now);
         lastWeek.setDate(now.getDate() - 7);
 
@@ -54,7 +54,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case "month":
+      case 'month':
         start = new Date(now.getFullYear(), now.getMonth(), 1);
         end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         end.setHours(23, 59, 59, 999);
@@ -62,7 +62,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case "quarter":
+      case 'quarter':
         const q = Math.floor(now.getMonth() / 3);
 
         start = new Date(now.getFullYear(), q * 3, 1);
@@ -72,7 +72,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case "year":
+      case 'year':
         start = new Date(now.getFullYear(), 0, 1);
         end = new Date(now.getFullYear(), 11, 31);
         end.setHours(23, 59, 59, 999);
@@ -80,7 +80,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case "custom":
+      case 'custom':
         break;
     }
   };
@@ -96,11 +96,8 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4 mb-6 shadow-sm">
-
       <div className="flex flex-col">
-        <label className="text-sm text-slate-500 mb-1">
-          Rango de Fecha
-        </label>
+        <label className="text-sm text-slate-500 mb-1">Rango de Fecha</label>
 
         <select
           value={mode}
@@ -117,12 +114,10 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         </select>
       </div>
 
-      {mode === "custom" && (
+      {mode === 'custom' && (
         <>
           <div className="flex flex-col">
-            <label className="text-sm text-slate-500 mb-1">
-              Fecha inicio
-            </label>
+            <label className="text-sm text-slate-500 mb-1">Fecha inicio</label>
 
             <input
               type="date"
@@ -133,9 +128,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm text-slate-500 mb-1">
-              Fecha fin
-            </label>
+            <label className="text-sm text-slate-500 mb-1">Fecha fin</label>
 
             <input
               type="date"

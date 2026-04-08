@@ -7,11 +7,10 @@ const Settings = () => {
   useEffect(() => {
     const GetData = async () => {
       const { data, error } = await supabase.schema('operations').from('countries').select('*');
-  
-        console.log(data)
+
+      console.log(data);
     };
     GetData();
-
   }, []);
 
   return (

@@ -9,7 +9,12 @@ const formatDate = (dateStr) => {
   });
 };
 
-const ExpenseTable = ({ gastos, onEdit, onDelete, emptyMessage = 'No se encontraron registros.' }) => {
+const ExpenseTable = ({
+  gastos,
+  onEdit,
+  onDelete,
+  emptyMessage = 'No se encontraron registros.',
+}) => {
   if (!gastos || gastos.length === 0) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center py-16 gap-3">
@@ -25,7 +30,6 @@ const ExpenseTable = ({ gastos, onEdit, onDelete, emptyMessage = 'No se encontra
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
-
           <thead>
             <tr className="bg-slate-800 text-white text-xs uppercase tracking-wide">
               <th className="px-5 py-4 font-semibold w-12">#</th>
@@ -49,9 +53,7 @@ const ExpenseTable = ({ gastos, onEdit, onDelete, emptyMessage = 'No se encontra
               >
                 <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{idx + 1}</td>
 
-                <td className="px-5 py-3.5 font-medium text-slate-800">
-                  {gasto.descripcion}
-                </td>
+                <td className="px-5 py-3.5 font-medium text-slate-800">{gasto.descripcion}</td>
 
                 <td className="px-5 py-3.5">
                   <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap">
@@ -101,7 +103,10 @@ const ExpenseTable = ({ gastos, onEdit, onDelete, emptyMessage = 'No se encontra
 
           <tfoot>
             <tr className="bg-slate-50 border-t-2 border-slate-200">
-              <td colSpan={(onEdit || onDelete) ? 4 : 3} className="px-5 py-3.5 text-slate-500 text-xs font-medium">
+              <td
+                colSpan={onEdit || onDelete ? 4 : 3}
+                className="px-5 py-3.5 text-slate-500 text-xs font-medium"
+              >
                 {gastos.length} {gastos.length === 1 ? 'registro' : 'registros'}
               </td>
               <td className="px-5 py-3.5 text-right font-bold text-red-600 whitespace-nowrap">
@@ -110,7 +115,6 @@ const ExpenseTable = ({ gastos, onEdit, onDelete, emptyMessage = 'No se encontra
               {(onEdit || onDelete) && <td />}
             </tr>
           </tfoot>
-
         </table>
       </div>
     </div>

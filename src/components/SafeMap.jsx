@@ -6,8 +6,8 @@ import 'leaflet/dist/leaflet.css';
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
 /**
@@ -23,20 +23,20 @@ L.Icon.Default.mergeOptions({
  */
 const SafeMap = ({ lat, lng, zoom = 15, height = '220px', interactive = false, onClick }) => {
   const containerRef = useRef(null);
-  const mapRef       = useRef(null);
-  const markerRef    = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, {
-      center:            [lat, lng],
+      center: [lat, lng],
       zoom,
-      scrollWheelZoom:   false,
-      dragging:          interactive,
-      touchZoom:         interactive,
-      doubleClickZoom:   interactive,
-      zoomControl:       interactive,
+      scrollWheelZoom: false,
+      dragging: interactive,
+      touchZoom: interactive,
+      doubleClickZoom: interactive,
+      zoomControl: interactive,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -53,7 +53,7 @@ const SafeMap = ({ lat, lng, zoom = 15, height = '220px', interactive = false, o
 
     return () => {
       map.remove();
-      mapRef.current  = null;
+      mapRef.current = null;
       markerRef.current = null;
     };
   }, []); // intentionally empty — mount once, cleanup on unmount

@@ -13,9 +13,9 @@ const Templates = () => {
 
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showModal,        setShowModal]        = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
-  const [toDelete,         setToDelete]         = useState(null);
+  const [toDelete, setToDelete] = useState(null);
 
   // ===============================
   // OBTENER DATOS
@@ -26,7 +26,8 @@ const Templates = () => {
     const { data, error } = await supabase
       .schema('operations')
       .from('order_templates')
-      .select(`
+      .select(
+        `
         id_template,
         name,
         description,
@@ -45,7 +46,8 @@ const Templates = () => {
             )
           )
         )
-      `)
+      `
+      )
       .eq('is_active', true)
       .order('id_template', { ascending: false });
 
@@ -87,14 +89,28 @@ const Templates = () => {
         open={!!toDelete}
         title="¿Eliminar plantilla?"
         message="Se eliminará la plantilla y todos sus días y recetas."
-        onConfirm={() => { eliminar(toDelete); setToDelete(null); }}
+        onConfirm={() => {
+          eliminar(toDelete);
+          setToDelete(null);
+        }}
         onCancel={() => setToDelete(null)}
       />
 
       <AnimatePresence>
         {showModal && (
-          <Modal isOpen={showModal} onClose={() => { setShowModal(false); getData(); }}>
-            <AddTemplate onSuccess={() => { setShowModal(false); getData(); }} />
+          <Modal
+            isOpen={showModal}
+            onClose={() => {
+              setShowModal(false);
+              getData();
+            }}
+          >
+            <AddTemplate
+              onSuccess={() => {
+                setShowModal(false);
+                getData();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>
@@ -102,7 +118,13 @@ const Templates = () => {
       <AnimatePresence>
         {editingTemplate && (
           <Modal isOpen={!!editingTemplate} onClose={() => setEditingTemplate(null)}>
-            <AddTemplate initialData={editingTemplate} onSuccess={() => { setEditingTemplate(null); getData(); }} />
+            <AddTemplate
+              initialData={editingTemplate}
+              onSuccess={() => {
+                setEditingTemplate(null);
+                getData();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>

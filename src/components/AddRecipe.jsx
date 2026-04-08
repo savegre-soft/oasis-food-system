@@ -4,9 +4,27 @@ import { Plus, X, Image } from 'lucide-react';
 import { sileo } from 'sileo';
 
 const CATEGORIES = [
-  { key: 'protein', label: 'Proteínas', color: 'bg-red-50 border-red-200', badge: 'bg-red-100 text-red-700', placeholder: 'Ej: Pechuga de pollo' },
-  { key: 'carb', label: 'Carbohidratos', color: 'bg-amber-50 border-amber-200', badge: 'bg-amber-100 text-amber-700', placeholder: 'Ej: Arroz blanco' },
-  { key: 'extra', label: 'Extras', color: 'bg-green-50 border-green-200', badge: 'bg-green-100 text-green-700', placeholder: 'Ej: Ensalada verde' },
+  {
+    key: 'protein',
+    label: 'Proteínas',
+    color: 'bg-red-50 border-red-200',
+    badge: 'bg-red-100 text-red-700',
+    placeholder: 'Ej: Pechuga de pollo',
+  },
+  {
+    key: 'carb',
+    label: 'Carbohidratos',
+    color: 'bg-amber-50 border-amber-200',
+    badge: 'bg-amber-100 text-amber-700',
+    placeholder: 'Ej: Arroz blanco',
+  },
+  {
+    key: 'extra',
+    label: 'Extras',
+    color: 'bg-green-50 border-green-200',
+    badge: 'bg-green-100 text-green-700',
+    placeholder: 'Ej: Ensalada verde',
+  },
 ];
 
 const emptyIngredients = () => ({ protein: [], carb: [], extra: [] });
@@ -24,13 +42,13 @@ const AddRecipe = ({ onSuccess, initialData }) => {
     return result;
   };
 
-  const [name,        setName]        = useState(initialData?.name        ?? '');
+  const [name, setName] = useState(initialData?.name ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [ingredients, setIngredients] = useState(buildInitialIngredients());
-  const [newItem,     setNewItem]     = useState({ protein: '', carb: '', extra: '' });
-  const [loading,     setLoading]     = useState(false);
-  const [image,       setImage]       = useState(null);
-  const [preview,     setPreview]     = useState(null);
+  const [newItem, setNewItem] = useState({ protein: '', carb: '', extra: '' });
+  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
 
   const addIngredient = (category) => {
     const val = newItem[category].trim();
@@ -78,21 +96,45 @@ const AddRecipe = ({ onSuccess, initialData }) => {
     e.preventDefault();
 
     if (!name.trim()) return;
-    if (Object.values(ingredients).flat().length === 0) { sileo.error('Agrega al menos un ingrediente'); return; }
+    if (Object.values(ingredients).flat().length === 0) {
+      sileo.error('Agrega al menos un ingrediente');
+      return;
+    }
     setLoading(true);
 
     let recipeId;
     if (isEdit) {
-      const { error } = await supabase.schema('operations').from('recipes')
-        .update({ name, description }).eq('id_recipe', initialData.id_recipe);
-      if (error) { sileo.error('Error al actualizar la receta'); console.error(error); setLoading(false); return; }
+      const { error } = await supabase
+        .schema('operations')
+        .from('recipes')
+        .update({ name, description })
+        .eq('id_recipe', initialData.id_recipe);
+      if (error) {
+        sileo.error('Error al actualizar la receta');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
       // Replace ingredients
-      await supabase.schema('operations').from('recipe_ingredients').delete().eq('recipe_id', initialData.id_recipe);
+      await supabase
+        .schema('operations')
+        .from('recipe_ingredients')
+        .delete()
+        .eq('recipe_id', initialData.id_recipe);
       recipeId = initialData.id_recipe;
     } else {
-      const { data, error } = await supabase.schema('operations').from('recipes')
-        .insert([{ name, description, is_active: true }]).select('id_recipe').single();
-      if (error) { sileo.error('Error al guardar la receta'); console.error(error); setLoading(false); return; }
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('recipes')
+        .insert([{ name, description, is_active: true }])
+        .select('id_recipe')
+        .single();
+      if (error) {
+        sileo.error('Error al guardar la receta');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
       recipeId = data.id_recipe;
     }
 
@@ -103,7 +145,12 @@ const AddRecipe = ({ onSuccess, initialData }) => {
 
     if (rows.length > 0) {
       const { error } = await supabase.schema('operations').from('recipe_ingredients').insert(rows);
-      if (error) { sileo.error('Error al guardar los ingredientes'); console.error(error); setLoading(false); return; }
+      if (error) {
+        sileo.error('Error al guardar los ingredientes');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
     }
 
     sileo.success(isEdit ? 'Receta actualizada correctamente' : 'Receta guardada correctamente');
@@ -114,10 +161,11 @@ const AddRecipe = ({ onSuccess, initialData }) => {
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">{isEdit ? 'Editar Receta' : 'Agregar Nueva Receta'}</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-6">
+          {isEdit ? 'Editar Receta' : 'Agregar Nueva Receta'}
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
           {/* Nombre */}
           <div>
             <label className="block text-sm font-medium text-slate-600 mb-1">
@@ -136,9 +184,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
 
           {/* Descripción */}
           <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
-              Descripción
-            </label>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Descripción</label>
 
             <textarea
               value={description}
@@ -156,7 +202,6 @@ const AddRecipe = ({ onSuccess, initialData }) => {
             </label>
 
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center">
-
               {preview ? (
                 <div className="relative">
                   <img
@@ -178,12 +223,9 @@ const AddRecipe = ({ onSuccess, initialData }) => {
                 </div>
               ) : (
                 <label className="cursor-pointer flex flex-col items-center gap-2 text-slate-500">
-
                   <Image size={28} />
 
-                  <span className="text-sm">
-                    Seleccionar imagen
-                  </span>
+                  <span className="text-sm">Seleccionar imagen</span>
 
                   <input
                     type="file"
@@ -199,14 +241,10 @@ const AddRecipe = ({ onSuccess, initialData }) => {
           {/* Ingredientes */}
           {CATEGORIES.map((cat) => (
             <div key={cat.key} className={`border-2 rounded-2xl p-4 ${cat.color}`}>
-
-              <p className="text-sm font-semibold text-slate-700 mb-3">
-                {cat.label}
-              </p>
+              <p className="text-sm font-semibold text-slate-700 mb-3">{cat.label}</p>
 
               {ingredients[cat.key].length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
-
                   {ingredients[cat.key].map((item, i) => (
                     <span
                       key={i}
@@ -227,7 +265,6 @@ const AddRecipe = ({ onSuccess, initialData }) => {
               )}
 
               <div className="flex gap-2">
-
                 <input
                   type="text"
                   value={newItem[cat.key]}
@@ -251,9 +288,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
                 </button>
               </div>
 
-              <p className="text-xs text-slate-400 mt-1.5">
-                Presiona Enter o + para agregar
-              </p>
+              <p className="text-xs text-slate-400 mt-1.5">Presiona Enter o + para agregar</p>
             </div>
           ))}
 
@@ -265,7 +300,6 @@ const AddRecipe = ({ onSuccess, initialData }) => {
             <Plus size={18} />
             {loading ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Receta'}
           </button>
-
         </form>
       </div>
     </div>

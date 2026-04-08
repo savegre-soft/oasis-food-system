@@ -22,12 +22,10 @@ export const AppProvider = ({ children }) => {
     getSession();
 
     // Escuchar cambios de login / logout
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-    );
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
 
     return () => {
       listener.subscription.unsubscribe();

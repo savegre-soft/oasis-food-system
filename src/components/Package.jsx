@@ -5,15 +5,15 @@ import { Truck, Archive, AlertTriangle, CheckCircle } from 'lucide-react';
 const groupByClient = (orderDays) => {
   const clients = {};
   for (const od of orderDays) {
-    const clientId   = od.orders?.clients?.id_client ?? od.orders?.clients?.name ?? '_';
+    const clientId = od.orders?.clients?.id_client ?? od.orders?.clients?.name ?? '_';
     const clientName = od.orders?.clients?.name ?? '(sin nombre)';
     if (!clients[clientId]) clients[clientId] = { id: clientId, name: clientName, orderDays: [] };
     clients[clientId].orderDays.push({
-      id_order_day:   od.id_order_day,
-      status:         od.status,
+      id_order_day: od.id_order_day,
+      status: od.status,
       classification: od.orders?.classification,
       recipes: (od.order_day_details ?? []).map((d) => ({
-        name:     d.recipes?.name ?? '(sin nombre)',
+        name: d.recipes?.name ?? '(sin nombre)',
         quantity: d.quantity ?? 1,
       })),
     });
@@ -24,19 +24,32 @@ const groupByClient = (orderDays) => {
 // ── ClientEmpaqueCard ─────────────────────────────────────────────────────────
 
 const ClassificationBadge = ({ classification }) => {
-  if (classification === 'Lunch')  return <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">☀️ Almuerzo</span>;
-  if (classification === 'Dinner') return <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 text-indigo-700">🌙 Cena</span>;
-  return <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700">👨‍👩‍👧 Familiar</span>;
+  if (classification === 'Lunch')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">
+        ☀️ Almuerzo
+      </span>
+    );
+  if (classification === 'Dinner')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 text-indigo-700">
+        🌙 Cena
+      </span>
+    );
+  return (
+    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700">
+      👨‍👩‍👧 Familiar
+    </span>
+  );
 };
 
 const ClientEmpaqueCard = ({ client, onDeliver }) => {
-  const packed  = client.orderDays.filter((od) => od.status === 'PACKED');
+  const packed = client.orderDays.filter((od) => od.status === 'PACKED');
   const pending = client.orderDays.filter((od) => od.status === 'PENDING');
   const allPackedIds = packed.map((od) => od.id_order_day);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
@@ -47,7 +60,9 @@ const ClientEmpaqueCard = ({ client, onDeliver }) => {
             <p className="text-sm font-semibold text-slate-800">{client.name}</p>
             <p className="text-xs text-slate-400">
               {packed.length} empacado{packed.length !== 1 ? 's' : ''}
-              {pending.length > 0 && <span className="text-amber-600 ml-1">· {pending.length} sin empacar</span>}
+              {pending.length > 0 && (
+                <span className="text-amber-600 ml-1">· {pending.length} sin empacar</span>
+              )}
             </p>
           </div>
         </div>
@@ -82,8 +97,12 @@ const ClientEmpaqueCard = ({ client, onDeliver }) => {
               <div className="flex items-center gap-2 flex-wrap">
                 <ClassificationBadge classification={od.classification} />
                 {(od.recipes ?? []).map((r, i) => (
-                  <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                    {r.name}{r.quantity > 1 ? ` ×${r.quantity}` : ''}
+                  <span
+                    key={i}
+                    className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                  >
+                    {r.name}
+                    {r.quantity > 1 ? ` ×${r.quantity}` : ''}
                   </span>
                 ))}
               </div>
@@ -108,15 +127,18 @@ const ClientEmpaqueCard = ({ client, onDeliver }) => {
               <Archive size={12} className="text-slate-400 shrink-0" />
               <ClassificationBadge classification={od.classification} />
               {(od.recipes ?? []).map((r, i) => (
-                <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                  {r.name}{r.quantity > 1 ? ` ×${r.quantity}` : ''}
+                <span
+                  key={i}
+                  className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                >
+                  {r.name}
+                  {r.quantity > 1 ? ` ×${r.quantity}` : ''}
                 </span>
               ))}
             </div>
           ))}
         </div>
       )}
-
     </div>
   );
 };
@@ -127,7 +149,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onDeliver }) => {
   // Merge both sets keyed by client
   const allDays = [...(pendingDays ?? []), ...(packedDays ?? [])];
   const byClient = groupByClient(allDays);
-  const clients  = Object.values(byClient).sort((a, b) => a.name.localeCompare(b.name));
+  const clients = Object.values(byClient).sort((a, b) => a.name.localeCompare(b.name));
 
   if (clients.length === 0) {
     return (
@@ -138,15 +160,30 @@ const EmpaqueView = ({ pendingDays, packedDays, onDeliver }) => {
     );
   }
 
-  const packedCount  = clients.reduce((s, c) => s + c.orderDays.filter((od) => od.status === 'PACKED').length,  0);
-  const pendingCount = clients.reduce((s, c) => s + c.orderDays.filter((od) => od.status === 'PENDING').length, 0);
+  const packedCount = clients.reduce(
+    (s, c) => s + c.orderDays.filter((od) => od.status === 'PACKED').length,
+    0
+  );
+  const pendingCount = clients.reduce(
+    (s, c) => s + c.orderDays.filter((od) => od.status === 'PENDING').length,
+    0
+  );
 
   return (
     <div className="space-y-4">
       {/* Summary row */}
       <div className="flex items-center gap-4 text-sm text-slate-500 mb-2">
-        {packedCount  > 0 && <span className="flex items-center gap-1.5"><Truck   size={14} className="text-green-500"  /> {packedCount}  empacado{packedCount  !== 1 ? 's' : ''}</span>}
-        {pendingCount > 0 && <span className="flex items-center gap-1.5"><Archive size={14} className="text-amber-400"  /> {pendingCount} sin empacar</span>}
+        {packedCount > 0 && (
+          <span className="flex items-center gap-1.5">
+            <Truck size={14} className="text-green-500" /> {packedCount} empacado
+            {packedCount !== 1 ? 's' : ''}
+          </span>
+        )}
+        {pendingCount > 0 && (
+          <span className="flex items-center gap-1.5">
+            <Archive size={14} className="text-amber-400" /> {pendingCount} sin empacar
+          </span>
+        )}
       </div>
 
       {clients.map((client) => (

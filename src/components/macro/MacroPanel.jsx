@@ -1,5 +1,3 @@
-
-
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 const MacroPanel = ({ label, accent, macro }) => {
@@ -29,6 +27,5 @@ const MacroPanel = ({ label, accent, macro }) => {
     </div>
   );
 };
-
 
 export default MacroPanel;

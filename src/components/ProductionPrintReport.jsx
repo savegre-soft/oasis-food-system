@@ -21,8 +21,8 @@ const buildIngBreakdown = (recipes, category, macroKey, macroUnitKey) => {
     const ings = r.effectiveIngredients?.[category] ?? [];
     if (ings.length === 0) continue;
     const macro = r[macroKey] ?? 0;
-    const unit  = r[macroUnitKey] ?? 'g';
-    const share = macro / ings.length;           // porción por ingrediente (de esta receta)
+    const unit = r[macroUnitKey] ?? 'g';
+    const share = macro / ings.length; // porción por ingrediente (de esta receta)
     for (const name of ings) {
       if (!breakdown[name]) breakdown[name] = { total: 0, unit, units: 0 };
       breakdown[name].total += share;
@@ -51,20 +51,38 @@ const buildIngCount = (recipes, category) => {
 };
 
 const buildSummary = (grouped) => {
-  let totalProtein = 0, totalCarb = 0, proteinUnit = 'g', carbUnit = 'g';
+  let totalProtein = 0,
+    totalCarb = 0,
+    proteinUnit = 'g',
+    carbUnit = 'g';
   const recipes = Object.values(grouped).sort((a, b) => b.totalUnits - a.totalUnits);
 
   for (const r of recipes) {
-    if (r.totalProtein != null) { totalProtein += r.totalProtein; proteinUnit = r.totalProteinUnit ?? 'g'; }
-    if (r.totalCarb    != null) { totalCarb    += r.totalCarb;    carbUnit    = r.totalCarbUnit    ?? 'g'; }
+    if (r.totalProtein != null) {
+      totalProtein += r.totalProtein;
+      proteinUnit = r.totalProteinUnit ?? 'g';
+    }
+    if (r.totalCarb != null) {
+      totalCarb += r.totalCarb;
+      carbUnit = r.totalCarbUnit ?? 'g';
+    }
   }
 
   // Ahora ambas categorías usan buildIngBreakdown (mismo criterio: gramos por ingrediente)
   const proteinByType = buildIngBreakdown(recipes, 'protein', 'totalProtein', 'totalProteinUnit');
-  const carbByType    = buildIngBreakdown(recipes, 'carb',    'totalCarb',    'totalCarbUnit');
-  const extraByType   = buildIngCount(recipes, 'extra');
+  const carbByType = buildIngBreakdown(recipes, 'carb', 'totalCarb', 'totalCarbUnit');
+  const extraByType = buildIngCount(recipes, 'extra');
 
-  return { recipes, totalProtein, totalCarb, proteinUnit, carbUnit, proteinByType, carbByType, extraByType };
+  return {
+    recipes,
+    totalProtein,
+    totalCarb,
+    proteinUnit,
+    carbUnit,
+    proteinByType,
+    carbByType,
+    extraByType,
+  };
 };
 
 // ── Print styles ──────────────────────────────────────────────────────────────
@@ -87,16 +105,28 @@ const PRINT_STYLES = `
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => {
-  const styleRef    = useRef(null);
+  const styleRef = useRef(null);
   const printDivRef = useRef(null);
 
   const grouped = groupByRecipe(orderDays ?? []);
-  const { recipes, totalProtein, totalCarb, proteinUnit, carbUnit, proteinByType, carbByType, extraByType } = buildSummary(grouped);
-  const totalUnits   = recipes.reduce((s, r) => s + r.totalUnits, 0);
-  const totalExtras  = extraByType.reduce((s, e) => s + e.units, 0);
+  const {
+    recipes,
+    totalProtein,
+    totalCarb,
+    proteinUnit,
+    carbUnit,
+    proteinByType,
+    carbByType,
+    extraByType,
+  } = buildSummary(grouped);
+  const totalUnits = recipes.reduce((s, r) => s + r.totalUnits, 0);
+  const totalExtras = extraByType.reduce((s, e) => s + e.units, 0);
 
   const today = new Date().toLocaleDateString('es-CR', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
   });
 
   useEffect(() => {
@@ -112,7 +142,7 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
     printDivRef.current = div;
 
     return () => {
-      if (styleRef.current)    document.head.removeChild(styleRef.current);
+      if (styleRef.current) document.head.removeChild(styleRef.current);
       if (printDivRef.current) document.body.removeChild(printDivRef.current);
     };
   }, []);
@@ -122,9 +152,19 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
     if (!div) return;
 
     div.innerHTML = buildPrintHTML({
-      recipes, totalProtein, totalCarb, proteinUnit, carbUnit,
-      proteinByType, carbByType, extraByType, totalUnits, totalExtras,
-      slotLabel, weekLabel, today,
+      recipes,
+      totalProtein,
+      totalCarb,
+      proteinUnit,
+      carbUnit,
+      proteinByType,
+      carbByType,
+      extraByType,
+      totalUnits,
+      totalExtras,
+      slotLabel,
+      weekLabel,
+      today,
     });
 
     div.style.display = 'block';
@@ -174,7 +214,6 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
         </div>
 
         <div className="p-6 space-y-7">
-
           {recipes.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
               <UtensilsCrossed size={36} className="mx-auto mb-3 opacity-30" />
@@ -223,7 +262,6 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                 <section>
                   <SectionTitle>Desglose por ingrediente</SectionTitle>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
                     {/* Proteínas */}
                     {proteinByType.length > 0 && (
                       <BreakdownCard
@@ -285,7 +323,6 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                         ))}
                       </BreakdownCard>
                     )}
-
                   </div>
                 </section>
               )}
@@ -307,49 +344,78 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {recipes.map((r, idx) => {
-                        const ings    = r.effectiveIngredients ?? {};
+                        const ings = r.effectiveIngredients ?? {};
                         const protein = ings.protein ?? [];
-                        const carb    = ings.carb    ?? [];
-                        const extra   = ings.extra   ?? [];
+                        const carb = ings.carb ?? [];
+                        const extra = ings.extra ?? [];
                         return (
                           <tr
                             key={idx}
                             className={`hover:bg-slate-50 transition align-top ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}
                           >
-                            <td className="px-4 py-3 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                            <td className="px-4 py-3 text-slate-400 font-mono text-xs">
+                              {idx + 1}
+                            </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="bg-slate-800 text-white text-xs font-bold px-2 py-0.5 rounded-lg min-w-[26px] text-center">
                                   {r.totalUnits}
                                 </span>
-                                <span className="font-semibold text-slate-800">{r.recipe_name}</span>
+                                <span className="font-semibold text-slate-800">
+                                  {r.recipe_name}
+                                </span>
                                 {r.isOverridden && (
-                                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">variante</span>
+                                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
+                                    variante
+                                  </span>
                                 )}
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-wrap gap-1">
                                 {protein.map((n, i) => (
-                                  <span key={'p'+i} className="text-[11px] bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded-full">{n}</span>
+                                  <span
+                                    key={'p' + i}
+                                    className="text-[11px] bg-red-50 text-red-700 border border-red-100 px-2 py-0.5 rounded-full"
+                                  >
+                                    {n}
+                                  </span>
                                 ))}
                                 {carb.map((n, i) => (
-                                  <span key={'c'+i} className="text-[11px] bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 rounded-full">{n}</span>
+                                  <span
+                                    key={'c' + i}
+                                    className="text-[11px] bg-amber-50 text-amber-700 border border-amber-100 px-2 py-0.5 rounded-full"
+                                  >
+                                    {n}
+                                  </span>
                                 ))}
                                 {extra.map((n, i) => (
-                                  <span key={'e'+i} className="text-[11px] bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full">{n}</span>
+                                  <span
+                                    key={'e' + i}
+                                    className="text-[11px] bg-green-50 text-green-700 border border-green-100 px-2 py-0.5 rounded-full"
+                                  >
+                                    {n}
+                                  </span>
                                 ))}
                                 {protein.length + carb.length + extra.length === 0 && (
-                                  <span className="text-xs text-slate-300 italic">Sin ingredientes</span>
+                                  <span className="text-xs text-slate-300 italic">
+                                    Sin ingredientes
+                                  </span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center font-bold text-slate-800">{r.totalUnits}</td>
+                            <td className="px-4 py-3 text-center font-bold text-slate-800">
+                              {r.totalUnits}
+                            </td>
                             <td className="px-4 py-3 text-center font-semibold text-red-600">
-                              {fmt(r.totalProtein, r.totalProteinUnit) ?? <span className="text-slate-300">—</span>}
+                              {fmt(r.totalProtein, r.totalProteinUnit) ?? (
+                                <span className="text-slate-300">—</span>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-center font-semibold text-amber-600">
-                              {fmt(r.totalCarb, r.totalCarbUnit) ?? <span className="text-slate-300">—</span>}
+                              {fmt(r.totalCarb, r.totalCarbUnit) ?? (
+                                <span className="text-slate-300">—</span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -357,10 +423,15 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                     </tbody>
                     <tfoot className="bg-slate-50 border-t-2 border-slate-200 text-sm">
                       <tr>
-                        <td colSpan={3} className="px-4 py-3 font-bold text-slate-600 text-xs uppercase tracking-wide">
+                        <td
+                          colSpan={3}
+                          className="px-4 py-3 font-bold text-slate-600 text-xs uppercase tracking-wide"
+                        >
                           Totales · {recipes.length} receta{recipes.length !== 1 ? 's' : ''}
                         </td>
-                        <td className="px-4 py-3 text-center font-bold text-slate-800">{totalUnits}</td>
+                        <td className="px-4 py-3 text-center font-bold text-slate-800">
+                          {totalUnits}
+                        </td>
                         <td className="px-4 py-3 text-center font-bold text-red-600">
                           {fmt(totalProtein, proteinUnit) ?? '—'}
                         </td>
@@ -388,7 +459,10 @@ const SectionTitle = ({ children }) => (
 
 const SummaryCard = ({ label, value, sub, colorClass, subClass, icon }) => (
   <div className={`border rounded-2xl p-4 ${colorClass}`}>
-    <div className="flex items-center gap-1.5 mb-2">{icon}<p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p></div>
+    <div className="flex items-center gap-1.5 mb-2">
+      {icon}
+      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">{label}</p>
+    </div>
     <p className="text-2xl font-bold leading-none mb-1">{value}</p>
     <p className={`text-xs ${subClass}`}>{sub}</p>
   </div>
@@ -399,7 +473,9 @@ const BreakdownCard = ({ title, headerClass, total, totalLabel, totalClass, chil
     <div className="px-4 py-3 bg-slate-50 flex items-center justify-between border-b border-slate-100">
       <span className={`text-xs font-bold uppercase tracking-wide ${headerClass}`}>{title}</span>
       {total && (
-        <span className={`text-xs font-bold ${totalClass}`}>{totalLabel}: {total}</span>
+        <span className={`text-xs font-bold ${totalClass}`}>
+          {totalLabel}: {total}
+        </span>
       )}
     </div>
     <div className="divide-y divide-slate-50">{children}</div>
@@ -418,28 +494,41 @@ const IngRow = ({ name, right, sub, rightClass }) => (
 
 // ── HTML string for PDF/print ─────────────────────────────────────────────────
 
-function buildPrintHTML({ recipes, totalProtein, totalCarb, proteinUnit, carbUnit,
-  proteinByType, carbByType, extraByType, totalUnits, totalExtras, slotLabel, weekLabel, today }) {
-
+function buildPrintHTML({
+  recipes,
+  totalProtein,
+  totalCarb,
+  proteinUnit,
+  carbUnit,
+  proteinByType,
+  carbByType,
+  extraByType,
+  totalUnits,
+  totalExtras,
+  slotLabel,
+  weekLabel,
+  today,
+}) {
   const fmtS = (val, unit) => {
     if (val == null || isNaN(Number(val))) return '—';
-    return (Math.round(Number(val) * 10) / 10) + (unit ?? 'g');
+    return Math.round(Number(val) * 10) / 10 + (unit ?? 'g');
   };
 
   // ── Tabla de recetas ────────────────────────────────────────────────────────
-  const recipeRows = recipes.map((r, i) => {
-    const ings    = r.effectiveIngredients ?? {};
-    const badgeFn = (name, bg, color) =>
-      `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${bg};color:${color};margin:2px;display:inline-block;">${name}</span>`;
+  const recipeRows = recipes
+    .map((r, i) => {
+      const ings = r.effectiveIngredients ?? {};
+      const badgeFn = (name, bg, color) =>
+        `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${bg};color:${color};margin:2px;display:inline-block;">${name}</span>`;
 
-    const allIngs = [
-      ...(ings.protein ?? []).map(n => badgeFn(n, '#fef2f2', '#b91c1c')),
-      ...(ings.carb    ?? []).map(n => badgeFn(n, '#fffbeb', '#b45309')),
-      ...(ings.extra   ?? []).map(n => badgeFn(n, '#f0fdf4', '#15803d')),
-    ].join('');
+      const allIngs = [
+        ...(ings.protein ?? []).map((n) => badgeFn(n, '#fef2f2', '#b91c1c')),
+        ...(ings.carb ?? []).map((n) => badgeFn(n, '#fffbeb', '#b45309')),
+        ...(ings.extra ?? []).map((n) => badgeFn(n, '#f0fdf4', '#15803d')),
+      ].join('');
 
-    const rowBg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
-    return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;">
+      const rowBg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+      return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;">
       <td style="padding:9px 10px;color:#94a3b8;font-size:11px;font-family:monospace;width:28px;">${i + 1}</td>
       <td style="padding:9px 10px;vertical-align:top;">
         <span style="display:inline-block;background:#0f172a;color:#fff;border-radius:5px;padding:2px 7px;font-weight:700;font-size:12px;min-width:24px;text-align:center;margin-right:6px;">${r.totalUnits}</span>
@@ -451,7 +540,8 @@ function buildPrintHTML({ recipes, totalProtein, totalCarb, proteinUnit, carbUni
       <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalProtein, r.totalProteinUnit)}</td>
       <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalCarb, r.totalCarbUnit)}</td>
     </tr>`;
-  }).join('');
+    })
+    .join('');
 
   // ── Columna de desglose ─────────────────────────────────────────────────────
   const mkBreakdownTable = (title, color, rows, totalLabel, totalVal) =>
@@ -465,28 +555,37 @@ function buildPrintHTML({ recipes, totalProtein, totalCarb, proteinUnit, carbUni
       </table>
     </div>`;
 
-  const proteinRows = proteinByType.map(({ name, total, unit, units }) =>
-    `<tr style="border-bottom:1px solid #f8fafc;">
+  const proteinRows = proteinByType
+    .map(
+      ({ name, total, unit, units }) =>
+        `<tr style="border-bottom:1px solid #f8fafc;">
       <td style="padding:6px 10px;font-weight:600;color:#991b1b;">${name}</td>
       <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${units} plato${units !== 1 ? 's' : ''}</td>
       <td style="padding:6px 10px;text-align:right;font-weight:700;color:#dc2626;">${fmtS(total, unit)}</td>
     </tr>`
-  ).join('');
+    )
+    .join('');
 
-  const carbRows = carbByType.map(({ name, total, unit, units }) =>
-    `<tr style="border-bottom:1px solid #f8fafc;">
+  const carbRows = carbByType
+    .map(
+      ({ name, total, unit, units }) =>
+        `<tr style="border-bottom:1px solid #f8fafc;">
       <td style="padding:6px 10px;font-weight:600;color:#92400e;">${name}</td>
       <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${units} plato${units !== 1 ? 's' : ''}</td>
       <td style="padding:6px 10px;text-align:right;font-weight:700;color:#d97706;">${fmtS(total, unit)}</td>
     </tr>`
-  ).join('');
+    )
+    .join('');
 
-  const extraRows = extraByType.map(({ name, units }) =>
-    `<tr style="border-bottom:1px solid #f8fafc;">
+  const extraRows = extraByType
+    .map(
+      ({ name, units }) =>
+        `<tr style="border-bottom:1px solid #f8fafc;">
       <td style="padding:6px 10px;font-weight:600;color:#166534;">${name}</td>
       <td style="padding:6px 10px;text-align:right;font-weight:700;color:#16a34a;">${units}×</td>
     </tr>`
-  ).join('');
+    )
+    .join('');
 
   const hasBreakdown = proteinByType.length > 0 || carbByType.length > 0 || extraByType.length > 0;
   const headerLine = [slotLabel, weekLabel].filter(Boolean).join(' · ');
@@ -526,14 +625,18 @@ function buildPrintHTML({ recipes, totalProtein, totalCarb, proteinUnit, carbUni
       </div>
     </div>
 
-    ${hasBreakdown ? `
+    ${
+      hasBreakdown
+        ? `
     <!-- Desglose por ingrediente -->
     <p style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;">Desglose por ingrediente</p>
     <div style="display:flex;gap:12px;margin-bottom:20px;">
       ${proteinByType.length > 0 ? mkBreakdownTable('🥩 Proteínas', '#991b1b', proteinRows, 'Total', fmtS(totalProtein, proteinUnit)) : ''}
-      ${carbByType.length    > 0 ? mkBreakdownTable('🍚 Carbohidratos', '#92400e', carbRows, 'Total', fmtS(totalCarb, carbUnit)) : ''}
-      ${extraByType.length   > 0 ? mkBreakdownTable('🥗 Extras', '#166534', extraRows, 'Total', totalExtras > 0 ? totalExtras + '×' : null) : ''}
-    </div>` : ''}
+      ${carbByType.length > 0 ? mkBreakdownTable('🍚 Carbohidratos', '#92400e', carbRows, 'Total', fmtS(totalCarb, carbUnit)) : ''}
+      ${extraByType.length > 0 ? mkBreakdownTable('🥗 Extras', '#166534', extraRows, 'Total', totalExtras > 0 ? totalExtras + '×' : null) : ''}
+    </div>`
+        : ''
+    }
 
     <!-- Tabla de platos -->
     <p style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px;">Platos a preparar</p>

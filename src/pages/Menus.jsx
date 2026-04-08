@@ -9,7 +9,6 @@ import RecipeCard from '../components/RecipeCard';
 import EditRecipe from '../components/EditRecipe';
 
 const Menus = () => {
-
   const { supabase } = useApp();
 
   const [recipes, setRecipes] = useState([]);
@@ -23,13 +22,13 @@ const Menus = () => {
   const [search, setSearch] = useState('');
 
   const getData = async () => {
-
     setLoading(true);
 
     const { data, error } = await supabase
       .schema('operations')
       .from('recipes')
-      .select(`
+      .select(
+        `
         id_recipe,
         name,
         description,
@@ -38,7 +37,8 @@ const Menus = () => {
           name,
           category
         )
-      `)
+      `
+      )
       .eq('is_active', true)
       .order('id_recipe', { ascending: false });
 
@@ -46,7 +46,6 @@ const Menus = () => {
     else setRecipes(data ?? []);
 
     setLoading(false);
-
   };
 
   useEffect(() => {
@@ -54,7 +53,6 @@ const Menus = () => {
   }, []);
 
   const eliminar = async (id) => {
-
     const { error } = await supabase
       .schema('operations')
       .from('recipes')
@@ -67,82 +65,50 @@ const Menus = () => {
     }
 
     getData();
-
   };
 
   const openAddModal = () => {
-
     setSelectedRecipe(null);
     setModalType('add');
     setShowModal(true);
-
   };
 
   const openEditModal = (recipe) => {
-
     setSelectedRecipe(recipe);
     setModalType('edit');
     setShowModal(true);
-
   };
 
   const closeModal = () => {
-
     setShowModal(false);
     setSelectedRecipe(null);
     setModalType(null);
 
     getData();
-
   };
 
-  const filtered = recipes.filter((r) =>
-    r.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = recipes.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <>
-
       <AnimatePresence>
-
         {showModal && (
-          <Modal
-            isOpen={showModal}
-            onClose={closeModal}
-          >
+          <Modal isOpen={showModal} onClose={closeModal}>
+            {modalType === 'add' && <AddRecipe onSuccess={closeModal} />}
 
-            {modalType === 'add' && (
-              <AddRecipe
-                onSuccess={closeModal}
-              />
-            )}
-
-            {modalType === 'edit' && (
-              <EditRecipe
-                recipe={selectedRecipe}
-                onSuccess={closeModal}
-              />
-            )}
-
+            {modalType === 'edit' && <EditRecipe recipe={selectedRecipe} onSuccess={closeModal} />}
           </Modal>
         )}
-
       </AnimatePresence>
 
       <div className="min-h-screen bg-slate-50 p-8">
-
         {/* Header */}
 
         <div className="mb-8 flex items-center justify-between">
-
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">
-              Recetas
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-800">Recetas</h1>
 
-            <p className="text-slate-500 mt-1">
-              Gestión de recetas y su composición
-            </p>
+            <p className="text-slate-500 mt-1">Gestión de recetas y su composición</p>
           </div>
 
           <button
@@ -152,7 +118,6 @@ const Menus = () => {
             <UtensilsCrossed size={16} />
             Agregar Receta
           </button>
-
         </div>
 
         {/* Buscador */}
@@ -172,42 +137,26 @@ const Menus = () => {
         {loading ? (
           <p className="text-slate-500">Cargando...</p>
         ) : filtered.length === 0 ? (
-
           <div className="text-center py-20 text-slate-400">
-
-            <UtensilsCrossed
-              size={40}
-              className="mx-auto mb-3 opacity-30"
-            />
+            <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
 
             <p>No hay recetas registradas</p>
-
           </div>
-
         ) : (
-
           <div className="space-y-3">
-
             {filtered.map((recipe) => (
-
               <RecipeCard
                 key={recipe.id_recipe}
                 recipe={recipe}
                 onDelete={eliminar}
                 onEdit={openEditModal}
               />
-
             ))}
-
           </div>
-
         )}
-
       </div>
-
     </>
   );
-
 };
 
 export default Menus;

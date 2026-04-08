@@ -1,20 +1,20 @@
 import { Trash2, Pencil } from 'lucide-react';
 
 const DAY_LABELS = {
-  Monday:    'Lun',
-  Tuesday:   'Mar',
+  Monday: 'Lun',
+  Tuesday: 'Mar',
   Wednesday: 'Mié',
-  Thursday:  'Jue',
-  Friday:    'Vie',
-  Saturday:  'Sáb',
-  Sunday:    'Dom',
+  Thursday: 'Jue',
+  Friday: 'Vie',
+  Saturday: 'Sáb',
+  Sunday: 'Dom',
 };
 
 const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const MEAL_TYPE_STYLES = {
-  Lunch:  { label: '☀️ Almuerzo', className: 'bg-amber-50 text-amber-700' },
-  Dinner: { label: '🌙 Cena',     className: 'bg-indigo-50 text-indigo-700' },
+  Lunch: { label: '☀️ Almuerzo', className: 'bg-amber-50 text-amber-700' },
+  Dinner: { label: '🌙 Cena', className: 'bg-indigo-50 text-indigo-700' },
 };
 
 const TemplateCard = ({ template, onDelete, onEdit }) => {
@@ -22,7 +22,10 @@ const TemplateCard = ({ template, onDelete, onEdit }) => {
     (a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)
   );
 
-  const mealStyle = MEAL_TYPE_STYLES[template.meal_type] ?? { label: template.meal_type, className: 'bg-slate-100 text-slate-600' };
+  const mealStyle = MEAL_TYPE_STYLES[template.meal_type] ?? {
+    label: template.meal_type,
+    className: 'bg-slate-100 text-slate-600',
+  };
 
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
@@ -31,7 +34,9 @@ const TemplateCard = ({ template, onDelete, onEdit }) => {
           {/* Nombre + badge tipo */}
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-slate-800 text-lg">{template.name}</p>
-            <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${mealStyle.className}`}>
+            <span
+              className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${mealStyle.className}`}
+            >
               {mealStyle.label}
             </span>
           </div>
@@ -75,13 +80,17 @@ const TemplateCard = ({ template, onDelete, onEdit }) => {
 
         <div className="flex items-center gap-2 ml-4 mt-1 shrink-0">
           {onEdit && (
-            <button onClick={() => onEdit(template)}
-              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition">
+            <button
+              onClick={() => onEdit(template)}
+              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition"
+            >
               <Pencil size={14} />
             </button>
           )}
-          <button onClick={() => onDelete(template.id_template)}
-            className="p-1.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:border-red-300 transition">
+          <button
+            onClick={() => onDelete(template.id_template)}
+            className="p-1.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:border-red-300 transition"
+          >
             <Trash2 size={14} />
           </button>
         </div>

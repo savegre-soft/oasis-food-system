@@ -1,11 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import HistoryView from "../History/HistoryView";
+import HistoryView from '../History/HistoryView';
 
-import OrderBlock from "./OrderBlock";
-
-
-
+import OrderBlock from './OrderBlock';
 
 // Current week view — active orders
 const CurrentWeekView = ({ orders }) => {
@@ -28,8 +25,8 @@ const CurrentWeekView = ({ orders }) => {
 
 // Next week range (same logic as orderUtils)
 const getNextWeekRange = () => {
-  const today  = new Date();
-  const diff   = today.getDay() === 0 ? -6 : 1 - today.getDay();
+  const today = new Date();
+  const diff = today.getDay() === 0 ? -6 : 1 - today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() + diff + 7);
   monday.setHours(0, 0, 0, 0);
@@ -37,15 +34,15 @@ const getNextWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   return {
     weekStart: monday.toISOString().split('T')[0],
-    weekEnd:   sunday.toISOString().split('T')[0],
+    weekEnd: sunday.toISOString().split('T')[0],
   };
 };
 
 // Orders section with tabs
 const OrdersSection = ({ clientId }) => {
-  const [orders,      setOrders]      = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [activeTab,   setActiveTab]   = useState('current');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('current');
 
   const { weekStart, weekEnd } = getNextWeekRange();
 
@@ -55,7 +52,8 @@ const OrdersSection = ({ clientId }) => {
       const { data, error } = await supabase
         .schema('operations')
         .from('orders')
-        .select(`
+        .select(
+          `
           id_order,
           week_start_date,
           week_end_date,
@@ -82,13 +80,15 @@ const OrdersSection = ({ clientId }) => {
               order_day_recipe_overrides ( name, category )
             )
           )
-        `)
+        `
+        )
         .eq('client_id', clientId)
         .order('week_start_date', { ascending: false })
-        .order('id_order',        { ascending: false });
+        .order('id_order', { ascending: false });
 
-      if (error) { console.error(error); }
-      else setOrders(data ?? []);
+      if (error) {
+        console.error(error);
+      } else setOrders(data ?? []);
       setLoading(false);
     };
     fetch();
@@ -103,7 +103,7 @@ const OrdersSection = ({ clientId }) => {
 
   const tabs = [
     { id: 'current', label: 'Semana actual', count: currentOrders.length },
-    { id: 'history', label: 'Histórico',     count: historyOrders.length },
+    { id: 'history', label: 'Histórico', count: historyOrders.length },
   ];
 
   return (
@@ -114,10 +114,14 @@ const OrdersSection = ({ clientId }) => {
       <div className="flex gap-2">
         {tabs.map(({ id, label, count }) => {
           const isActive = activeTab === id;
-          const cls = 'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border '
-            + (isActive ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
-          const badgeCls = 'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center '
-            + (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
+          const cls =
+            'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ' +
+            (isActive
+              ? 'bg-slate-800 border-slate-800 text-white'
+              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
+          const badgeCls =
+            'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ' +
+            (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
           return (
             <button key={id} type="button" onClick={() => setActiveTab(id)} className={cls}>
               {label}
@@ -139,5 +143,4 @@ const OrdersSection = ({ clientId }) => {
   );
 };
 
-
-export default OrdersSection
+export default OrdersSection;

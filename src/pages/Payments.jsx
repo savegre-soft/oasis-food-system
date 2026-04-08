@@ -31,12 +31,12 @@ const formatDate = (dateStr) => {
 const TYPE_LABEL = { monthly: 'Mensual', weekly: 'Semanal', express: 'Express' };
 const TYPE_COLOR = {
   monthly: 'bg-violet-100 text-violet-700',
-  weekly:  'bg-blue-100 text-blue-700',
+  weekly: 'bg-blue-100 text-blue-700',
   express: 'bg-amber-100 text-amber-700',
 };
 const STATUS_LABEL = { pending: 'Pendiente', cancelled: 'Cancelado' };
 const STATUS_COLOR = {
-  pending:   'bg-yellow-100 text-yellow-700',
+  pending: 'bg-yellow-100 text-yellow-700',
   cancelled: 'bg-red-100 text-red-600',
 };
 
@@ -45,21 +45,22 @@ const STATUS_COLOR = {
 const Payments = () => {
   const { supabase } = useApp();
 
-  const [payments,      setPayments]      = useState([]);
-  const [tab,           setTab]           = useState('week');
-  const [search,        setSearch]        = useState('');
-  const [dateRange,     setDateRange]     = useState({ startDate: null, endDate: null });
+  const [payments, setPayments] = useState([]);
+  const [tab, setTab] = useState('week');
+  const [search, setSearch] = useState('');
+  const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
   const [editingStatus, setEditingStatus] = useState(null); // { id, status }
-  const [statusFilter,  setStatusFilter]  = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   // Order detail modal
-  const [viewingOrder,  setViewingOrder]  = useState(null); // full order object
+  const [viewingOrder, setViewingOrder] = useState(null); // full order object
 
   const fetchPayments = async () => {
     const { data, error } = await supabase
       .schema('operations')
       .from('payments')
-      .select(`
+      .select(
+        `
         id_payment, client_id, payment_type, amount, currency,
         payment_date, status, notes, created_at,
         clients(name),
@@ -75,40 +76,49 @@ const Payments = () => {
             )
           )
         )
-      `)
+      `
+      )
       .order('payment_date', { ascending: false });
 
-    if (error) { console.error(error); return; }
+    if (error) {
+      console.error(error);
+      return;
+    }
     setPayments(data ?? []);
   };
 
   useEffect(() => {
-    (async () => { await fetchPayments(); })();
+    (async () => {
+      await fetchPayments();
+    })();
   }, [supabase]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const { start: weekStart, end: weekEnd } = getWeekRange();
 
-  const weekPayments = payments.filter(p => {
+  const weekPayments = payments.filter((p) => {
     const d = new Date(p.payment_date + 'T00:00:00');
     return d >= weekStart && d <= weekEnd;
   });
 
   const historyPayments = payments
-    .filter(p => (p.clients?.name ?? '').toLowerCase().includes(search.toLowerCase()))
-    .filter(p => {
+    .filter((p) => (p.clients?.name ?? '').toLowerCase().includes(search.toLowerCase()))
+    .filter((p) => {
       if (!dateRange.startDate || !dateRange.endDate) return true;
       const d = new Date(p.payment_date + 'T00:00:00');
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
-  const displayList = (tab === 'week' ? weekPayments : historyPayments)
-    .filter(p => statusFilter === 'all' || p.status === statusFilter);
+  const displayList = (tab === 'week' ? weekPayments : historyPayments).filter(
+    (p) => statusFilter === 'all' || p.status === statusFilter
+  );
 
-  const totalWeek     = weekPayments.reduce((s, p) => s + (p.amount || 0), 0);
-  const totalAll      = payments.reduce((s, p) => s + (p.amount || 0), 0);
-  const pendingCount  = payments.filter(p => p.status === 'pending').length;
-  const pendingAmount = payments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0);
+  const totalWeek = weekPayments.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalAll = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const pendingCount = payments.filter((p) => p.status === 'pending').length;
+  const pendingAmount = payments
+    .filter((p) => p.status === 'pending')
+    .reduce((s, p) => s + (p.amount || 0), 0);
 
   // ── Status update ─────────────────────────────────────────────────────────
   const handleStatusSave = async (id, newStatus) => {
@@ -118,7 +128,10 @@ const Payments = () => {
       .update({ status: newStatus })
       .eq('id_payment', id);
 
-    if (error) { sileo.error('No se pudo actualizar el estado'); return; }
+    if (error) {
+      sileo.error('No se pudo actualizar el estado');
+      return;
+    }
     sileo.success('Estado actualizado');
     setEditingStatus(null);
     await fetchPayments();
@@ -134,10 +147,7 @@ const Payments = () => {
       {/* Order Detail Modal */}
       <AnimatePresence>
         {viewingOrder && (
-          <OrderDetailModal
-            order={viewingOrder}
-            onClose={() => setViewingOrder(null)}
-          />
+          <OrderDetailModal order={viewingOrder} onClose={() => setViewingOrder(null)} />
         )}
       </AnimatePresence>
 
@@ -176,18 +186,33 @@ const Payments = () => {
       {/* Tab + Status filter */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-          {[['week', 'Esta Semana'], ['history', 'Historial']].map(([val, lbl]) => (
-            <button key={val} onClick={() => setTab(val)}
+          {[
+            ['week', 'Esta Semana'],
+            ['history', 'Historial'],
+          ].map(([val, lbl]) => (
+            <button
+              key={val}
+              onClick={() => setTab(val)}
               className={`px-5 py-2.5 text-sm font-medium transition ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-            >{lbl}</button>
+            >
+              {lbl}
+            </button>
           ))}
         </div>
 
         <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-          {[['all', 'Todos'], ['pending', 'Pendientes'], ['cancelled', 'Cancelados']].map(([val, lbl]) => (
-            <button key={val} onClick={() => setStatusFilter(val)}
+          {[
+            ['all', 'Todos'],
+            ['pending', 'Pendientes'],
+            ['cancelled', 'Cancelados'],
+          ].map(([val, lbl]) => (
+            <button
+              key={val}
+              onClick={() => setStatusFilter(val)}
               className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-            >{lbl}</button>
+            >
+              {lbl}
+            </button>
           ))}
         </div>
       </div>
@@ -205,8 +230,10 @@ const Payments = () => {
             <div className="relative max-w-md">
               <Search size={18} className="absolute left-4 top-3.5 text-slate-400" />
               <input
-                type="text" placeholder="Buscar cliente…"
-                value={search} onChange={e => setSearch(e.target.value)}
+                type="text"
+                placeholder="Buscar cliente…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
               />
             </div>
@@ -222,7 +249,9 @@ const Payments = () => {
         onStatusSave={handleStatusSave}
         onStatusCancel={() => setEditingStatus(null)}
         onViewOrder={setViewingOrder}
-        emptyMessage={tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'}
+        emptyMessage={
+          tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
+        }
       />
     </motion.div>
   );
@@ -247,7 +276,13 @@ const SummaryCard = ({ icon, label, value, colorClass }) => (
 // ── PaymentTable ──────────────────────────────────────────────────────────────
 
 const PaymentTable = ({
-  payments, editingStatus, onStatusEdit, onStatusSave, onStatusCancel, onViewOrder, emptyMessage,
+  payments,
+  editingStatus,
+  onStatusEdit,
+  onStatusSave,
+  onStatusCancel,
+  onViewOrder,
+  emptyMessage,
 }) => {
   // Which monthly payment is expanded (showing its order list)
   const [expandedPayment, setExpandedPayment] = useState(null);
@@ -287,9 +322,9 @@ const PaymentTable = ({
           </thead>
           <tbody>
             {payments.map((p, i) => {
-              const isEditing  = editingStatus?.id === p.id_payment;
-              const isMonthly  = p.payment_type === 'monthly';
-              const orders     = (p.payment_orders ?? []).map(po => po.orders).filter(Boolean);
+              const isEditing = editingStatus?.id === p.id_payment;
+              const isMonthly = p.payment_type === 'monthly';
+              const orders = (p.payment_orders ?? []).map((po) => po.orders).filter(Boolean);
               const isExpanded = expandedPayment === p.id_payment;
 
               return (
@@ -299,13 +334,17 @@ const PaymentTable = ({
                   >
                     {/* Cliente */}
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-slate-800">{p.clients?.name ?? `Cliente ${p.client_id}`}</p>
+                      <p className="font-medium text-slate-800">
+                        {p.clients?.name ?? `Cliente ${p.client_id}`}
+                      </p>
                       {p.notes && <p className="text-xs text-slate-400 mt-0.5">{p.notes}</p>}
                     </td>
 
                     {/* Tipo */}
                     <td className="px-5 py-3.5">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${TYPE_COLOR[p.payment_type] ?? 'bg-slate-100 text-slate-600'}`}>
+                      <span
+                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${TYPE_COLOR[p.payment_type] ?? 'bg-slate-100 text-slate-600'}`}
+                      >
                         {TYPE_LABEL[p.payment_type] ?? p.payment_type}
                       </span>
                     </td>
@@ -342,7 +381,9 @@ const PaymentTable = ({
                         <div className="flex items-center justify-center gap-1">
                           <select
                             value={editingStatus.status}
-                            onChange={e => onStatusEdit({ id: p.id_payment, status: e.target.value })}
+                            onChange={(e) =>
+                              onStatusEdit({ id: p.id_payment, status: e.target.value })
+                            }
                             className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
                           >
                             <option value="pending">Pendiente</option>
@@ -362,7 +403,9 @@ const PaymentTable = ({
                           </button>
                         </div>
                       ) : (
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                        <span
+                          className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}
+                        >
                           {STATUS_LABEL[p.status] ?? p.status}
                         </span>
                       )}
@@ -436,23 +479,36 @@ const PaymentTable = ({
 
 // ── OrderMiniRow — compact order row inside expanded monthly payment ───────────
 
-const ORDER_STATUS_LABEL = { PENDING: 'Pendiente', PACKED: 'Empacado', DELIVERED: 'Entregado', CANCELLED: 'Cancelado' };
+const ORDER_STATUS_LABEL = {
+  PENDING: 'Pendiente',
+  PACKED: 'Empacado',
+  DELIVERED: 'Entregado',
+  CANCELLED: 'Cancelado',
+};
 const ORDER_STATUS_COLOR = {
-  PENDING:   'bg-amber-100 text-amber-700',
-  PACKED:    'bg-blue-100 text-blue-700',
+  PENDING: 'bg-amber-100 text-amber-700',
+  PACKED: 'bg-blue-100 text-blue-700',
   DELIVERED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-600',
 };
-const CLS_LABEL = { Lunch: 'Almuerzo', Dinner: 'Cena', Family: 'Familiar', both: 'Almuerzo + Cena' };
+const CLS_LABEL = {
+  Lunch: 'Almuerzo',
+  Dinner: 'Cena',
+  Family: 'Familiar',
+  both: 'Almuerzo + Cena',
+};
 
-const fmtShort = (str) => str
-  ? new Date(str + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'short' })
-  : '—';
+const fmtShort = (str) =>
+  str
+    ? new Date(str + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'short' })
+    : '—';
 
 const OrderMiniRow = ({ order, onView }) => (
   <div className="flex items-center justify-between gap-3 bg-white rounded-xl px-3 py-2 shadow-sm">
     <div className="flex items-center gap-2 min-w-0">
-      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${ORDER_STATUS_COLOR[order.status] ?? 'bg-slate-100 text-slate-600'}`}>
+      <span
+        className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${ORDER_STATUS_COLOR[order.status] ?? 'bg-slate-100 text-slate-600'}`}
+      >
         {ORDER_STATUS_LABEL[order.status] ?? order.status}
       </span>
       <span className="text-xs font-medium text-slate-700 truncate">

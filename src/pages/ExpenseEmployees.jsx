@@ -170,7 +170,9 @@ const ExpenseEmployees = () => {
           </div>
           <div>
             <p className="text-sm text-slate-500">Total Pagado</p>
-            <p className="text-xl font-semibold text-slate-800">₡{totalExpenses.toLocaleString()}</p>
+            <p className="text-xl font-semibold text-slate-800">
+              ₡{totalExpenses.toLocaleString()}
+            </p>
           </div>
         </motion.div>
 

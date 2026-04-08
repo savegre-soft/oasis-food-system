@@ -17,10 +17,7 @@ const PaymentAdd = ({ clientId, onSuccess }) => {
 
   const GetTypes = async () => {
     try {
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('PaymentsType')
-        .select('*');
+      const { data, error } = await supabase.schema('operations').from('PaymentsType').select('*');
 
       if (error) throw error;
 
@@ -41,10 +38,7 @@ const PaymentAdd = ({ clientId, onSuccess }) => {
     try {
       setLoading(true);
 
-      const { error } = await supabase
-        .schema('operations')
-        .from('Payments')
-        .insert([payment]);
+      const { error } = await supabase.schema('operations').from('Payments').insert([payment]);
 
       if (error) throw error;
 

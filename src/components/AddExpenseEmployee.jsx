@@ -67,7 +67,9 @@ const AddExpenseEmployee = ({ onAdded, expense }) => {
       onAdded?.();
     } catch (error) {
       console.error(error);
-      sileo.error(isEditing ? 'No se pudo actualizar el registro' : 'No se pudo guardar el registro');
+      sileo.error(
+        isEditing ? 'No se pudo actualizar el registro' : 'No se pudo guardar el registro'
+      );
     } finally {
       setLoading(false);
     }

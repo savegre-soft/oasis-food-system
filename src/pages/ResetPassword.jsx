@@ -24,11 +24,7 @@ const ResetPassword = () => {
       if (accessToken) sessionStorage.setItem('access_token', accessToken);
       if (refreshToken) sessionStorage.setItem('refresh_token', refreshToken);
 
-      window.history.replaceState(
-        null,
-        '',
-        window.location.pathname + window.location.search
-      );
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }, []);
 
@@ -57,11 +53,10 @@ const ResetPassword = () => {
 
       const accessToken = sessionStorage.getItem('access_token');
 
-      const { data, error: supabaseError } =
-        await supabase.auth.updateUser(
-          { password },
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
+      const { data, error: supabaseError } = await supabase.auth.updateUser(
+        { password },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
 
       if (supabaseError) {
         setError(supabaseError.message);
@@ -91,9 +86,7 @@ const ResetPassword = () => {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md"
       >
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          Restablecer contraseña
-        </h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">Restablecer contraseña</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input

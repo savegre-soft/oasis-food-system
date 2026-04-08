@@ -54,9 +54,7 @@ const Bills = () => {
       return;
     }
 
-    const catMap = Object.fromEntries(
-      (catData || []).map((c) => [c.id_expense_category, c.name])
-    );
+    const catMap = Object.fromEntries((catData || []).map((c) => [c.id_expense_category, c.name]));
 
     const formatted = data.map((item) => ({
       id: item.id_expense,

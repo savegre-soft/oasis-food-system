@@ -1,40 +1,38 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useApp } from "../context/AppContext";
-import { sileo } from "sileo";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+import { sileo } from 'sileo';
 
 const ChangePassword = () => {
-
   const { supabase } = useApp();
   const navigate = useNavigate();
 
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [urlError, setUrlError] = useState(null);
 
   useEffect(() => {
-
     const hash = window.location.hash;
 
     if (!hash) return;
 
-    const params = new URLSearchParams(hash.replace("#", ""));
+    const params = new URLSearchParams(hash.replace('#', ''));
 
-    const access_token = params.get("access_token");
-    const refresh_token = params.get("refresh_token");
-    const error = params.get("error");
-    const description = params.get("error_description");
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    const error = params.get('error');
+    const description = params.get('error_description');
 
     // manejar errores
     if (error) {
-      const message = decodeURIComponent(description || "Error en el enlace");
+      const message = decodeURIComponent(description || 'Error en el enlace');
 
       setUrlError(message);
 
       sileo.error({
-        title: "Link inválido",
-        description: message
+        title: 'Link inválido',
+        description: message,
       });
 
       return;
@@ -44,54 +42,49 @@ const ChangePassword = () => {
     if (access_token && refresh_token) {
       supabase.auth.setSession({
         access_token,
-        refresh_token
+        refresh_token,
       });
     }
-
   }, []);
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
     if (!password || !confirm) {
-      sileo.error({ title: "Completa los campos" });
+      sileo.error({ title: 'Completa los campos' });
       return;
     }
 
     if (password !== confirm) {
-      sileo.error({ title: "Las contraseñas no coinciden" });
+      sileo.error({ title: 'Las contraseñas no coinciden' });
       return;
     }
 
     try {
-
       setLoading(true);
 
       const { error } = await supabase.auth.updateUser({
-        password
+        password,
       });
 
       if (error) {
         sileo.error({
-          title: "Error",
-          description: error.message
+          title: 'Error',
+          description: error.message,
         });
         return;
       }
 
       sileo.success({
-        title: "Contraseña actualizada"
+        title: 'Contraseña actualizada',
       });
 
-      navigate("/login");
-
+      navigate('/login');
     } catch (err) {
-
       sileo.error({
-        title: "Error inesperado",
-        description: err.message
+        title: 'Error inesperado',
+        description: err.message,
       });
-
     } finally {
       setLoading(false);
     }
@@ -104,7 +97,7 @@ const ChangePassword = () => {
           <h2 className="text-lg font-bold mb-2">Link inválido</h2>
           <p className="text-gray-600 mb-4">{urlError}</p>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => navigate('/login')}
             className="bg-green-700 text-white px-4 py-2 rounded"
           >
             Volver al login
@@ -116,21 +109,16 @@ const ChangePassword = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-800 p-6">
-
       <div className="bg-white w-full max-w-md rounded-xl shadow-xl p-8">
-
-        <h2 className="text-xl font-bold text-center mb-6">
-          Cambiar contraseña
-        </h2>
+        <h2 className="text-xl font-bold text-center mb-6">Cambiar contraseña</h2>
 
         <form onSubmit={handleChangePassword} className="space-y-4">
-
           <input
             type="password"
             placeholder="Nueva contraseña"
             className="w-full border rounded-lg p-3"
             value={password}
-            onChange={(e)=>setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
           />
 
           <input
@@ -138,7 +126,7 @@ const ChangePassword = () => {
             placeholder="Confirmar contraseña"
             className="w-full border rounded-lg p-3"
             value={confirm}
-            onChange={(e)=>setConfirm(e.target.value)}
+            onChange={(e) => setConfirm(e.target.value)}
           />
 
           <button
@@ -146,13 +134,10 @@ const ChangePassword = () => {
             disabled={loading}
             className="w-full bg-green-700 text-white py-3 rounded-lg"
           >
-            {loading ? "Actualizando..." : "Cambiar contraseña"}
+            {loading ? 'Actualizando...' : 'Cambiar contraseña'}
           </button>
-
         </form>
-
       </div>
-
     </div>
   );
 };

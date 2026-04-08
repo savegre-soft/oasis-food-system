@@ -97,7 +97,12 @@ export const useDashboardData = () => {
     const init = async () => {
       try {
         setLoading(true);
-        await Promise.all([fetchClientCount(), fetchDistrictsAndClients(), fetchTotalOrders(), fetchOrdersByDate()]);
+        await Promise.all([
+          fetchClientCount(),
+          fetchDistrictsAndClients(),
+          fetchTotalOrders(),
+          fetchOrdersByDate(),
+        ]);
       } catch (err) {
         console.error(err);
         setError(err.message);

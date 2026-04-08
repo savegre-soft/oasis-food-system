@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useApp } from "../context/AppContext";
+import { useEffect, useState } from 'react';
+import { useApp } from '../context/AppContext';
 
 export default function useCustomers() {
   const { supabase } = useApp();
@@ -7,9 +7,10 @@ export default function useCustomers() {
 
   const fetchCustomers = async () => {
     const { data, error } = await supabase
-      .schema("operations")
-      .from("clients")
-      .select(`
+      .schema('operations')
+      .from('clients')
+      .select(
+        `
         *,
         lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey (
           id_macro_profile, name,
@@ -21,8 +22,9 @@ export default function useCustomers() {
           protein_value, protein_unit,
           carb_value, carb_unit
         )
-      `)
-      .order("id_client", { ascending: false });
+      `
+      )
+      .order('id_client', { ascending: false });
 
     if (data) setCustomers(data);
     if (error) console.error(error);
@@ -30,20 +32,20 @@ export default function useCustomers() {
 
   const eliminar = async (id) => {
     const { error } = await supabase
-      .schema("operations")
-      .from("clients")
+      .schema('operations')
+      .from('clients')
       .update({ is_active: false })
-      .eq("id_client", id);
+      .eq('id_client', id);
 
     if (!error) fetchCustomers();
   };
 
   const reactivar = async (id) => {
     const { error } = await supabase
-      .schema("operations")
-      .from("clients")
+      .schema('operations')
+      .from('clients')
       .update({ is_active: true })
-      .eq("id_client", id);
+      .eq('id_client', id);
 
     if (!error) fetchCustomers();
   };

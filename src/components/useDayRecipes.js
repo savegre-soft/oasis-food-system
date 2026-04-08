@@ -6,66 +6,79 @@ import { DAYS_ORDER } from './orderUtils';
 export const useDayRecipes = () => {
   const { supabase } = useApp();
 
-  const [dayRecipes,          setDayRecipes]          = useState(() => {
+  const [dayRecipes, setDayRecipes] = useState(() => {
     const init = {};
-    DAYS_ORDER.forEach(d => { init[d] = []; });
+    DAYS_ORDER.forEach((d) => {
+      init[d] = [];
+    });
     return init;
   });
-  const [recipeIngredients,   setRecipeIngredients]   = useState({});
+  const [recipeIngredients, setRecipeIngredients] = useState({});
   const [ingredientOverrides, setIngredientOverrides] = useState({});
-  const [expandedDays,        setExpandedDays]        = useState({});
+  const [expandedDays, setExpandedDays] = useState({});
 
   // ── Fetch ingredients for a list of recipe IDs ───────────────────────────
 
-  const fetchRecipeIngredients = useCallback(async (ids) => {
-    const toFetch = ids.filter(id => id && !recipeIngredients[String(id)]);
-    if (toFetch.length === 0) return;
-    const { data } = await supabase
-      .schema('operations')
-      .from('recipe_ingredients')
-      .select('id_recipe_ingredient, recipe_id, name, category')
-      .in('recipe_id', toFetch);
-    if (!data) return;
-    // Normalize keys to String for consistent lookup regardless of number/string source
-    const grouped = {};
-    toFetch.forEach(id => { grouped[String(id)] = { protein: [], carb: [], extra: [] }; });
-    data.forEach(ing => {
-      const key = String(ing.recipe_id);
-      if (grouped[key]) grouped[key][ing.category]?.push(ing.name);
-    });
-    setRecipeIngredients(prev => ({ ...prev, ...grouped }));
-  }, [supabase, recipeIngredients]);
+  const fetchRecipeIngredients = useCallback(
+    async (ids) => {
+      const toFetch = ids.filter((id) => id && !recipeIngredients[String(id)]);
+      if (toFetch.length === 0) return;
+      const { data } = await supabase
+        .schema('operations')
+        .from('recipe_ingredients')
+        .select('id_recipe_ingredient, recipe_id, name, category')
+        .in('recipe_id', toFetch);
+      if (!data) return;
+      // Normalize keys to String for consistent lookup regardless of number/string source
+      const grouped = {};
+      toFetch.forEach((id) => {
+        grouped[String(id)] = { protein: [], carb: [], extra: [] };
+      });
+      data.forEach((ing) => {
+        const key = String(ing.recipe_id);
+        if (grouped[key]) grouped[key][ing.category]?.push(ing.name);
+      });
+      setRecipeIngredients((prev) => ({ ...prev, ...grouped }));
+    },
+    [supabase, recipeIngredients]
+  );
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   const addRecipeToDay = useCallback((day, recipeId = '', recipeName = '', isExtra = true) => {
-    setDayRecipes(prev => ({
+    setDayRecipes((prev) => ({
       ...prev,
-      [day]: [...(prev[day] ?? []), { recipe_id: recipeId, recipe_name: recipeName, quantity: 1, isExtra }],
+      [day]: [
+        ...(prev[day] ?? []),
+        { recipe_id: recipeId, recipe_name: recipeName, quantity: 1, isExtra },
+      ],
     }));
   }, []);
 
-  const updateRecipeInDay = useCallback((day, index, field, value, allRecipes = []) => {
-    setDayRecipes(prev => {
-      const updated = [...(prev[day] ?? [])];
-      if (field === 'recipe_id') {
-        const found = allRecipes.find(r => String(r.id_recipe) === String(value));
-        updated[index] = { ...updated[index], recipe_id: value, recipe_name: found?.name ?? '' };
-        if (value) fetchRecipeIngredients([value]);
-      } else {
-        updated[index] = { ...updated[index], [field]: value };
-      }
-      return { ...prev, [day]: updated };
-    });
-  }, [fetchRecipeIngredients]);
+  const updateRecipeInDay = useCallback(
+    (day, index, field, value, allRecipes = []) => {
+      setDayRecipes((prev) => {
+        const updated = [...(prev[day] ?? [])];
+        if (field === 'recipe_id') {
+          const found = allRecipes.find((r) => String(r.id_recipe) === String(value));
+          updated[index] = { ...updated[index], recipe_id: value, recipe_name: found?.name ?? '' };
+          if (value) fetchRecipeIngredients([value]);
+        } else {
+          updated[index] = { ...updated[index], [field]: value };
+        }
+        return { ...prev, [day]: updated };
+      });
+    },
+    [fetchRecipeIngredients]
+  );
 
   const removeRecipeFromDay = useCallback((day, index) => {
-    setDayRecipes(prev => {
+    setDayRecipes((prev) => {
       const updated = [...(prev[day] ?? [])];
       updated.splice(index, 1);
       return { ...prev, [day]: updated };
     });
-    setIngredientOverrides(prev => {
+    setIngredientOverrides((prev) => {
       const next = { ...prev };
       delete next[`${day}-${index}`];
       return next;
@@ -73,36 +86,46 @@ export const useDayRecipes = () => {
   }, []);
 
   const setOverride = useCallback((day, index, value) => {
-    setIngredientOverrides(prev => ({ ...prev, [`${day}-${index}`]: value }));
+    setIngredientOverrides((prev) => ({ ...prev, [`${day}-${index}`]: value }));
   }, []);
 
   const toggleDay = useCallback((day) => {
-    setExpandedDays(prev => ({ ...prev, [day]: !prev[day] }));
+    setExpandedDays((prev) => ({ ...prev, [day]: !prev[day] }));
   }, []);
 
   // ── Bulk load (used by EditOrder to pre-fill from existing order) ─────────
 
-  const loadFromOrderDays = useCallback((orderDays, allRecipes = []) => {
-    const recipes = {};
-    DAYS_ORDER.forEach(d => { recipes[d] = []; });
-    orderDays.forEach(od => {
-      recipes[od.day_of_week] = (od.order_day_details ?? []).map(det => ({
-        recipe_id:   String(det.recipe_id ?? det.recipes?.id_recipe ?? ''),
-        recipe_name: det.recipes?.name ?? '',
-        quantity:    det.quantity ?? 1,
-        isExtra:     true,   // treat all existing recipes as extras so extraCount works in EditOrder
-      }));
-    });
-    setDayRecipes(recipes);
-    // Pre-fetch ingredients for loaded recipes
-    const ids = Object.values(recipes).flat().map(r => r.recipe_id).filter(Boolean);
-    if (ids.length > 0) fetchRecipeIngredients(ids);
-  }, [fetchRecipeIngredients]);
+  const loadFromOrderDays = useCallback(
+    (orderDays, allRecipes = []) => {
+      const recipes = {};
+      DAYS_ORDER.forEach((d) => {
+        recipes[d] = [];
+      });
+      orderDays.forEach((od) => {
+        recipes[od.day_of_week] = (od.order_day_details ?? []).map((det) => ({
+          recipe_id: String(det.recipe_id ?? det.recipes?.id_recipe ?? ''),
+          recipe_name: det.recipes?.name ?? '',
+          quantity: det.quantity ?? 1,
+          isExtra: true, // treat all existing recipes as extras so extraCount works in EditOrder
+        }));
+      });
+      setDayRecipes(recipes);
+      // Pre-fetch ingredients for loaded recipes
+      const ids = Object.values(recipes)
+        .flat()
+        .map((r) => r.recipe_id)
+        .filter(Boolean);
+      if (ids.length > 0) fetchRecipeIngredients(ids);
+    },
+    [fetchRecipeIngredients]
+  );
 
   return {
-    dayRecipes,        setDayRecipes,
+    dayRecipes,
+    setDayRecipes,
     recipeIngredients,
-    ingredientOverrides, setIngredientOverrides,
+    ingredientOverrides,
+    setIngredientOverrides,
     expandedDays,
     addRecipeToDay,
     updateRecipeInDay,
