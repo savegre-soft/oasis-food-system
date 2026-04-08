@@ -138,7 +138,10 @@ export default function Navbar() {
                   <div className="px-4 py-2 text-xs text-gray-500 border-b">{user.email}</div>
                 )}
 
-                <button className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100">
+                <button
+                  onClick={() => { setOpenMenu(null); nav('/perfil'); }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100"
+                >
                   <User size={16} />
                   Perfil
                 </button>

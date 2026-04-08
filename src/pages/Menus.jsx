@@ -128,7 +128,7 @@ const Menus = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar receta..."
-            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm bg-white"
+            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 text-sm bg-white"
           />
         </div>
 

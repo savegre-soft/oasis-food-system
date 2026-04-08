@@ -14,16 +14,14 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!sessionStorage.getItem('access_token')) {
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
 
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
 
-      if (accessToken) sessionStorage.setItem('access_token', accessToken);
-      if (refreshToken) sessionStorage.setItem('refresh_token', refreshToken);
-
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
   }, []);
@@ -38,8 +36,8 @@ const ResetPassword = () => {
       return;
     }
 
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
 
@@ -51,29 +49,21 @@ const ResetPassword = () => {
     try {
       setLoading(true);
 
-      const accessToken = sessionStorage.getItem('access_token');
-
-      const { data, error: supabaseError } = await supabase.auth.updateUser(
-        { password },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      const { error: supabaseError } = await supabase.auth.updateUser({ password });
 
       if (supabaseError) {
-        setError(supabaseError.message);
-        sileo.error(supabaseError.message);
+        setError('No se pudo actualizar la contraseña. Verifica que el enlace sea válido.');
+        sileo.error({ title: 'Error al actualizar la contraseña' });
       } else {
         setSuccess('Contraseña actualizada correctamente.');
-        sileo.success('Contraseña actualizada');
+        sileo.success({ title: 'Contraseña actualizada' });
 
         setTimeout(() => {
           navigate('/login');
         }, 1500);
-
-        console.log('User updated:', data);
       }
-    } catch (err) {
+    } catch {
       setError('Ocurrió un error al actualizar la contraseña.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -91,7 +81,7 @@ const ResetPassword = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
-            placeholder="Nueva contraseña"
+            placeholder="Nueva contraseña (mín. 8 caracteres)"
             className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

@@ -20,7 +20,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-300 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Navbar */}
       <Navbar />
 

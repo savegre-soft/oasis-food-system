@@ -30,21 +30,17 @@ const ForgotPassword = () => {
       });
 
       if (error) {
-        sileo.error({
-          title: 'Error',
-          description: error.message,
-        });
-        return;
+        // Always show success to prevent email enumeration
       }
 
       sileo.success({
         title: 'Correo enviado',
-        description: 'Revisa tu correo para cambiar la contraseña',
+        description: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña',
       });
-    } catch (err) {
+    } catch {
       sileo.error({
         title: 'Error inesperado',
-        description: err.message,
+        description: 'Ocurrió un error. Intenta de nuevo.',
       });
     } finally {
       setLoading(false);

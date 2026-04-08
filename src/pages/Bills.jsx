@@ -121,13 +121,13 @@ const GastosTab = () => {
           <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
             <button
               onClick={() => setView('cards')}
-              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'cards' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'cards' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <LayoutGrid size={16} /> Cards
             </button>
             <button
               onClick={() => setView('table')}
-              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'table' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <Table size={16} /> Tabla
             </button>
@@ -136,7 +136,7 @@ const GastosTab = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md"
           >
             <Plus size={18} /> Nuevo Gasto
           </motion.button>
@@ -152,7 +152,7 @@ const GastosTab = () => {
           placeholder="Buscar gasto..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+          className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
         />
       </div>
 
@@ -277,13 +277,13 @@ const PersonalTab = () => {
           <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
             <button
               onClick={() => setView('cards')}
-              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'cards' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'cards' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <LayoutGrid size={16} /> Cards
             </button>
             <button
               onClick={() => setView('table')}
-              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`flex items-center gap-2 px-4 py-2 transition ${view === 'table' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               <Table size={16} /> Tabla
             </button>
@@ -292,7 +292,7 @@ const PersonalTab = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-md"
           >
             <Plus size={18} /> Nuevo Registro
           </motion.button>
@@ -308,7 +308,7 @@ const PersonalTab = () => {
           placeholder="Buscar empleado..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+          className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-400 transition"
         />
       </div>
 
@@ -346,7 +346,7 @@ const Bills = () => {
 
   return (
     <motion.div
-      className="min-h-screen bg-slate-100 rounded p-8"
+      className="min-h-screen bg-slate-50 rounded p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
@@ -364,14 +364,14 @@ const Bills = () => {
       <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden w-fit mb-6">
         <button
           onClick={() => setTab('operativos')}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'operativos' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'operativos' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
         >
           <DollarSign size={15} />
           Gastos Operativos
         </button>
         <button
           onClick={() => setTab('personal')}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'personal' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'personal' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
         >
           <Users size={15} />
           Personal

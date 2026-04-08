@@ -42,8 +42,8 @@ const Login = () => {
 
       if (error) {
         sileo.error({
-          title: 'Error al iniciar sesión',
-          description: error.message,
+          title: 'Credenciales inválidas',
+          description: 'Correo o contraseña incorrectos',
         });
         return;
       }
@@ -54,10 +54,10 @@ const Login = () => {
       });
 
       navigate('/main');
-    } catch (err) {
+    } catch {
       sileo.error({
         title: 'Error inesperado',
-        description: err.message,
+        description: 'Ocurrió un error. Intenta de nuevo.',
       });
     } finally {
       setLoading(false);

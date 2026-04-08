@@ -40,7 +40,7 @@ const CLIENT_COLORS = ['#10b981', '#94a3b8'];             // Activos / Inactivos
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 const StatCard = ({ label, value, sub, accent = 'text-slate-800' }) => (
-  <div className="bg-white rounded-2xl shadow p-5">
+  <div className="bg-white rounded-2xl shadow-sm p-5">
     <p className="text-xs text-gray-500 mb-1">{label}</p>
     <p className={`text-3xl font-bold ${accent}`}>{value}</p>
     {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
@@ -48,7 +48,7 @@ const StatCard = ({ label, value, sub, accent = 'text-slate-800' }) => (
 );
 
 const ChartCard = ({ title, sub, loading, children }) => (
-  <div className="bg-white rounded-2xl shadow p-6 relative">
+  <div className="bg-white rounded-2xl shadow-sm p-6 relative">
     <div className="mb-4">
       <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
       {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
@@ -124,7 +124,7 @@ const DateFilter = ({ dateRange, setDateRange }) => {
           value={dateRange.from}
           max={dateRange.to}
           onChange={(e) => setDateRange((r) => ({ ...r, from: e.target.value }))}
-          className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
         <span className="text-xs text-slate-400">→</span>
         <input
@@ -132,7 +132,7 @@ const DateFilter = ({ dateRange, setDateRange }) => {
           value={dateRange.to}
           min={dateRange.from}
           onChange={(e) => setDateRange((r) => ({ ...r, to: e.target.value }))}
-          className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
         />
       </div>
     </div>
@@ -186,8 +186,8 @@ export default function Main() {
   const periodLabel = `${dateRange.from} → ${dateRange.to}`;
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen space-y-5">
-      <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+    <div className="p-8 bg-slate-50 min-h-screen space-y-5">
+      <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
 
       {/* ── Date filter ── */}
       <DateFilter dateRange={dateRange} setDateRange={setDateRange} />
@@ -375,7 +375,7 @@ export default function Main() {
       </ChartCard>
 
       {/* ── Mapa ── */}
-      <div className="relative z-0 bg-white rounded-2xl shadow p-6">
+      <div className="relative z-0 bg-white rounded-2xl shadow-sm p-6">
         <h2 className="text-sm font-semibold text-slate-700 mb-1">Mapa de clientes</h2>
         <p className="text-xs text-slate-400 mb-4">todos los registrados</p>
         <MapContainer center={[9.9333, -84.0833]} zoom={10} className="h-100 w-full rounded-xl">
