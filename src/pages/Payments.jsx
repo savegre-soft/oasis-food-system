@@ -1,11 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { DollarSign, TrendingUp, Clock, Search, Pencil, Check, X, Eye } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { DollarSign, TrendingUp, Clock, Search, Pencil, Check, X, Eye, BarChart2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
+
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
 import { useApp } from '../context/AppContext';
 import DatePicker from '../components/DatePicker';
 import OrderDetailModal from '../components/OrderDetailModal';
+import { getThisWeek, getLast, getThisMonth } from '../hooks/useDashboardData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -28,6 +47,15 @@ const formatDate = (dateStr) => {
   return `${d}/${m}/${y}`;
 };
 
+const isoWeekMonday = (dateStr) => {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+  return monday.toISOString().split('T')[0];
+};
+
 const TYPE_LABEL = { monthly: 'Mensual', weekly: 'Semanal', express: 'Express' };
 const TYPE_COLOR = {
   monthly: 'bg-violet-100 text-violet-700',
@@ -40,6 +68,24 @@ const STATUS_COLOR = {
   cancelled: 'bg-red-100 text-red-600',
 };
 
+// ── Chart colors ──────────────────────────────────────────────────────────────
+
+const TYPE_PIE_COLORS = ['#6366f1', '#3b82f6', '#f59e0b'];
+const STATUS_PIE_COLORS = ['#f59e0b', '#ef4444'];
+const CLIENT_BAR_COLORS = [
+  '#10b981', '#3b82f6', '#6366f1', '#f59e0b',
+  '#f97316', '#a855f7', '#14b8a6', '#64748b',
+];
+
+// ── Chart presets ─────────────────────────────────────────────────────────────
+
+const CHART_PRESETS = [
+  { label: 'Esta semana', fn: getThisWeek },
+  { label: 'Últimos 7 días', fn: () => getLast(7) },
+  { label: 'Este mes', fn: getThisMonth },
+  { label: 'Últimos 30 días', fn: () => getLast(30) },
+];
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 const Payments = () => {
@@ -49,11 +95,12 @@ const Payments = () => {
   const [tab, setTab] = useState('week');
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
-  const [editingStatus, setEditingStatus] = useState(null); // { id, status }
+  const [editingStatus, setEditingStatus] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [chartRange, setChartRange] = useState(getThisMonth);
 
   // Order detail modal
-  const [viewingOrder, setViewingOrder] = useState(null); // full order object
+  const [viewingOrder, setViewingOrder] = useState(null);
 
   const fetchPayments = async () => {
     const { data, error } = await supabase
@@ -93,7 +140,7 @@ const Payments = () => {
     })();
   }, [supabase]);
 
-  // ── Derived data ──────────────────────────────────────────────────────────
+  // ── Derived data — table ──────────────────────────────────────────────────
   const { start: weekStart, end: weekEnd } = getWeekRange();
 
   const weekPayments = payments.filter((p) => {
@@ -119,6 +166,100 @@ const Payments = () => {
   const pendingAmount = payments
     .filter((p) => p.status === 'pending')
     .reduce((s, p) => s + (p.amount || 0), 0);
+
+  // ── Derived data — charts ─────────────────────────────────────────────────
+  const chartPayments = useMemo(() => {
+    const from = new Date(chartRange.from + 'T00:00:00');
+    const to = new Date(chartRange.to + 'T23:59:59');
+    return payments.filter((p) => {
+      const d = new Date(p.payment_date + 'T00:00:00');
+      return d >= from && d <= to;
+    });
+  }, [payments, chartRange]);
+
+  const chartData = useMemo(() => {
+    // Pre-fill all dates in range with 0
+    const dayMap = {};
+    for (
+      let d = new Date(chartRange.from + 'T00:00:00');
+      d <= new Date(chartRange.to + 'T00:00:00');
+      d.setDate(d.getDate() + 1)
+    ) {
+      dayMap[d.toISOString().split('T')[0]] = 0;
+    }
+
+    const typeMap = { monthly: 0, weekly: 0, express: 0 };
+    const statusMap = { pending: 0, cancelled: 0 };
+    const clientMap = {};
+    const weekMap = {};
+
+    chartPayments.forEach((p) => {
+      const amt = p.amount || 0;
+
+      // By day
+      if (p.payment_date in dayMap) dayMap[p.payment_date] += amt;
+
+      // By type
+      if (p.payment_type in typeMap) typeMap[p.payment_type] += amt;
+
+      // By status
+      if (p.status in statusMap) statusMap[p.status] += amt;
+
+      // By client
+      const clientName = p.clients?.name || `Cliente ${p.client_id}`;
+      clientMap[clientName] = (clientMap[clientName] || 0) + amt;
+
+      // By week
+      const weekKey = isoWeekMonday(p.payment_date);
+      weekMap[weekKey] = (weekMap[weekKey] || 0) + amt;
+    });
+
+    // Build ordered day series with cumulative total
+    let running = 0;
+    const incomeByDay = Object.entries(dayMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, total]) => {
+        running += total;
+        return {
+          date: date.slice(5).replace('-', '/'),
+          total,
+          acumulado: running,
+        };
+      });
+
+    const incomeByType = [
+      { name: 'Mensual', value: typeMap.monthly },
+      { name: 'Semanal', value: typeMap.weekly },
+      { name: 'Express', value: typeMap.express },
+    ].filter((x) => x.value > 0);
+
+    const incomeByStatus = [
+      { name: 'Pendiente', value: statusMap.pending },
+      { name: 'Cancelado', value: statusMap.cancelled },
+    ].filter((x) => x.value > 0);
+
+    const topClients = Object.entries(clientMap)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+
+    const weeklyData = Object.entries(weekMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, total]) => ({
+        semana: date.slice(5).replace('-', '/'),
+        total,
+      }));
+
+    const totalChart = chartPayments.reduce((s, p) => s + (p.amount || 0), 0);
+    const pendingChart = chartPayments
+      .filter((p) => p.status === 'pending')
+      .reduce((s, p) => s + (p.amount || 0), 0);
+    const cancelledChart = chartPayments
+      .filter((p) => p.status === 'cancelled')
+      .reduce((s, p) => s + (p.amount || 0), 0);
+
+    return { incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData, totalChart, pendingChart, cancelledChart };
+  }, [chartPayments, chartRange]);
 
   // ── Status update ─────────────────────────────────────────────────────────
   const handleStatusSave = async (id, newStatus) => {
@@ -189,32 +330,36 @@ const Payments = () => {
           {[
             ['week', 'Esta Semana'],
             ['history', 'Historial'],
+            ['stats', 'Estadísticas'],
           ].map(([val, lbl]) => (
             <button
               key={val}
               onClick={() => setTab(val)}
-              className={`px-5 py-2.5 text-sm font-medium transition ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`px-5 py-2.5 text-sm font-medium transition flex items-center gap-1.5 ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
             >
+              {val === 'stats' && <BarChart2 size={14} />}
               {lbl}
             </button>
           ))}
         </div>
 
-        <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-          {[
-            ['all', 'Todos'],
-            ['pending', 'Pendientes'],
-            ['cancelled', 'Cancelados'],
-          ].map(([val, lbl]) => (
-            <button
-              key={val}
-              onClick={() => setStatusFilter(val)}
-              className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-            >
-              {lbl}
-            </button>
-          ))}
-        </div>
+        {tab !== 'stats' && (
+          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+            {[
+              ['all', 'Todos'],
+              ['pending', 'Pendientes'],
+              ['cancelled', 'Cancelados'],
+            ].map(([val, lbl]) => (
+              <button
+                key={val}
+                onClick={() => setStatusFilter(val)}
+                className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* History filters */}
@@ -241,18 +386,30 @@ const Payments = () => {
         )}
       </AnimatePresence>
 
-      {/* Table */}
-      <PaymentTable
-        payments={displayList}
-        editingStatus={editingStatus}
-        onStatusEdit={setEditingStatus}
-        onStatusSave={handleStatusSave}
-        onStatusCancel={() => setEditingStatus(null)}
-        onViewOrder={setViewingOrder}
-        emptyMessage={
-          tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
-        }
-      />
+      {/* Table (week / history tabs) */}
+      {tab !== 'stats' && (
+        <PaymentTable
+          payments={displayList}
+          editingStatus={editingStatus}
+          onStatusEdit={setEditingStatus}
+          onStatusSave={handleStatusSave}
+          onStatusCancel={() => setEditingStatus(null)}
+          onViewOrder={setViewingOrder}
+          emptyMessage={
+            tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
+          }
+        />
+      )}
+
+      {/* Stats tab */}
+      {tab === 'stats' && (
+        <PaymentStats
+          chartRange={chartRange}
+          setChartRange={setChartRange}
+          chartData={chartData}
+          chartPayments={chartPayments}
+        />
+      )}
     </motion.div>
   );
 };
@@ -273,6 +430,316 @@ const SummaryCard = ({ icon, label, value, colorClass }) => (
   </motion.div>
 );
 
+// ── ChartCard ─────────────────────────────────────────────────────────────────
+
+const ChartCard = ({ title, sub, children }) => (
+  <div className="bg-white rounded-2xl shadow-sm p-6">
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+    </div>
+    {children}
+  </div>
+);
+
+// ── StatsDateFilter ───────────────────────────────────────────────────────────
+
+const StatsDateFilter = ({ chartRange, setChartRange }) => {
+  const isPreset = (fn) => {
+    const p = fn();
+    return p.from === chartRange.from && p.to === chartRange.to;
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm px-5 py-4 flex flex-wrap items-center gap-3 mb-6">
+      <span className="text-xs font-medium text-slate-500 shrink-0">Período</span>
+      <div className="flex flex-wrap gap-2">
+        {CHART_PRESETS.map(({ label, fn }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setChartRange(fn())}
+            className={`text-xs px-3 py-1.5 rounded-xl border transition ${
+              isPreset(fn)
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <span className="text-slate-200 hidden sm:block">|</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="date"
+          value={chartRange.from}
+          max={chartRange.to}
+          onChange={(e) => setChartRange((r) => ({ ...r, from: e.target.value }))}
+          className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+        />
+        <span className="text-xs text-slate-400">→</span>
+        <input
+          type="date"
+          value={chartRange.to}
+          min={chartRange.from}
+          onChange={(e) => setChartRange((r) => ({ ...r, to: e.target.value }))}
+          className="text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+        />
+      </div>
+    </div>
+  );
+};
+
+// ── PaymentStats ──────────────────────────────────────────────────────────────
+
+const fmtCRC = (v) => `₡${Number(v).toLocaleString()}`;
+
+const renderDonutLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+  if (percent < 0.05) return null;
+  const RADIAN = Math.PI / 180;
+  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const x = cx + r * Math.cos(-midAngle * RADIAN);
+  const y = cy + r * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
+};
+
+const PaymentStats = ({ chartRange, setChartRange, chartData, chartPayments }) => {
+  const { incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData, totalChart, pendingChart, cancelledChart } = chartData;
+  const periodLabel = `${chartRange.from} → ${chartRange.to}`;
+  const confirmedChart = totalChart - pendingChart - cancelledChart;
+
+  return (
+    <div className="space-y-5">
+      <StatsDateFilter chartRange={chartRange} setChartRange={setChartRange} />
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Total en el período</p>
+          <p className="text-2xl font-bold text-slate-800">{fmtCRC(totalChart)}</p>
+          <p className="text-xs text-gray-400 mt-1">{chartPayments.length} pago{chartPayments.length !== 1 ? 's' : ''}</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Confirmados</p>
+          <p className="text-2xl font-bold text-emerald-600">{fmtCRC(confirmedChart)}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {totalChart > 0 ? `${((confirmedChart / totalChart) * 100).toFixed(0)}% del total` : '—'}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Pendientes</p>
+          <p className="text-2xl font-bold text-amber-500">{fmtCRC(pendingChart)}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {totalChart > 0 ? `${((pendingChart / totalChart) * 100).toFixed(0)}% del total` : '—'}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Cancelados</p>
+          <p className="text-2xl font-bold text-red-500">{fmtCRC(cancelledChart)}</p>
+          <p className="text-xs text-gray-400 mt-1">
+            {totalChart > 0 ? `${((cancelledChart / totalChart) * 100).toFixed(0)}% del total` : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Ingresos por día */}
+      <ChartCard title="Ingresos por día" sub={periodLabel}>
+        {incomeByDay.every((d) => d.total === 0) ? (
+          <p className="text-sm text-slate-400 py-8 text-center">Sin ingresos en el período</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={incomeByDay} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 11 }}
+                interval={Math.max(0, Math.floor(incomeByDay.length / 10) - 1)}
+                stroke="#cbd5e1"
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                stroke="#cbd5e1"
+                tickFormatter={(v) => `₡${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                formatter={(v) => [fmtCRC(v), 'Ingresos']}
+              />
+              <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </ChartCard>
+
+      {/* Flujo acumulado */}
+      <ChartCard title="Flujo acumulado de ingresos" sub={periodLabel}>
+        {incomeByDay.every((d) => d.acumulado === 0) ? (
+          <p className="text-sm text-slate-400 py-8 text-center">Sin ingresos en el período</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={incomeByDay} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 11 }}
+                interval={Math.max(0, Math.floor(incomeByDay.length / 10) - 1)}
+                stroke="#cbd5e1"
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                stroke="#cbd5e1"
+                tickFormatter={(v) => `₡${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                formatter={(v) => [fmtCRC(v), 'Acumulado']}
+              />
+              <Area
+                type="monotone"
+                dataKey="acumulado"
+                stroke="#10b981"
+                strokeWidth={2.5}
+                fill="url(#gradIncome)"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </ChartCard>
+
+      {/* Por tipo + Estado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ChartCard title="Ingresos por tipo de pago" sub={periodLabel}>
+          {incomeByType.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">Sin datos</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={incomeByType}
+                  cx="50%"
+                  cy="45%"
+                  innerRadius={65}
+                  outerRadius={95}
+                  dataKey="value"
+                  labelLine={false}
+                  label={renderDonutLabel}
+                >
+                  {incomeByType.map((_, i) => (
+                    <Cell key={i} fill={TYPE_PIE_COLORS[i % TYPE_PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                  formatter={(v, n) => [fmtCRC(v), n]}
+                />
+                <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Estado de pagos" sub={periodLabel}>
+          {incomeByStatus.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">Sin datos</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={incomeByStatus}
+                  cx="50%"
+                  cy="45%"
+                  innerRadius={65}
+                  outerRadius={95}
+                  dataKey="value"
+                  labelLine={false}
+                  label={renderDonutLabel}
+                >
+                  {incomeByStatus.map((_, i) => (
+                    <Cell key={i} fill={STATUS_PIE_COLORS[i % STATUS_PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                  formatter={(v, n) => [fmtCRC(v), n]}
+                />
+                <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Top clientes */}
+      <ChartCard title="Top clientes por ingreso" sub={periodLabel}>
+        {topClients.length === 0 ? (
+          <p className="text-sm text-slate-400 py-8 text-center">Sin datos</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={Math.max(200, topClients.length * 42)}>
+            <BarChart
+              layout="vertical"
+              data={topClients}
+              margin={{ top: 0, right: 24, left: 8, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11 }}
+                stroke="#cbd5e1"
+                tickFormatter={(v) => `₡${(v / 1000).toFixed(0)}k`}
+              />
+              <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11 }} stroke="#cbd5e1" />
+              <Tooltip
+                contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                formatter={(v) => [fmtCRC(v), 'Ingresos']}
+              />
+              <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={24}>
+                {topClients.map((_, i) => (
+                  <Cell key={i} fill={CLIENT_BAR_COLORS[i % CLIENT_BAR_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </ChartCard>
+
+      {/* Comparativa semanal */}
+      {weeklyData.length > 1 && (
+        <ChartCard title="Comparativa semanal" sub="Ingresos totales por semana en el período">
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={weeklyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="semana" tick={{ fontSize: 11 }} stroke="#cbd5e1" />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                stroke="#cbd5e1"
+                tickFormatter={(v) => `₡${(v / 1000).toFixed(0)}k`}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                formatter={(v) => [fmtCRC(v), 'Ingresos']}
+              />
+              <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={48} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
+    </div>
+  );
+};
+
 // ── PaymentTable ──────────────────────────────────────────────────────────────
 
 const PaymentTable = ({
@@ -284,7 +751,6 @@ const PaymentTable = ({
   onViewOrder,
   emptyMessage,
 }) => {
-  // Which monthly payment is expanded (showing its order list)
   const [expandedPayment, setExpandedPayment] = useState(null);
 
   if (payments.length === 0) {
@@ -332,7 +798,6 @@ const PaymentTable = ({
                   <tr
                     className={`border-t border-slate-100 transition ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}
                   >
-                    {/* Cliente */}
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-slate-800">
                         {p.clients?.name ?? `Cliente ${p.client_id}`}
@@ -340,7 +805,6 @@ const PaymentTable = ({
                       {p.notes && <p className="text-xs text-slate-400 mt-0.5">{p.notes}</p>}
                     </td>
 
-                    {/* Tipo */}
                     <td className="px-5 py-3.5">
                       <span
                         className={`text-xs font-medium px-2.5 py-1 rounded-full ${TYPE_COLOR[p.payment_type] ?? 'bg-slate-100 text-slate-600'}`}
@@ -349,17 +813,14 @@ const PaymentTable = ({
                       </span>
                     </td>
 
-                    {/* Fecha */}
                     <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
                       {formatDate(p.payment_date)}
                     </td>
 
-                    {/* Monto */}
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
                       {p.currency ?? 'CRC'} {Number(p.amount).toLocaleString()}
                     </td>
 
-                    {/* Órdenes */}
                     <td className="px-5 py-3.5 text-center">
                       {isMonthly && orders.length > 0 ? (
                         <button
@@ -375,7 +836,6 @@ const PaymentTable = ({
                       )}
                     </td>
 
-                    {/* Estado */}
                     <td className="px-5 py-3.5 text-center">
                       {isEditing ? (
                         <div className="flex items-center justify-center gap-1">
@@ -411,10 +871,8 @@ const PaymentTable = ({
                       )}
                     </td>
 
-                    {/* Acción */}
                     <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        {/* Ver orden — solo si tiene exactamente 1 orden (weekly/express) */}
                         {!isMonthly && orders.length === 1 && !isEditing && (
                           <button
                             onClick={() => onViewOrder(orders[0])}
@@ -437,7 +895,6 @@ const PaymentTable = ({
                     </td>
                   </tr>
 
-                  {/* Expanded monthly orders list */}
                   {isMonthly && isExpanded && (
                     <tr key={`${p.id_payment}-orders`} className="bg-violet-50">
                       <td colSpan={7} className="px-5 py-3">
@@ -477,7 +934,7 @@ const PaymentTable = ({
   );
 };
 
-// ── OrderMiniRow — compact order row inside expanded monthly payment ───────────
+// ── OrderMiniRow ──────────────────────────────────────────────────────────────
 
 const ORDER_STATUS_LABEL = {
   PENDING: 'Pendiente',
