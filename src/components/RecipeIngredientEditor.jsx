@@ -2,9 +2,24 @@ import { useState } from 'react';
 import { Plus, X, RotateCcw } from 'lucide-react';
 
 const CATEGORIES = [
-  { key: 'protein', label: 'Proteínas',     badge: 'bg-red-100 text-red-700',     input: 'Ej: Pechuga de pollo' },
-  { key: 'carb',    label: 'Carbohidratos', badge: 'bg-amber-100 text-amber-700', input: 'Ej: Arroz blanco' },
-  { key: 'extra',   label: 'Extras',        badge: 'bg-green-100 text-green-700', input: 'Ej: Ensalada verde' },
+  {
+    key: 'protein',
+    label: 'Proteínas',
+    badge: 'bg-red-100 text-red-700',
+    input: 'Ej: Pechuga de pollo',
+  },
+  {
+    key: 'carb',
+    label: 'Carbohidratos',
+    badge: 'bg-amber-100 text-amber-700',
+    input: 'Ej: Arroz blanco',
+  },
+  {
+    key: 'extra',
+    label: 'Extras',
+    badge: 'bg-green-100 text-green-700',
+    input: 'Ej: Ensalada verde',
+  },
 ];
 
 // baseIngredients: { protein: ['Pollo', ...], carb: [...], extra: [...] }
@@ -31,7 +46,10 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
   };
 
   const handleKeyDown = (e, category) => {
-    if (e.key === 'Enter') { e.preventDefault(); addIngredient(category); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addIngredient(category);
+    }
   };
 
   const resetToBase = () => {
@@ -40,8 +58,9 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
   };
 
   return (
-    <div className={`rounded-xl border p-3 ${isOverridden ? 'border-blue-200 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}>
-
+    <div
+      className={`rounded-xl border p-3 ${isOverridden ? 'border-blue-200 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -53,7 +72,9 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
           )}
         </div>
         {isOverridden && (
-          <button type="button" onClick={resetToBase}
+          <button
+            type="button"
+            onClick={resetToBase}
             className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition"
           >
             <RotateCcw size={11} /> Usar base
@@ -71,28 +92,41 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
 
               <div className="flex flex-wrap gap-1.5 mb-1.5">
                 {items.map((item, i) => (
-                  <span key={i} className={`flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full ${cat.badge}`}>
+                  <span
+                    key={i}
+                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full ${cat.badge}`}
+                  >
                     {item}
-                    <button type="button" onClick={() => removeIngredient(cat.key, i)}
-                      className="hover:opacity-60 transition">
+                    <button
+                      type="button"
+                      onClick={() => removeIngredient(cat.key, i)}
+                      className="hover:opacity-60 transition"
+                    >
                       <X size={10} />
                     </button>
                   </span>
                 ))}
                 {items.length === 0 && (
-                  <span className="text-xs text-slate-400 italic">Sin {cat.label.toLowerCase()}</span>
+                  <span className="text-xs text-slate-400 italic">
+                    Sin {cat.label.toLowerCase()}
+                  </span>
                 )}
               </div>
 
               <div className="flex gap-1.5">
-                <input type="text" value={newItem[cat.key]}
+                <input
+                  type="text"
+                  value={newItem[cat.key]}
                   onChange={(e) => setNewItem((prev) => ({ ...prev, [cat.key]: e.target.value }))}
                   onKeyDown={(e) => handleKeyDown(e, cat.key)}
                   placeholder={cat.input}
                   className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
                 />
-                <button type="button" onClick={() => addIngredient(cat.key)}
-                  className="bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl hover:border-slate-400 transition text-slate-600">
+                <button
+                  type="button"
+                  onClick={() => addIngredient(cat.key)}
+                  className="bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl hover:border-slate-400 transition text-slate-600"
+                >
                   <Plus size={13} />
                 </button>
               </div>

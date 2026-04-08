@@ -1,4 +1,4 @@
-import { Pencil, Trash2, EyeIcon } from 'lucide-react';
+import { Pencil, Trash2, EyeIcon, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CLIENT_TYPE = {
@@ -11,7 +11,7 @@ const PLAN_TYPE = {
   nutricional: { label: '🥗 Nutricional', className: 'bg-green-50 text-green-700' },
 };
 
-const CustomerCard = ({ customer, onSelected, onEdit, onDelete }) => {
+const CustomerCard = ({ customer, onSelected, onEdit, onDelete, onReactivate }) => {
   const typeStyle = CLIENT_TYPE[customer.client_type] ?? CLIENT_TYPE.personal;
   const planStyle = customer.plan_type
     ? (PLAN_TYPE[customer.plan_type] ?? PLAN_TYPE.estandar)
@@ -50,11 +50,10 @@ const CustomerCard = ({ customer, onSelected, onEdit, onDelete }) => {
         {/* Action buttons */}
         <div className="flex items-center gap-1.5 shrink-0">
           <Link
-          to={`/cliente/${customer.id_client}`}
- 
+            to={`/cliente/${customer.id_client}`}
             className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition"
           >
-            <EyeIcon size={13}  />
+            <EyeIcon size={13} />
           </Link>
           {onEdit && (
             <button
@@ -63,6 +62,16 @@ const CustomerCard = ({ customer, onSelected, onEdit, onDelete }) => {
               className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition"
             >
               <Pencil size={13} />
+            </button>
+          )}
+          {onReactivate && (
+            <button
+              type="button"
+              onClick={() => onReactivate(customer.id_client)}
+              className="p-1.5 rounded-xl border border-green-200 text-green-500 hover:text-green-700 hover:border-green-400 transition"
+              title="Reactivar cliente"
+            >
+              <RotateCcw size={13} />
             </button>
           )}
           {onDelete && (

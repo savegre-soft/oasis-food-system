@@ -5,7 +5,6 @@ const ClientDeliveryCard = ({ client, onDeliver }) => {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-
       {/* Client header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
         <div className="flex items-center gap-3">
@@ -14,7 +13,10 @@ const ClientDeliveryCard = ({ client, onDeliver }) => {
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-800">{client.name}</p>
-            <p className="text-xs text-slate-400">{client.orderDays.length} comida{client.orderDays.length !== 1 ? 's' : ''} empacada{client.orderDays.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-slate-400">
+              {client.orderDays.length} comida{client.orderDays.length !== 1 ? 's' : ''} empacada
+              {client.orderDays.length !== 1 ? 's' : ''}
+            </p>
           </div>
         </div>
 
@@ -33,19 +35,29 @@ const ClientDeliveryCard = ({ client, onDeliver }) => {
         {client.orderDays.map((od) => (
           <div key={od.id_order_day} className="flex items-center justify-between px-5 py-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                od.classification === 'Lunch'
-                  ? 'bg-amber-50 text-amber-700'
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  od.classification === 'Lunch'
+                    ? 'bg-amber-50 text-amber-700'
+                    : od.classification === 'Dinner'
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'bg-purple-50 text-purple-700'
+                }`}
+              >
+                {od.classification === 'Lunch'
+                  ? '☀️ Almuerzo'
                   : od.classification === 'Dinner'
-                  ? 'bg-indigo-50 text-indigo-700'
-                  : 'bg-purple-50 text-purple-700'
-              }`}>
-                {od.classification === 'Lunch' ? '☀️ Almuerzo' : od.classification === 'Dinner' ? '🌙 Cena' : '👨‍👩‍👧 Familiar'}
+                    ? '🌙 Cena'
+                    : '👨‍👩‍👧 Familiar'}
               </span>
 
               {(od.recipes ?? []).map((r, i) => (
-                <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                  {r.name}{r.quantity > 1 ? ` ×${r.quantity}` : ''}
+                <span
+                  key={i}
+                  className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                >
+                  {r.name}
+                  {r.quantity > 1 ? ` ×${r.quantity}` : ''}
                 </span>
               ))}
             </div>

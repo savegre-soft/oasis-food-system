@@ -4,23 +4,23 @@ import { Plus } from 'lucide-react';
 import { sileo } from 'sileo';
 
 const DAYS = [
-  { value: 'Monday',    label: 'Lunes' },
-  { value: 'Tuesday',   label: 'Martes' },
+  { value: 'Monday', label: 'Lunes' },
+  { value: 'Tuesday', label: 'Martes' },
   { value: 'Wednesday', label: 'Miércoles' },
-  { value: 'Thursday',  label: 'Jueves' },
-  { value: 'Friday',    label: 'Viernes' },
-  { value: 'Saturday',  label: 'Sábado' },
-  { value: 'Sunday',    label: 'Domingo' },
+  { value: 'Thursday', label: 'Jueves' },
+  { value: 'Friday', label: 'Viernes' },
+  { value: 'Saturday', label: 'Sábado' },
+  { value: 'Sunday', label: 'Domingo' },
 ];
 
 const AddRoute = ({ onSuccess, initialData }) => {
   const { supabase } = useApp();
   const isEdit = !!initialData;
 
-  const [name,         setName]         = useState(initialData?.name        ?? '');
-  const [description,  setDescription]  = useState(initialData?.description ?? '');
+  const [name, setName] = useState(initialData?.name ?? '');
+  const [description, setDescription] = useState(initialData?.description ?? '');
   const [selectedDays, setSelectedDays] = useState(
-    initialData?.route_delivery_days?.map(d => d.day_of_week) ?? []
+    initialData?.route_delivery_days?.map((d) => d.day_of_week) ?? []
   );
   const [loading, setLoading] = useState(false);
 
@@ -37,27 +37,59 @@ const AddRoute = ({ onSuccess, initialData }) => {
 
     let routeId;
     if (isEdit) {
-      const { error } = await supabase.schema('operations').from('routes')
-        .update({ name, description }).eq('id_route', initialData.id_route);
-      if (error) { sileo.error('Error al actualizar la ruta'); console.error(error); setLoading(false); return; }
+      const { error } = await supabase
+        .schema('operations')
+        .from('routes')
+        .update({ name, description })
+        .eq('id_route', initialData.id_route);
+      if (error) {
+        sileo.error('Error al actualizar la ruta');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
       // Replace delivery days
-      await supabase.schema('operations').from('route_delivery_days').delete().eq('route_id', initialData.id_route);
+      await supabase
+        .schema('operations')
+        .from('route_delivery_days')
+        .delete()
+        .eq('route_id', initialData.id_route);
       routeId = initialData.id_route;
     } else {
-      const { data, error } = await supabase.schema('operations').from('routes')
-        .insert([{ name, description, is_active: true, route_type: null }]).select('id_route').single();
-      if (error) { sileo.error('Error al guardar la ruta'); console.error(error); setLoading(false); return; }
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('routes')
+        .insert([{ name, description, is_active: true, route_type: null }])
+        .select('id_route')
+        .single();
+      if (error) {
+        sileo.error('Error al guardar la ruta');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
       routeId = data.id_route;
     }
 
     if (selectedDays.length > 0) {
-      const { error } = await supabase.schema('operations').from('route_delivery_days')
-        .insert(selectedDays.map(day => ({ route_id: routeId, day_of_week: day })));
-      if (error) { sileo.error('Error al guardar los días'); console.error(error); setLoading(false); return; }
+      const { error } = await supabase
+        .schema('operations')
+        .from('route_delivery_days')
+        .insert(selectedDays.map((day) => ({ route_id: routeId, day_of_week: day })));
+      if (error) {
+        sileo.error('Error al guardar los días');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
     }
 
     sileo.success(isEdit ? 'Ruta actualizada correctamente' : 'Ruta agregada correctamente');
-    if (!isEdit) { setName(''); setDescription(''); setSelectedDays([]); }
+    if (!isEdit) {
+      setName('');
+      setDescription('');
+      setSelectedDays([]);
+    }
     setLoading(false);
     if (onSuccess) onSuccess();
   };
@@ -69,7 +101,9 @@ const AddRoute = ({ onSuccess, initialData }) => {
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">{isEdit ? 'Editar Ruta' : 'Agregar Nueva Ruta'}</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-6">
+          {isEdit ? 'Editar Ruta' : 'Agregar Nueva Ruta'}
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>

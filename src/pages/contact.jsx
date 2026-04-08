@@ -1,11 +1,11 @@
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 const Contact = ({
-  title = "",
-  description ,
-  location = "",
-  phone = "",
-  schedule = "",
+  title = '',
+  description,
+  location = '',
+  phone = '',
+  schedule = '',
   onSubmit,
 }) => {
   const handleSubmit = (e) => {
@@ -23,15 +23,9 @@ const Contact = ({
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          {title && (
-            <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">
-              {title}
-            </h1>
-          )}
+          {title && <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">{title}</h1>}
 
-          {description && (
-            <p className="mt-4 text-slate-600">{description}</p>
-          )}
+          {description && <p className="mt-4 text-slate-600">{description}</p>}
         </motion.div>
 
         {/* Form Card */}
@@ -43,9 +37,7 @@ const Contact = ({
         >
           <form className="grid gap-6" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Nombre
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Nombre</label>
               <input
                 type="text"
                 placeholder="Tu nombre"
@@ -65,9 +57,7 @@ const Contact = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Mensaje
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Mensaje</label>
               <textarea
                 rows="5"
                 placeholder="Escribe tu mensaje aquí..."

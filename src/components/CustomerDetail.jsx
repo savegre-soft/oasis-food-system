@@ -6,18 +6,18 @@ import 'leaflet/dist/leaflet.css';
 
 const CLIENT_TYPE = {
   personal: { label: 'Personal', className: 'bg-blue-50 text-blue-700' },
-  family:   { label: 'Familiar', className: 'bg-purple-50 text-purple-700' },
+  family: { label: 'Familiar', className: 'bg-purple-50 text-purple-700' },
 };
 
 const PLAN_TYPE = {
-  estandar:    { label: '⭐ Estándar',    className: 'bg-slate-100 text-slate-600' },
-  nutricional: { label: '🥗 Nutricional', className: 'bg-green-50 text-green-700'  },
+  estandar: { label: '⭐ Estándar', className: 'bg-slate-100 text-slate-600' },
+  nutricional: { label: '🥗 Nutricional', className: 'bg-green-50 text-green-700' },
 };
 
 const MacroPanel = ({ label, accent, macro }) => {
   if (!macro) return null;
   const colors = {
-    amber:  { border: 'border-amber-200', bg: 'bg-amber-50',  text: 'text-amber-700'  },
+    amber: { border: 'border-amber-200', bg: 'bg-amber-50', text: 'text-amber-700' },
     indigo: { border: 'border-indigo-200', bg: 'bg-indigo-50', text: 'text-indigo-700' },
   };
   const c = colors[accent];
@@ -28,7 +28,8 @@ const MacroPanel = ({ label, accent, macro }) => {
         <div>
           <p className="text-xs text-slate-500 mb-0.5">Proteína</p>
           <p className="text-sm font-semibold text-slate-800">
-            {macro.protein_value} <span className="font-normal text-slate-500">{macro.protein_unit}</span>
+            {macro.protein_value}{' '}
+            <span className="font-normal text-slate-500">{macro.protein_unit}</span>
           </p>
         </div>
         <div>
@@ -44,14 +45,18 @@ const MacroPanel = ({ label, accent, macro }) => {
 
 const CustomerDetailModal = ({ customer, onClose }) => {
   const overlayRef = useRef(null);
-  const typeStyle  = CLIENT_TYPE[customer.client_type] ?? CLIENT_TYPE.personal;
-  const planStyle  = customer.plan_type ? (PLAN_TYPE[customer.plan_type] ?? PLAN_TYPE.estandar) : null;
-  const hasMap     = customer.latitude && customer.longitude;
-  const hasMacros  = customer.lunch_macro || customer.dinner_macro;
+  const typeStyle = CLIENT_TYPE[customer.client_type] ?? CLIENT_TYPE.personal;
+  const planStyle = customer.plan_type
+    ? (PLAN_TYPE[customer.plan_type] ?? PLAN_TYPE.estandar)
+    : null;
+  const hasMap = customer.latitude && customer.longitude;
+  const hasMacros = customer.lunch_macro || customer.dinner_macro;
 
   // Close on Escape
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -63,7 +68,9 @@ const CustomerDetailModal = ({ customer, onClose }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose();
+      }}
     >
       <motion.div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
@@ -77,27 +84,33 @@ const CustomerDetailModal = ({ customer, onClose }) => {
           <div>
             <h2 className="text-xl font-bold text-slate-800">{customer.name}</h2>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                customer.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-              }`}>
+              <span
+                className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                  customer.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                }`}
+              >
                 {customer.is_active ? 'Activo' : 'Inactivo'}
               </span>
-              <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${typeStyle.className}`}>
+              <span
+                className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${typeStyle.className}`}
+              >
                 {typeStyle.label}
               </span>
               {planStyle && customer.client_type === 'personal' && (
-                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${planStyle.className}`}>
+                <span
+                  className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${planStyle.className}`}
+                >
                   {planStyle.label}
                 </span>
               )}
             </div>
           </div>
-           <a
-      href={`/cliente/${customer.id_client}`}
-      className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
-    >
-      Ver perfil
-    </a>
+          <a
+            href={`/cliente/${customer.id_client}`}
+            className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition"
+          >
+            Ver perfil
+          </a>
           <button
             type="button"
             onClick={onClose}
@@ -108,18 +121,16 @@ const CustomerDetailModal = ({ customer, onClose }) => {
         </div>
 
         <div className="p-6 space-y-5">
-
           {/* Contacto */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Contacto</p>
-            {customer.phone && (
-              <p className="text-sm text-slate-700">📞 {customer.phone}</p>
-            )}
+            {customer.phone && <p className="text-sm text-slate-700">📞 {customer.phone}</p>}
             {customer.address_detail && (
               <p className="text-sm text-slate-700">📍 {customer.address_detail}</p>
             )}
             <p className="text-sm text-slate-700">
-              📅 {customer.client_type === 'family'
+              📅{' '}
+              {customer.client_type === 'family'
                 ? 'Entrega los Viernes'
                 : 'Dom + Mar o Dom + Mié según pedido'}
             </p>
@@ -128,11 +139,13 @@ const CustomerDetailModal = ({ customer, onClose }) => {
           {/* Perfiles nutricionales */}
           {customer.client_type === 'personal' && (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Perfiles Nutricionales</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Perfiles Nutricionales
+              </p>
               {hasMacros ? (
                 <div className="grid grid-cols-2 gap-3">
-                  <MacroPanel label="☀️ Almuerzo" accent="amber"  macro={customer.lunch_macro}  />
-                  <MacroPanel label="🌙 Cena"     accent="indigo" macro={customer.dinner_macro} />
+                  <MacroPanel label="☀️ Almuerzo" accent="amber" macro={customer.lunch_macro} />
+                  <MacroPanel label="🌙 Cena" accent="indigo" macro={customer.dinner_macro} />
                 </div>
               ) : (
                 <p className="text-sm text-slate-400 italic">Sin perfil nutricional registrado</p>
@@ -143,7 +156,9 @@ const CustomerDetailModal = ({ customer, onClose }) => {
           {/* Mapa */}
           {hasMap && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Ubicación</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                Ubicación
+              </p>
               <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                 <MapContainer
                   center={[customer.latitude, customer.longitude]}
@@ -164,10 +179,14 @@ const CustomerDetailModal = ({ customer, onClose }) => {
           {/* Fecha */}
           {customer.created_at && (
             <p className="text-xs text-slate-400">
-              Cliente desde {new Date(customer.created_at).toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              Cliente desde{' '}
+              {new Date(customer.created_at).toLocaleDateString('es-CR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
             </p>
           )}
-
         </div>
       </motion.div>
     </motion.div>

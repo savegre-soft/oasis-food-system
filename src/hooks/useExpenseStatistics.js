@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useApp } from "../context/AppContext";
-import { sileo } from "sileo";
+import { useEffect, useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { sileo } from 'sileo';
 
 /* =========================
    FORMATEAR FECHA PARA SUPABASE
@@ -26,7 +26,6 @@ export const useExpenseStatistics = (dateRange) => {
 
   const getData = async () => {
     try {
-
       const start = formatDate(dateRange?.startDate);
       const end = formatDate(dateRange?.endDate);
 
@@ -35,29 +34,29 @@ export const useExpenseStatistics = (dateRange) => {
       ========================= */
 
       let expensesQuery = supabase
-        .schema("operations")
-        .from("expenses")
-        .select("expense_date, amount, category_id")
-        .order("expense_date");
+        .schema('operations')
+        .from('expenses')
+        .select('expense_date, amount, category_id')
+        .order('expense_date');
 
       /* =========================
          QUERY EMPLEADOS
       ========================= */
 
       let empQuery = supabase
-        .schema("operations")
-        .from("empCost")
-        .select("WorkDate, Amount")
-        .order("WorkDate");
+        .schema('operations')
+        .from('empCost')
+        .select('WorkDate, Amount')
+        .order('WorkDate');
 
       if (start) {
-        expensesQuery = expensesQuery.gte("expense_date", start);
-        empQuery = empQuery.gte("WorkDate", start);
+        expensesQuery = expensesQuery.gte('expense_date', start);
+        empQuery = empQuery.gte('WorkDate', start);
       }
 
       if (end) {
-        expensesQuery = expensesQuery.lte("expense_date", end);
-        empQuery = empQuery.lte("WorkDate", end);
+        expensesQuery = expensesQuery.lte('expense_date', end);
+        empQuery = empQuery.lte('WorkDate', end);
       }
 
       const { data: expensesData, error: expensesError } = await expensesQuery;
@@ -105,18 +104,12 @@ export const useExpenseStatistics = (dateRange) => {
          TOTALES
       ========================= */
 
-      const totalExp = expensesData.reduce(
-        (acc, item) => acc + item.amount,
-        0
-      );
+      const totalExp = expensesData.reduce((acc, item) => acc + item.amount, 0);
 
       setTotalExpenses(totalExp);
       setExpenseCount(expensesData.length);
 
-      const totalEmp = empData.reduce(
-        (acc, item) => acc + item.Amount,
-        0
-      );
+      const totalEmp = empData.reduce((acc, item) => acc + item.Amount, 0);
 
       setTotalEmployeeCost(totalEmp);
       setEmployeeCount(empData.length);
@@ -125,28 +118,24 @@ export const useExpenseStatistics = (dateRange) => {
          CATEGORIAS
       ========================= */
 
-      let categoryQuery = supabase
-        .schema("operations")
-        .from("expenses")
-        .select(`
+      let categoryQuery = supabase.schema('operations').from('expenses').select(`
           amount,
           expense_categories (
             name
           )
         `);
 
-      if (start) categoryQuery = categoryQuery.gte("expense_date", start);
-      if (end) categoryQuery = categoryQuery.lte("expense_date", end);
+      if (start) categoryQuery = categoryQuery.gte('expense_date', start);
+      if (end) categoryQuery = categoryQuery.lte('expense_date', end);
 
-      const { data: categoryData, error: categoryError } =
-        await categoryQuery;
+      const { data: categoryData, error: categoryError } = await categoryQuery;
 
       if (categoryError) throw categoryError;
 
       const categoryMap = {};
 
       categoryData.forEach((exp) => {
-        const name = exp.expense_categories?.name || "Otros";
+        const name = exp.expense_categories?.name || 'Otros';
 
         if (!categoryMap[name]) categoryMap[name] = 0;
         categoryMap[name] += exp.amount;
@@ -158,7 +147,6 @@ export const useExpenseStatistics = (dateRange) => {
           value,
         }))
       );
-
     } catch (error) {
       sileo.error(error.message);
     }

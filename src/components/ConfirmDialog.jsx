@@ -4,7 +4,15 @@ import { AlertTriangle } from 'lucide-react';
 // Reusable confirmation dialog
 // Usage: <ConfirmDialog open={!!toDelete} title="¿Eliminar ruta?" message="Esta acción no se puede deshacer."
 //          onConfirm={() => { doDelete(toDelete); setToDelete(null); }} onCancel={() => setToDelete(null)} />
-const ConfirmDialog = ({ open, title = '¿Confirmar acción?', message, onConfirm, onCancel }) => (
+const ConfirmDialog = ({
+  open,
+  title = '¿Confirmar acción?',
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = 'Eliminar',
+  confirmClassName,
+}) => (
   <AnimatePresence>
     {open && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
@@ -34,9 +42,12 @@ const ConfirmDialog = ({ open, title = '¿Confirmar acción?', message, onConfir
               </button>
               <button
                 onClick={onConfirm}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition"
+                className={
+                  confirmClassName ??
+                  'flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition'
+                }
               >
-                Eliminar
+                {confirmLabel}
               </button>
             </div>
           </div>

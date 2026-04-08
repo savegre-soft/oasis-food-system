@@ -30,7 +30,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-
 export default function Main() {
   const {
     clientCount,
@@ -99,7 +98,6 @@ export default function Main() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
- 
         {/* Clientes por distrito */}
         <div className="bg-white p-6 rounded-2xl shadow">
           <h2 className="text-xl font-semibold mb-4">Clientes por Distrito</h2>

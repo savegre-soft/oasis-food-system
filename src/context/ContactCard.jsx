@@ -19,9 +19,7 @@ const ContactCard = ({ contactInfo }) => {
         <strong>Mensaje:</strong> {Description}
       </p>
 
-      <small>
-        {created_at && new Date(created_at).toLocaleString()}
-      </small>
+      <small>{created_at && new Date(created_at).toLocaleString()}</small>
     </div>
   );
 };

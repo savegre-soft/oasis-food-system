@@ -30,28 +30,28 @@ export const groupByRecipe = (orderDays) => {
   for (const orderDay of orderDays) {
     if (!orderDay.orders?.clients) continue;
 
-    const clientName     = orderDay.orders.clients.name;
+    const clientName = orderDay.orders.clients.name;
     const classification = orderDay.orders.classification;
 
     for (const detail of orderDay.order_day_details ?? []) {
-      const recipe    = detail.recipes;
-      const recipeId  = recipe?.id_recipe;
+      const recipe = detail.recipes;
+      const recipeId = recipe?.id_recipe;
       const recipeName = recipe?.name ?? '(sin nombre)';
 
       const { ingredients, isOverridden } = buildEffectiveIngredients(
         detail.order_day_recipe_overrides,
-        recipe?.recipe_ingredients,
+        recipe?.recipe_ingredients
       );
       const fingerprint = ingredientFingerprint(ingredients);
-      const variantKey  = `${recipeId}__${fingerprint}`;
+      const variantKey = `${recipeId}__${fingerprint}`;
 
       if (!grouped[variantKey]) {
         grouped[variantKey] = {
-          recipe_name:          recipeName,
+          recipe_name: recipeName,
           isOverridden,
           effectiveIngredients: ingredients,
-          totalUnits:           0,
-          clients:              {},
+          totalUnits: 0,
+          clients: {},
         };
       }
 
@@ -67,12 +67,12 @@ export const groupByRecipe = (orderDays) => {
       if (!g.clients[clientName].meals[mealKey]) {
         g.clients[clientName].meals[mealKey] = {
           classification,
-          quantity:    0,
+          quantity: 0,
           orderDayIds: new Set(),
-          protein:     detail.protein_value_applied,
+          protein: detail.protein_value_applied,
           proteinUnit: detail.protein_unit_applied,
-          carb:        detail.carb_value_applied,
-          carbUnit:    detail.carb_unit_applied,
+          carb: detail.carb_value_applied,
+          carbUnit: detail.carb_unit_applied,
         };
       }
 
@@ -82,11 +82,11 @@ export const groupByRecipe = (orderDays) => {
       const pVal = parseFloat(detail.protein_value_applied);
       const cVal = parseFloat(detail.carb_value_applied);
       if (!isNaN(pVal)) {
-        g.totalProtein     = (g.totalProtein     ?? 0) + pVal * qty;
+        g.totalProtein = (g.totalProtein ?? 0) + pVal * qty;
         g.totalProteinUnit = detail.protein_unit_applied ?? g.totalProteinUnit ?? 'g';
       }
       if (!isNaN(cVal)) {
-        g.totalCarb     = (g.totalCarb     ?? 0) + cVal * qty;
+        g.totalCarb = (g.totalCarb ?? 0) + cVal * qty;
         g.totalCarbUnit = detail.carb_unit_applied ?? g.totalCarbUnit ?? 'g';
       }
       m.orderDayIds.add(orderDay.id_order_day);
@@ -113,20 +113,31 @@ export const groupByRecipe = (orderDays) => {
 const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
 
-  const grouped       = groupByRecipe(orderDays);
-  const totalPending  = orderDays.length;
+  const grouped = groupByRecipe(orderDays);
+  const totalPending = orderDays.length;
   const totalUnitsAll = Object.values(grouped).reduce((s, r) => s + r.totalUnits, 0);
 
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
 
   return (
     <div className="space-y-6">
-
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <StatCard icon={<Clock className="text-amber-500" size={20} />}    label="Pedidos pendientes" value={totalPending} />
-        <StatCard icon={<Truck className="text-blue-500" size={20} />}     label="Total unidades"     value={totalUnitsAll} />
-        <StatCard icon={<CheckCircle className="text-green-500" size={20} />} label="Recetas distintas" value={Object.keys(grouped).length} />
+        <StatCard
+          icon={<Clock className="text-amber-500" size={20} />}
+          label="Pedidos pendientes"
+          value={totalPending}
+        />
+        <StatCard
+          icon={<Truck className="text-blue-500" size={20} />}
+          label="Total unidades"
+          value={totalUnitsAll}
+        />
+        <StatCard
+          icon={<CheckCircle className="text-green-500" size={20} />}
+          label="Recetas distintas"
+          value={Object.keys(grouped).length}
+        />
       </div>
 
       {/* Cards */}

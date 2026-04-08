@@ -3,7 +3,6 @@ import Navbar from '../components/NavBar';
 import { useApp } from '../context/AppContext';
 
 export default function MainLayout() {
-
   const { user, loading } = useApp();
 
   // Esperar mientras Supabase verifica la sesión
@@ -22,7 +21,6 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gray-300 flex flex-col">
-      
       {/* Navbar */}
       <Navbar />
 
@@ -35,7 +33,6 @@ export default function MainLayout() {
       <footer className="fixed bottom-0 left-0 w-full bg-green-800 text-center p-3 text-sm text-white z-50 shadow-md">
         © 2026 Oasis Food System. All rights reserved.
       </footer>
-
     </div>
   );
 }

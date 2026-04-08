@@ -4,13 +4,13 @@ import { Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { sileo } from 'sileo';
 
 const DAYS = [
-  { value: 'Monday',    label: 'Lunes' },
-  { value: 'Tuesday',   label: 'Martes' },
+  { value: 'Monday', label: 'Lunes' },
+  { value: 'Tuesday', label: 'Martes' },
   { value: 'Wednesday', label: 'Miércoles' },
-  { value: 'Thursday',  label: 'Jueves' },
-  { value: 'Friday',    label: 'Viernes' },
-  { value: 'Saturday',  label: 'Sábado' },
-  { value: 'Sunday',    label: 'Domingo' },
+  { value: 'Thursday', label: 'Jueves' },
+  { value: 'Friday', label: 'Viernes' },
+  { value: 'Saturday', label: 'Sábado' },
+  { value: 'Sunday', label: 'Domingo' },
 ];
 
 const STEP_LABELS = ['Información', 'Recetas'];
@@ -23,21 +23,21 @@ const AddTemplate = ({ onSuccess, initialData }) => {
     if (!initialData?.order_template_days) return {};
     const result = {};
     for (const day of initialData.order_template_days) {
-      result[day.day_of_week] = (day.order_template_details ?? []).map(d => ({
+      result[day.day_of_week] = (day.order_template_details ?? []).map((d) => ({
         recipe_id: Number(d.recipe_id ?? d.recipes?.id_recipe ?? 0) || '',
-        quantity:  d.quantity ?? 1,
+        quantity: d.quantity ?? 1,
       }));
     }
     return result;
   };
 
-  const [step,        setStep]        = useState(isEdit ? 2 : 1); // skip to step 2 when editing
-  const [loading,     setLoading]     = useState(false);
-  const [name,        setName]        = useState(initialData?.name        ?? '');
+  const [step, setStep] = useState(isEdit ? 2 : 1); // skip to step 2 when editing
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState(initialData?.name ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
-  const [mealType,    setMealType]    = useState(initialData?.meal_type   ?? 'Lunch');
-  const [dayRecipes,  setDayRecipes]  = useState(buildInitialDayRecipes());
-  const [recipes,     setRecipes]     = useState([]);
+  const [mealType, setMealType] = useState(initialData?.meal_type ?? 'Lunch');
+  const [dayRecipes, setDayRecipes] = useState(buildInitialDayRecipes());
+  const [recipes, setRecipes] = useState([]);
 
   // ── Cargar recetas filtradas por tipo de comida ──
   useEffect(() => {
@@ -93,33 +93,81 @@ const AddTemplate = ({ onSuccess, initialData }) => {
 
     let templateId;
     if (isEdit) {
-      const { error } = await supabase.schema('operations').from('order_templates')
-        .update({ name, description }).eq('id_template', initialData.id_template);
-      if (error) { sileo.error('Error al actualizar la plantilla'); console.error(error); setLoading(false); return; }
+      const { error } = await supabase
+        .schema('operations')
+        .from('order_templates')
+        .update({ name, description })
+        .eq('id_template', initialData.id_template);
+      if (error) {
+        sileo.error('Error al actualizar la plantilla');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
       // Delete existing days+details (cascade)
-      await supabase.schema('operations').from('order_template_days').delete().eq('template_id', initialData.id_template);
+      await supabase
+        .schema('operations')
+        .from('order_template_days')
+        .delete()
+        .eq('template_id', initialData.id_template);
       templateId = initialData.id_template;
     } else {
-      const { data, error } = await supabase.schema('operations').from('order_templates')
-        .insert([{ name, description, is_active: true }]).select('id_template').single();
-      if (error) { sileo.error('Error al crear la plantilla'); console.error(error); setLoading(false); return; }
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('order_templates')
+        .insert([{ name, description, is_active: true }])
+        .select('id_template')
+        .single();
+      if (error) {
+        sileo.error('Error al crear la plantilla');
+        console.error(error);
+        setLoading(false);
+        return;
+      }
       templateId = data.id_template;
     }
 
-    const daysWithRecipes = DAYS.filter(d => (dayRecipes[d.value] || []).some(r => r.recipe_id));
+    const daysWithRecipes = DAYS.filter((d) =>
+      (dayRecipes[d.value] || []).some((r) => r.recipe_id)
+    );
 
     for (const day of daysWithRecipes) {
-      const { data: dayData, error: dayError } = await supabase.schema('operations').from('order_template_days')
-        .insert([{ template_id: templateId, day_of_week: day.value }]).select('id_template_day').single();
-      if (dayError) { sileo.error(`Error al guardar el día ${day.label}`); console.error(dayError); setLoading(false); return; }
+      const { data: dayData, error: dayError } = await supabase
+        .schema('operations')
+        .from('order_template_days')
+        .insert([{ template_id: templateId, day_of_week: day.value }])
+        .select('id_template_day')
+        .single();
+      if (dayError) {
+        sileo.error(`Error al guardar el día ${day.label}`);
+        console.error(dayError);
+        setLoading(false);
+        return;
+      }
 
-      const details = (dayRecipes[day.value] || []).filter(r => r.recipe_id);
-      const { error: detErr } = await supabase.schema('operations').from('order_template_details')
-        .insert(details.map(r => ({ template_day_id: dayData.id_template_day, recipe_id: r.recipe_id, quantity: Number(r.quantity) || 1, macro_modifiable: false })));
-      if (detErr) { sileo.error(`Error al guardar recetas del día ${day.label}`); console.error(detErr); setLoading(false); return; }
+      const details = (dayRecipes[day.value] || []).filter((r) => r.recipe_id);
+      const { error: detErr } = await supabase
+        .schema('operations')
+        .from('order_template_details')
+        .insert(
+          details.map((r) => ({
+            template_day_id: dayData.id_template_day,
+            recipe_id: r.recipe_id,
+            quantity: Number(r.quantity) || 1,
+            macro_modifiable: false,
+          }))
+        );
+      if (detErr) {
+        sileo.error(`Error al guardar recetas del día ${day.label}`);
+        console.error(detErr);
+        setLoading(false);
+        return;
+      }
     }
 
-    sileo.success(isEdit ? 'Plantilla actualizada correctamente' : 'Plantilla creada correctamente');
+    sileo.success(
+      isEdit ? 'Plantilla actualizada correctamente' : 'Plantilla creada correctamente'
+    );
     setLoading(false);
     if (onSuccess) onSuccess();
   };
@@ -132,7 +180,6 @@ const AddTemplate = ({ onSuccess, initialData }) => {
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-
         <h1 className="text-2xl font-bold text-slate-800 mb-6">Nueva Plantilla</h1>
 
         {/* Stepper */}
@@ -149,18 +196,22 @@ const AddTemplate = ({ onSuccess, initialData }) => {
                       isDone
                         ? 'bg-green-500 text-white'
                         : isActive
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-slate-200 text-slate-500'
+                          ? 'bg-slate-800 text-white'
+                          : 'bg-slate-200 text-slate-500'
                     }`}
                   >
                     {isDone ? <Check size={14} /> : stepNum}
                   </div>
-                  <span className={`text-xs mt-1 font-medium ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>
+                  <span
+                    className={`text-xs mt-1 font-medium ${isActive ? 'text-slate-800' : 'text-slate-400'}`}
+                  >
                     {label}
                   </span>
                 </div>
                 {i < STEP_LABELS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-2 mb-4 ${step > stepNum ? 'bg-green-400' : 'bg-slate-200'}`} />
+                  <div
+                    className={`flex-1 h-0.5 mx-2 mb-4 ${step > stepNum ? 'bg-green-400' : 'bg-slate-200'}`}
+                  />
                 )}
               </div>
             );
@@ -248,12 +299,16 @@ const AddTemplate = ({ onSuccess, initialData }) => {
                       <div key={index} className="flex gap-2 items-center">
                         <select
                           value={item.recipe_id || ''}
-                          onChange={(e) => updateRecipeInDay(day.value, index, 'recipe_id', e.target.value)}
+                          onChange={(e) =>
+                            updateRecipeInDay(day.value, index, 'recipe_id', e.target.value)
+                          }
                           className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
                         >
                           <option value="">Seleccionar receta</option>
                           {recipes.map((r) => (
-                            <option key={r.id_recipe} value={r.id_recipe}>{r.name}</option>
+                            <option key={r.id_recipe} value={r.id_recipe}>
+                              {r.name}
+                            </option>
                           ))}
                         </select>
 
@@ -261,7 +316,9 @@ const AddTemplate = ({ onSuccess, initialData }) => {
                           type="number"
                           min="1"
                           value={item.quantity}
-                          onChange={(e) => updateRecipeInDay(day.value, index, 'quantity', e.target.value)}
+                          onChange={(e) =>
+                            updateRecipeInDay(day.value, index, 'quantity', e.target.value)
+                          }
                           className="w-16 px-3 py-2 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
                         />
 
@@ -318,7 +375,6 @@ const AddTemplate = ({ onSuccess, initialData }) => {
             </button>
           )}
         </div>
-
       </div>
     </div>
   );

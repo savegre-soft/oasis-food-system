@@ -82,9 +82,7 @@ const Login = () => {
             transition={{ delay: 0.2, type: 'spring' }}
             className="flex justify-center mb-4"
           >
-            
-              <img src={LogoUrl} className="w-20" />
-      
+            <img src={LogoUrl} className="w-20" />
           </motion.div>
 
           <h1 className="text-2xl font-bold text-gray-800">Oasis Food Operativo</h1>

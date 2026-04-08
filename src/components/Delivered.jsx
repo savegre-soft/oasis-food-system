@@ -5,14 +5,14 @@ import { CheckCircle, Truck } from 'lucide-react';
 const groupByClient = (orderDays) => {
   const clients = {};
   for (const od of orderDays) {
-    const clientId   = od.orders?.clients?.id_client ?? od.orders?.clients?.name ?? '_';
+    const clientId = od.orders?.clients?.id_client ?? od.orders?.clients?.name ?? '_';
     const clientName = od.orders?.clients?.name ?? '(sin nombre)';
     if (!clients[clientId]) clients[clientId] = { id: clientId, name: clientName, orderDays: [] };
     clients[clientId].orderDays.push({
-      id_order_day:   od.id_order_day,
+      id_order_day: od.id_order_day,
       classification: od.orders?.classification,
       recipes: (od.order_day_details ?? []).map((d) => ({
-        name:     d.recipes?.name ?? '(sin nombre)',
+        name: d.recipes?.name ?? '(sin nombre)',
         quantity: d.quantity ?? 1,
       })),
     });
@@ -23,9 +23,23 @@ const groupByClient = (orderDays) => {
 // ── ClientDeliveredCard ───────────────────────────────────────────────────────
 
 const ClassificationBadge = ({ classification }) => {
-  if (classification === 'Lunch')  return <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">☀️ Almuerzo</span>;
-  if (classification === 'Dinner') return <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 text-indigo-700">🌙 Cena</span>;
-  return <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700">👨‍👩‍👧 Familiar</span>;
+  if (classification === 'Lunch')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">
+        ☀️ Almuerzo
+      </span>
+    );
+  if (classification === 'Dinner')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 text-indigo-700">
+        🌙 Cena
+      </span>
+    );
+  return (
+    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700">
+      👨‍👩‍👧 Familiar
+    </span>
+  );
 };
 
 const ClientDeliveredCard = ({ client }) => (
@@ -50,7 +64,8 @@ const ClientDeliveredCard = ({ client }) => (
           <ClassificationBadge classification={od.classification} />
           {(od.recipes ?? []).map((r, i) => (
             <span key={i} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-              {r.name}{r.quantity > 1 ? ` ×${r.quantity}` : ''}
+              {r.name}
+              {r.quantity > 1 ? ` ×${r.quantity}` : ''}
             </span>
           ))}
         </div>
@@ -77,7 +92,10 @@ const EntregaView = ({ orderDays }) => {
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
         <CheckCircle size={14} className="text-green-500" />
-        <span>{clients.length} cliente{clients.length !== 1 ? 's' : ''} entregado{clients.length !== 1 ? 's' : ''} hoy</span>
+        <span>
+          {clients.length} cliente{clients.length !== 1 ? 's' : ''} entregado
+          {clients.length !== 1 ? 's' : ''} hoy
+        </span>
       </div>
       {clients.map((client) => (
         <ClientDeliveredCard key={client.id} client={client} />

@@ -1,13 +1,10 @@
 import { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 
+const Recipes = () => {
+  const { supabase } = useApp();
 
-const Recipes = ()=>{
-
-     const { supabase } = useApp();
-
-    return <>
-    </>
-}
+  return <></>;
+};
 
 export default Recipes;

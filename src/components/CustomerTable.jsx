@@ -1,17 +1,15 @@
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 const CLIENT_TYPE = {
-  personal: "bg-blue-100 text-blue-700",
-  family: "bg-purple-100 text-purple-700",
+  personal: 'bg-blue-100 text-blue-700',
+  family: 'bg-purple-100 text-purple-700',
 };
 
 export default function CustomerTable({ customers, onSelected }) {
   return (
     <div className="overflow-hidden border rounded-2xl shadow-sm border-slate-200 bg-white">
-
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-
           {/* Header */}
           <thead className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider">
             <tr>
@@ -25,7 +23,6 @@ export default function CustomerTable({ customers, onSelected }) {
 
           {/* Body */}
           <tbody className="divide-y divide-slate-100">
-
             {customers.map((c, index) => (
               <motion.tr
                 key={c.id_client}
@@ -34,17 +31,14 @@ export default function CustomerTable({ customers, onSelected }) {
                 transition={{ delay: index * 0.03 }}
                 className="hover:bg-slate-50 transition cursor-pointer"
               >
-
                 {/* Cliente */}
-                <td className="px-6 py-4 font-medium text-slate-800">
-                  {c.name}
-                </td>
+                <td className="px-6 py-4 font-medium text-slate-800">{c.name}</td>
 
                 {/* Tipo */}
                 <td className="px-6 py-4">
                   <span
                     className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${
-                      CLIENT_TYPE[c.client_type] || "bg-slate-100 text-slate-600"
+                      CLIENT_TYPE[c.client_type] || 'bg-slate-100 text-slate-600'
                     }`}
                   >
                     {c.client_type}
@@ -82,10 +76,8 @@ export default function CustomerTable({ customers, onSelected }) {
                     Ver detalle
                   </button>
                 </td>
-
               </motion.tr>
             ))}
-
           </tbody>
         </table>
       </div>

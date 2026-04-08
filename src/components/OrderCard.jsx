@@ -1,22 +1,29 @@
 const STATUS_STYLES = {
-  PENDING:   { label: 'Pendiente', className: 'bg-yellow-50 text-yellow-700' },
+  PENDING: { label: 'Pendiente', className: 'bg-yellow-50 text-yellow-700' },
   DELIVERED: { label: 'Entregado', className: 'bg-green-50 text-green-700' },
   CANCELLED: { label: 'Cancelado', className: 'bg-red-50 text-red-600' },
 };
 
 const DAY_LABELS = {
-  Monday: 'Lun', Tuesday: 'Mar', Wednesday: 'Mié',
-  Thursday: 'Jue', Friday: 'Vie', Saturday: 'Sáb', Sunday: 'Dom',
+  Monday: 'Lun',
+  Tuesday: 'Mar',
+  Wednesday: 'Mié',
+  Thursday: 'Jue',
+  Friday: 'Vie',
+  Saturday: 'Sáb',
+  Sunday: 'Dom',
 };
 
 const OrderCard = ({ order }) => {
-  const st = STATUS_STYLES[order.status] ?? { label: order.status, className: 'bg-slate-100 text-slate-600' };
+  const st = STATUS_STYLES[order.status] ?? {
+    label: order.status,
+    className: 'bg-slate-100 text-slate-600',
+  };
 
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-2">
-
           {/* Cliente + badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-slate-800">{order.clients?.name}</p>
@@ -27,23 +34,24 @@ const OrderCard = ({ order }) => {
               {order.classification === 'Lunch'
                 ? '☀️ Almuerzo'
                 : order.classification === 'Dinner'
-                ? '🌙 Cena'
-                : order.classification}
+                  ? '🌙 Cena'
+                  : order.classification}
             </span>
           </div>
 
           {/* Semana y ruta */}
           <p className="text-sm text-slate-500">
-            Semana: {new Date(order.week_start_date).toLocaleDateString('es-CR')} — {new Date(order.week_end_date).toLocaleDateString('es-CR')}
-            {order.routes && (
-              <span className="ml-3">· Ruta: {order.routes.name}</span>
-            )}
+            Semana: {new Date(order.week_start_date).toLocaleDateString('es-CR')} —{' '}
+            {new Date(order.week_end_date).toLocaleDateString('es-CR')}
+            {order.routes && <span className="ml-3">· Ruta: {order.routes.name}</span>}
           </p>
 
           {/* Macros snapshot */}
           {order.protein_snapshot && (
             <p className="text-xs text-slate-400">
-              Proteína: {order.protein_snapshot}{order.protein_unit_snapshot} · Carbos: {order.carb_snapshot}{order.carb_unit_snapshot}
+              Proteína: {order.protein_snapshot}
+              {order.protein_unit_snapshot} · Carbos: {order.carb_snapshot}
+              {order.carb_unit_snapshot}
             </p>
           )}
 
@@ -60,12 +68,14 @@ const OrderCard = ({ order }) => {
                   }`}
                 >
                   {DAY_LABELS[d.day_of_week]}{' '}
-                  {new Date(d.delivery_date).toLocaleDateString('es-CR', { day: '2-digit', month: '2-digit' })}
+                  {new Date(d.delivery_date).toLocaleDateString('es-CR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                  })}
                 </span>
               ))}
             </div>
           )}
-
         </div>
       </div>
     </div>

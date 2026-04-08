@@ -30,7 +30,6 @@ export default function Modal({ isOpen, onClose, children }) {
             transition={{ duration: 0.25 }}
           >
             <div className="bg-white rounded-3xl p-6 w-full max-w-5xl shadow-2xl relative overflow-y-auto max-h-[90vh]">
-
               {/* Botón cerrar */}
               <button
                 className="absolute top-4 right-4 text-gray-400 hover:text-red-600 transition transform hover:rotate-90"
@@ -40,10 +39,7 @@ export default function Modal({ isOpen, onClose, children }) {
               </button>
 
               {/* Contenido */}
-              <div className="mt-4">
-                {children}
-              </div>
-
+              <div className="mt-4">{children}</div>
             </div>
           </motion.div>
         </>

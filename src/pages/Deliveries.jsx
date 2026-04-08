@@ -1,45 +1,46 @@
 import { useState, useEffect } from 'react';
-import { Truck, ChefHat, Package, Zap } from 'lucide-react';
+import { Truck, ChefHat, Package, Zap, Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
-import CocinaView  from '../components/Kitchen';
+import CocinaView from '../components/Kitchen';
+import ProductionPrintReport from '../components/ProductionPrintReport';
 import EmpaqueView from '../components/Package';
 import EntregaView from '../components/Delivered';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DAY_LABELS = {
-  Monday:    'Lunes',
-  Tuesday:   'Martes',
+  Monday: 'Lunes',
+  Tuesday: 'Martes',
   Wednesday: 'Miércoles',
-  Thursday:  'Jueves',
-  Friday:    'Viernes',
-  Saturday:  'Sábado',
-  Sunday:    'Domingo',
+  Thursday: 'Jueves',
+  Friday: 'Viernes',
+  Saturday: 'Sábado',
+  Sunday: 'Domingo',
 };
 
-const DAY_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const TABS = [
-  { id: 'cocina',  label: 'Cocina',  Icon: ChefHat },
-  { id: 'empaque', label: 'Empaque', Icon: Package  },
-  { id: 'entrega', label: 'Entrega', Icon: Truck    },
-  { id: 'express', label: 'Express', Icon: Zap      },
+  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
+  { id: 'empaque', label: 'Empaque', Icon: Package },
+  { id: 'entrega', label: 'Entrega', Icon: Truck },
+  { id: 'express', label: 'Express', Icon: Zap },
 ];
 
 const EXPRESS_SUBTABS = [
-  { id: 'cocina',  label: 'Cocina',  Icon: ChefHat },
-  { id: 'empaque', label: 'Empaque', Icon: Package  },
-  { id: 'entrega', label: 'Entrega', Icon: Truck    },
+  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
+  { id: 'empaque', label: 'Empaque', Icon: Package },
+  { id: 'entrega', label: 'Entrega', Icon: Truck },
 ];
 
 // ── Week range ─────────────────────────────────────────────────────────────────
 
 const getWeekRange = () => {
-  const today  = new Date();
-  const day    = today.getDay();
-  const diff   = day === 0 ? -6 : 1 - day;
+  const today = new Date();
+  const day = today.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
   monday.setDate(today.getDate() + diff + 7);
   monday.setHours(0, 0, 0, 0);
@@ -47,13 +48,13 @@ const getWeekRange = () => {
   sunday.setDate(monday.getDate() + 6);
   return {
     weekStart: monday.toISOString().split('T')[0],
-    weekEnd:   sunday.toISOString().split('T')[0],
+    weekEnd: sunday.toISOString().split('T')[0],
   };
 };
 
 // ── Delivery slot helpers ──────────────────────────────────────────────────────
 
-const cycleIdx = (d) => d === 'Sunday' ? -1 : DAY_ORDER.indexOf(d);
+const cycleIdx = (d) => (d === 'Sunday' ? -1 : DAY_ORDER.indexOf(d));
 
 const isoOfDay = (name, weekMonday) => {
   const d = new Date(weekMonday);
@@ -104,10 +105,13 @@ const ORDER_DAY_SELECT = `
 // ── Helper components ──────────────────────────────────────────────────────────
 
 const SlotButton = ({ slot, isActive, onSelect }) => {
-  const delivLabel = new Date(slot.deliveryDate + 'T00:00:00')
-    .toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
-  const cls = 'flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition '
-    + (isActive ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800');
+  const delivLabel = new Date(slot.deliveryDate + 'T00:00:00').toLocaleDateString('es-CR', {
+    day: '2-digit',
+    month: 'short',
+  });
+  const cls =
+    'flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition ' +
+    (isActive ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800');
   return (
     <button onClick={() => onSelect(slot)} className={cls}>
       <span>{slot.label}</span>
@@ -117,10 +121,14 @@ const SlotButton = ({ slot, isActive, onSelect }) => {
 };
 
 const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
-  const cls = 'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border '
-    + (isActive ? 'bg-slate-800 border-slate-800 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
-  const badgeCls = 'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center '
-    + (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
+  const cls =
+    'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border ' +
+    (isActive
+      ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
+      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
+  const badgeCls =
+    'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ' +
+    (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
   return (
     <button key={id} onClick={() => onSelect(id)} className={cls}>
       <Icon size={15} />
@@ -131,10 +139,15 @@ const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
 };
 
 const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
-  const cls = 'px-4 py-1.5 rounded-xl text-xs font-medium transition border '
-    + (isActive ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400');
+  const cls =
+    'px-4 py-1.5 rounded-xl text-xs font-medium transition border ' +
+    (isActive
+      ? 'bg-slate-800 text-white border-slate-800'
+      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400');
   return (
-    <button onClick={() => onSelect(id)} className={cls}>{label}</button>
+    <button onClick={() => onSelect(id)} className={cls}>
+      {label}
+    </button>
   );
 };
 
@@ -147,15 +160,27 @@ const EmptyState = ({ icon, text }) => (
 
 // ── ExpressView ────────────────────────────────────────────────────────────────
 
-const ExpressView = ({ pendingDays, packedDays, deliveredDays, onPack, onDeliver, expressTab, setExpressTab, todayStr }) => {
+const ExpressView = ({
+  pendingDays,
+  packedDays,
+  deliveredDays,
+  onPack,
+  onDeliver,
+  expressTab,
+  setExpressTab,
+  todayStr,
+}) => {
   const subCounts = {
-    cocina:  pendingDays.length,
+    cocina: pendingDays.length,
     empaque: pendingDays.length + packedDays.length,
     entrega: deliveredDays.length,
   };
 
-  const todayLabel = new Date(todayStr + 'T00:00:00')
-    .toLocaleDateString('es-CR', { weekday: 'long', day: '2-digit', month: 'long' });
+  const todayLabel = new Date(todayStr + 'T00:00:00').toLocaleDateString('es-CR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  });
 
   return (
     <div className="space-y-5">
@@ -186,21 +211,24 @@ const ExpressView = ({ pendingDays, packedDays, deliveredDays, onPack, onDeliver
         ))}
       </div>
 
-      {expressTab === 'cocina' && (
-        pendingDays.length === 0
-          ? <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
-          : <CocinaView orderDays={pendingDays} onPack={onPack} DAY_LABELS={DAY_LABELS} />
-      )}
-      {expressTab === 'empaque' && (
-        pendingDays.length === 0 && packedDays.length === 0
-          ? <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
-          : <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onDeliver={onDeliver} />
-      )}
-      {expressTab === 'entrega' && (
-        deliveredDays.length === 0
-          ? <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
-          : <EntregaView orderDays={deliveredDays} />
-      )}
+      {expressTab === 'cocina' &&
+        (pendingDays.length === 0 ? (
+          <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
+        ) : (
+          <CocinaView orderDays={pendingDays} onPack={onPack} DAY_LABELS={DAY_LABELS} />
+        ))}
+      {expressTab === 'empaque' &&
+        (pendingDays.length === 0 && packedDays.length === 0 ? (
+          <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
+        ) : (
+          <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onDeliver={onDeliver} />
+        ))}
+      {expressTab === 'entrega' &&
+        (deliveredDays.length === 0 ? (
+          <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
+        ) : (
+          <EntregaView orderDays={deliveredDays} />
+        ))}
     </div>
   );
 };
@@ -208,21 +236,22 @@ const ExpressView = ({ pendingDays, packedDays, deliveredDays, onPack, onDeliver
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const Production = () => {
-  const { supabase }           = useApp();
+  const { supabase } = useApp();
   const { weekStart, weekEnd } = getWeekRange();
-  const todayStr               = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  const [activeTab,    setActiveTab]    = useState('cocina');
-  const [expressTab,   setExpressTab]   = useState('cocina');
+  const [activeTab, setActiveTab] = useState('cocina');
+  const [expressTab, setExpressTab] = useState('cocina');
+  const [showPrint, setShowPrint] = useState(false);
   const [clientFilter, setClientFilter] = useState('todos');
 
-  const [slots,        setSlots]        = useState([]);
+  const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  const [loadingDays,   setLoadingDays]   = useState(false);
-  const [loading,       setLoading]       = useState(false);
-  const [pendingDays,   setPendingDays]   = useState([]);
-  const [packedDays,    setPackedDays]    = useState([]);
+  const [loadingDays, setLoadingDays] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [pendingDays, setPendingDays] = useState([]);
+  const [packedDays, setPackedDays] = useState([]);
   const [deliveredDays, setDeliveredDays] = useState([]);
 
   // ── Load routes → build delivery slots ──────────────────────────────────────
@@ -236,11 +265,17 @@ const Production = () => {
       .select('id_route, name, route_type, route_delivery_days(day_of_week)')
       .eq('is_active', true);
 
-    if (error) { console.error(error); setLoadingDays(false); return; }
+    if (error) {
+      console.error(error);
+      setLoadingDays(false);
+      return;
+    }
 
-    const allDayNames = [...new Set(
-      (routes ?? []).flatMap((r) => (r.route_delivery_days ?? []).map((d) => d.day_of_week))
-    )];
+    const allDayNames = [
+      ...new Set(
+        (routes ?? []).flatMap((r) => (r.route_delivery_days ?? []).map((d) => d.day_of_week))
+      ),
+    ];
 
     if (allDayNames.length === 0) {
       const { data: fallback } = await supabase
@@ -253,7 +288,7 @@ const Production = () => {
 
       const uniqueDates = [...new Set((fallback ?? []).map((d) => d.delivery_date))].sort();
       const fallbackSlots = uniqueDates.map((dateStr) => {
-        const d    = new Date(dateStr + 'T00:00:00');
+        const d = new Date(dateStr + 'T00:00:00');
         const name = DAY_ORDER[d.getDay() === 0 ? 6 : d.getDay() - 1];
         return { name, label: DAY_LABELS[name] ?? name, deliveryDate: dateStr };
       });
@@ -263,9 +298,9 @@ const Production = () => {
       return;
     }
 
-    const weekMonday  = new Date(weekStart + 'T00:00:00');
-    const allSlots    = buildDeliverySlots(allDayNames, weekMonday);
-    const queryFrom   = new Date(weekMonday);
+    const weekMonday = new Date(weekStart + 'T00:00:00');
+    const allSlots = buildDeliverySlots(allDayNames, weekMonday);
+    const queryFrom = new Date(weekMonday);
     queryFrom.setDate(weekMonday.getDate() - 1);
     const queryFromStr = queryFrom.toISOString().split('T')[0];
     const effectiveFrom = todayStr < queryFromStr ? todayStr : queryFromStr;
@@ -279,7 +314,7 @@ const Production = () => {
       .lte('delivery_date', weekEnd);
 
     const activeDateSet = new Set((activeDates ?? []).map((d) => d.delivery_date));
-    const activeSlots   = allSlots.filter((slot) => activeDateSet.has(slot.deliveryDate));
+    const activeSlots = allSlots.filter((slot) => activeDateSet.has(slot.deliveryDate));
 
     setSlots(activeSlots);
     if (activeSlots.length > 0 && !selectedSlot) setSelectedSlot(activeSlots[0]);
@@ -307,20 +342,20 @@ const Production = () => {
       base('DELIVERED'),
     ]);
 
-    if (pendingRes.error)   console.error(pendingRes.error);
-    if (packedRes.error)    console.error(packedRes.error);
+    if (pendingRes.error) console.error(pendingRes.error);
+    if (packedRes.error) console.error(packedRes.error);
     if (deliveredRes.error) console.error(deliveredRes.error);
 
-    setPendingDays(pendingRes.data   ?? []);
-    setPackedDays(packedRes.data     ?? []);
+    setPendingDays(pendingRes.data ?? []);
+    setPackedDays(packedRes.data ?? []);
     setDeliveredDays(deliveredRes.data ?? []);
     setLoading(false);
   };
 
   // ── Express: fetch today's orders regardless of slot ─────────────────────────
 
-  const [expressPendingAll,   setExpressPendingAll]   = useState([]);
-  const [expressPackedAll,    setExpressPackedAll]    = useState([]);
+  const [expressPendingAll, setExpressPendingAll] = useState([]);
+  const [expressPackedAll, setExpressPackedAll] = useState([]);
   const [expressDeliveredAll, setExpressDeliveredAll] = useState([]);
 
   const getExpressData = async () => {
@@ -335,13 +370,18 @@ const Production = () => {
 
     const [p, k, d] = await Promise.all([base('PENDING'), base('PACKED'), base('DELIVERED')]);
     const isExpress = (row) => row.orders?.route_id === null;
-    setExpressPendingAll((p.data   ?? []).filter(isExpress));
-    setExpressPackedAll((k.data    ?? []).filter(isExpress));
+    setExpressPendingAll((p.data ?? []).filter(isExpress));
+    setExpressPackedAll((k.data ?? []).filter(isExpress));
     setExpressDeliveredAll((d.data ?? []).filter(isExpress));
   };
 
-  useEffect(() => { getAvailableDays(); getExpressData(); }, []);
-  useEffect(() => { getData(); }, [selectedSlot]);
+  useEffect(() => {
+    getAvailableDays();
+    getExpressData();
+  }, []);
+  useEffect(() => {
+    getData();
+  }, [selectedSlot]);
 
   const refresh = async () => {
     await getAvailableDays();
@@ -358,12 +398,16 @@ const Production = () => {
       .update({ status: newStatus })
       .eq('id_order_day', orderDayId);
 
-    if (error) { sileo.error('Error al actualizar el estado'); console.error(error); return; }
+    if (error) {
+      sileo.error('Error al actualizar el estado');
+      console.error(error);
+      return;
+    }
     sileo.success(successMsg);
     await refresh();
   };
 
-  const markPacked    = (id) => updateStatus(id, 'PACKED',    '📦 Marcado como empacado');
+  const markPacked = (id) => updateStatus(id, 'PACKED', '📦 Marcado como empacado');
   const markDelivered = (id) => updateStatus(id, 'DELIVERED', '🚚 Entrega registrada');
 
   // ── Filters ────────────────────────────────────────────────────────────────────
@@ -375,12 +419,12 @@ const Production = () => {
 
   // Normal tabs exclude express (route_id = null + today)
   const isExpressDay = (d) => d.orders?.route_id === null && d.delivery_date === todayStr;
-  const normalPending   = filterByClient(pendingDays.filter(d => !isExpressDay(d)));
-  const normalPacked    = filterByClient(packedDays.filter(d => !isExpressDay(d)));
-  const normalDelivered = filterByClient(deliveredDays.filter(d => !isExpressDay(d)));
+  const normalPending = filterByClient(pendingDays.filter((d) => !isExpressDay(d)));
+  const normalPacked = filterByClient(packedDays.filter((d) => !isExpressDay(d)));
+  const normalDelivered = filterByClient(deliveredDays.filter((d) => !isExpressDay(d)));
 
   const counts = {
-    cocina:  normalPending.length,
+    cocina: normalPending.length,
     empaque: normalPacked.length + normalPending.length,
     entrega: normalDelivered.length,
     express: expressPendingAll.length + expressPackedAll.length,
@@ -390,14 +434,62 @@ const Production = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
-        <p className="text-slate-500 mt-1">
-          {'Semana del '}
-          {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })}
-          {' al '}
-          {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
-        </p>
+      {/* Print report */}
+      {showPrint && activeTab !== 'express' && (
+        <ProductionPrintReport
+          orderDays={[...pendingDays, ...packedDays, ...deliveredDays]}
+          slotLabel={selectedSlot?.label}
+          weekLabel={
+            new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', {
+              day: '2-digit',
+              month: 'long',
+            }) +
+            ' al ' +
+            new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })
+          }
+          onClose={() => setShowPrint(false)}
+        />
+      )}
+      {showPrint && activeTab === 'express' && (
+        <ProductionPrintReport
+          orderDays={[...expressPendingAll, ...expressPackedAll, ...expressDeliveredAll]}
+          slotLabel="Express"
+          weekLabel={new Date(todayStr + 'T00:00:00').toLocaleDateString('es-CR', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+          })}
+          onClose={() => setShowPrint(false)}
+        />
+      )}
+
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
+          <p className="text-slate-500 mt-1">
+            {'Semana del '}
+            {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', {
+              day: '2-digit',
+              month: 'long',
+            })}
+            {' al '}
+            {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowPrint(true)}
+          className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+        >
+          <Printer size={15} /> Imprimir resumen
+        </button>
       </div>
 
       {loadingDays ? (
@@ -426,9 +518,9 @@ const Production = () => {
               )}
               <div className="flex gap-1 mb-4">
                 {[
-                  { id: 'todos',    label: '🌐 Todos'      },
-                  { id: 'personal', label: '👤 Personales'  },
-                  { id: 'family',   label: '👨‍👩‍👧 Familiares' },
+                  { id: 'todos', label: '🌐 Todos' },
+                  { id: 'personal', label: '👤 Personales' },
+                  { id: 'family', label: '👨‍👩‍👧 Familiares' },
                 ].map(({ id, label }) => (
                   <ClientFilterButton
                     key={id}
@@ -466,11 +558,13 @@ const Production = () => {
                 <CocinaView orderDays={normalPending} onPack={markPacked} DAY_LABELS={DAY_LABELS} />
               )}
               {activeTab === 'empaque' && (
-                <EmpaqueView pendingDays={normalPending} packedDays={normalPacked} onDeliver={markDelivered} />
+                <EmpaqueView
+                  pendingDays={normalPending}
+                  packedDays={normalPacked}
+                  onDeliver={markDelivered}
+                />
               )}
-              {activeTab === 'entrega' && (
-                <EntregaView orderDays={normalDelivered} />
-              )}
+              {activeTab === 'entrega' && <EntregaView orderDays={normalDelivered} />}
               {activeTab === 'express' && (
                 <ExpressView
                   pendingDays={expressPendingAll}

@@ -1,6 +1,14 @@
 import { useState } from 'react';
 
-const DAY_LABELS = { Monday:'Lunes', Tuesday:'Martes', Wednesday:'Miércoles', Thursday:'Jueves', Friday:'Viernes', Saturday:'Sábado', Sunday:'Domingo' };
+const DAY_LABELS = {
+  Monday: 'Lunes',
+  Tuesday: 'Martes',
+  Wednesday: 'Miércoles',
+  Thursday: 'Jueves',
+  Friday: 'Viernes',
+  Saturday: 'Sábado',
+  Sunday: 'Domingo',
+};
 
 // Displays current route + optional inline selector to change it
 const RouteSelector = ({ resolvedRoute, allRoutes, onChange, readOnly = false }) => {
@@ -21,7 +29,10 @@ const RouteSelector = ({ resolvedRoute, allRoutes, onChange, readOnly = false })
             {days.length > 0 && (
               <div className="flex gap-1 mt-1 flex-wrap">
                 {days.map((d, i) => (
-                  <span key={i} className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">
+                  <span
+                    key={i}
+                    className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full"
+                  >
                     {DAY_LABELS[d.day_of_week] ?? d.day_of_week}
                   </span>
                 ))}
@@ -47,7 +58,10 @@ const RouteSelector = ({ resolvedRoute, allRoutes, onChange, readOnly = false })
               <button
                 key={route.id_route}
                 type="button"
-                onClick={() => { onChange(route); setOpen(false); }}
+                onClick={() => {
+                  onChange(route);
+                  setOpen(false);
+                }}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${
                   active
                     ? 'bg-slate-800 text-white border-slate-800'
