@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import HistoryView from '../History/HistoryView';
-
+import { Clock } from 'lucide-react';
 import OrderBlock from './OrderBlock';
 
 // Current week view — active orders
