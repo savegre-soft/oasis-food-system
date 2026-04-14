@@ -1,7 +1,8 @@
 import MacroPanel from '../../MacroPanel';
 import RecipeIngredientEditor from '../../RecipeIngredientEditor';
+import { MACRO_UNIT } from '../../orderUtils';
 
-const STANDARD_MACRO = { protein_value: 120, protein_unit: 'g', carb_value: 120, carb_unit: 'g' };
+const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
 
 const StepExpressRecipes = ({
   expressType,
@@ -27,18 +28,14 @@ const StepExpressRecipes = ({
 
   const isStdActive =
     expressMacros &&
-    String(expressMacros.protein_value) === '120' &&
-    expressMacros.protein_unit === 'g' &&
-    String(expressMacros.carb_value) === '120' &&
-    expressMacros.carb_unit === 'g';
+    String(expressMacros.protein_value) === '1' &&
+    String(expressMacros.carb_value) === '1';
 
   const applyClientMacro = () => {
     const m = expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
     setExpressMacros({
       protein_value: m.protein_value,
-      protein_unit: m.protein_unit,
       carb_value: m.carb_value,
-      carb_unit: m.carb_unit,
     });
   };
 
@@ -97,7 +94,7 @@ const StepExpressRecipes = ({
                   : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
               }`}
             >
-              ⭐ Estándar (120g)
+              ⭐ Estándar (1 {MACRO_UNIT})
             </button>
           </div>
         </div>

@@ -114,16 +114,12 @@ const EditOrder = ({ order, onSuccess }) => {
     if (isLunch)
       setLunchMacros({
         protein_value: order.protein_snapshot ?? '',
-        protein_unit: order.protein_unit_snapshot ?? 'g',
         carb_value: order.carb_snapshot ?? '',
-        carb_unit: order.carb_unit_snapshot ?? 'g',
       });
     else
       setDinnerMacros({
         protein_value: order.protein_snapshot ?? '',
-        protein_unit: order.protein_unit_snapshot ?? 'g',
         carb_value: order.carb_snapshot ?? '',
-        carb_unit: order.carb_unit_snapshot ?? 'g',
       });
 
     // Recipes
@@ -147,12 +143,8 @@ const EditOrder = ({ order, onSuccess }) => {
         route_id: resolvedRoute?.id_route ?? null,
         protein_snapshot:
           (type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null,
-        protein_unit_snapshot:
-          (type === 'Dinner' ? dinnerMacros?.protein_unit : lunchMacros?.protein_unit) ?? null,
         carb_snapshot:
           (type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null,
-        carb_unit_snapshot:
-          (type === 'Dinner' ? dinnerMacros?.carb_unit : lunchMacros?.carb_unit) ?? null,
       })
       .eq('id_order', order.id_order);
     if (orderErr) {
@@ -211,9 +203,7 @@ const EditOrder = ({ order, onSuccess }) => {
               recipe_id: r.recipe_id,
               quantity: Number(r.quantity) || 1,
               protein_value_applied: eff?.protein_value ?? null,
-              protein_unit_applied: eff?.protein_unit ?? null,
               carb_value_applied: eff?.carb_value ?? null,
-              carb_unit_applied: eff?.carb_unit ?? null,
             };
           })
         )

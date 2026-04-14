@@ -36,10 +36,10 @@ const Customer = () => {
           `
           *,
           lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey (
-            id_macro_profile, name, protein_value, protein_unit, carb_value, carb_unit
+            id_macro_profile, name, protein_value, carb_value
           ),
           dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
-            id_macro_profile, name, protein_value, protein_unit, carb_value, carb_unit
+            id_macro_profile, name, protein_value, carb_value
           )
         `
         )

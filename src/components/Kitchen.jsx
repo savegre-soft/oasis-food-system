@@ -70,24 +70,20 @@ export const groupByRecipe = (orderDays) => {
           quantity: 0,
           orderDayIds: new Set(),
           protein: detail.protein_value_applied,
-          proteinUnit: detail.protein_unit_applied,
           carb: detail.carb_value_applied,
-          carbUnit: detail.carb_unit_applied,
         };
       }
 
       const m = g.clients[clientName].meals[mealKey];
       m.quantity += qty;
-      // Macros are per-unit — multiply by quantity
+      // Macros are unit counts — multiply by quantity
       const pVal = parseFloat(detail.protein_value_applied);
       const cVal = parseFloat(detail.carb_value_applied);
       if (!isNaN(pVal)) {
         g.totalProtein = (g.totalProtein ?? 0) + pVal * qty;
-        g.totalProteinUnit = detail.protein_unit_applied ?? g.totalProteinUnit ?? 'g';
       }
       if (!isNaN(cVal)) {
         g.totalCarb = (g.totalCarb ?? 0) + cVal * qty;
-        g.totalCarbUnit = detail.carb_unit_applied ?? g.totalCarbUnit ?? 'g';
       }
       m.orderDayIds.add(orderDay.id_order_day);
     }

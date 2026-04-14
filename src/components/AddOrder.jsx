@@ -22,7 +22,7 @@ import StepPayment from './orders/steps/StepPayment';
 import StepConfirm from './orders/steps/StepConfirm';
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const STANDARD_MACRO = { protein_value: 120, protein_unit: 'g', carb_value: 120, carb_unit: 'g' };
+const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
 
 const PERSONAL_STEPS = ['Cliente', 'Menú', 'Ajustes', 'Pago', 'Confirmar'];
 const FAMILY_STEPS   = ['Cliente', 'Ajustes', 'Pago', 'Confirmar'];
@@ -73,7 +73,7 @@ const AddOrder = ({ onSuccess }) => {
   const [expressType, setExpressType]                     = useState('Lunch');
   const [expressIngredientOverrides, setExpressIngredientOverrides] = useState({});
   const [expressMacros, setExpressMacros] = useState({
-    protein_value: '', protein_unit: 'g', carb_value: '', carb_unit: 'g',
+    protein_value: '', carb_value: '',
   });
 
   const familyClient = selectedClient ? isFamily(selectedClient) : false;
@@ -103,8 +103,8 @@ const AddOrder = ({ onSuccess }) => {
         .from('clients')
         .select(
           `id_client, name, client_type,
-           lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey(id_macro_profile,name,protein_value,protein_unit,carb_value,carb_unit),
-           dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey(id_macro_profile,name,protein_value,protein_unit,carb_value,carb_unit)`
+           lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey(id_macro_profile,name,protein_value,carb_value),
+           dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey(id_macro_profile,name,protein_value,carb_value)`
         )
         .order('name');
       setClients(data ?? []);
@@ -155,8 +155,8 @@ const AddOrder = ({ onSuccess }) => {
     if (!selectedClient) return;
     const lm = selectedClient.lunch_macro;
     const dm = selectedClient.dinner_macro;
-    if (lm) setLunchMacros({ protein_value: lm.protein_value, protein_unit: lm.protein_unit, carb_value: lm.carb_value, carb_unit: lm.carb_unit });
-    if (dm) setDinnerMacros({ protein_value: dm.protein_value, protein_unit: dm.protein_unit, carb_value: dm.carb_value, carb_unit: dm.carb_unit });
+    if (lm) setLunchMacros({ protein_value: lm.protein_value, carb_value: lm.carb_value });
+    if (dm) setDinnerMacros({ protein_value: dm.protein_value, carb_value: dm.carb_value });
   }, [selectedClient]);
 
   // Reset dayRecipes when switching express/normal
@@ -174,7 +174,7 @@ const AddOrder = ({ onSuccess }) => {
     const macro = expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
     setExpressMacros(
       macro
-        ? { protein_value: macro.protein_value, protein_unit: macro.protein_unit, carb_value: macro.carb_value, carb_unit: macro.carb_unit }
+        ? { protein_value: macro.protein_value, carb_value: macro.carb_value }
         : { ...STANDARD_MACRO }
     );
   }, [selectedClient, expressType, isExpress]);
@@ -353,7 +353,7 @@ const AddOrder = ({ onSuccess }) => {
     setExpressRecipes([]);
     setExpressType('Lunch');
     setExpressIngredientOverrides({});
-    setExpressMacros({ protein_value: '', protein_unit: 'g', carb_value: '', carb_unit: 'g' });
+    setExpressMacros({ protein_value: '', carb_value: '' });
     setPaymentType('weekly');
     setPaymentAmount('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -399,9 +399,7 @@ const AddOrder = ({ onSuccess }) => {
           macro_profile_snapshot_id:
             (type === 'Dinner' ? selectedClient?.dinner_macro_profile_id : selectedClient?.lunch_macro_profile_id) ?? null,
           protein_snapshot: isExpress ? expressMacros.protein_value : ((type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null),
-          protein_unit_snapshot: isExpress ? expressMacros.protein_unit : ((type === 'Dinner' ? dinnerMacros?.protein_unit : lunchMacros?.protein_unit) ?? null),
           carb_snapshot: isExpress ? expressMacros.carb_value : ((type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null),
-          carb_unit_snapshot: isExpress ? expressMacros.carb_unit : ((type === 'Dinner' ? dinnerMacros?.carb_unit : lunchMacros?.carb_unit) ?? null),
         }])
         .select('id_order')
         .single();
@@ -445,9 +443,7 @@ const AddOrder = ({ onSuccess }) => {
                 recipe_id: r.recipe_id,
                 quantity: Number(r.quantity) || 1,
                 protein_value_applied: eff?.protein_value ?? null,
-                protein_unit_applied:  eff?.protein_unit  ?? null,
                 carb_value_applied:    eff?.carb_value    ?? null,
-                carb_unit_applied:     eff?.carb_unit     ?? null,
               };
             })
           )
@@ -624,8 +620,8 @@ const AddOrder = ({ onSuccess }) => {
           clientDinnerMacro={selectedClient?.dinner_macro}
           onApplyStandardLunch={() => setLunchMacros({ ...STANDARD_MACRO })}
           onApplyStandardDinner={() => setDinnerMacros({ ...STANDARD_MACRO })}
-          onApplyClientLunch={() => { const m = selectedClient?.lunch_macro; if (m) setLunchMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit }); }}
-          onApplyClientDinner={() => { const m = selectedClient?.dinner_macro; if (m) setDinnerMacros({ protein_value: m.protein_value, protein_unit: m.protein_unit, carb_value: m.carb_value, carb_unit: m.carb_unit }); }}
+          onApplyClientLunch={() => { const m = selectedClient?.lunch_macro; if (m) setLunchMacros({ protein_value: m.protein_value, carb_value: m.carb_value }); }}
+          onApplyClientDinner={() => { const m = selectedClient?.dinner_macro; if (m) setDinnerMacros({ protein_value: m.protein_value, carb_value: m.carb_value }); }}
         />
       )}
 

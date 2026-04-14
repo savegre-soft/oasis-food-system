@@ -1,3 +1,5 @@
+import { MACRO_UNIT } from './orderUtils';
+
 const STATUS_STYLES = {
   PENDING: { label: 'Pendiente', className: 'bg-yellow-50 text-yellow-700' },
   DELIVERED: { label: 'Entregado', className: 'bg-green-50 text-green-700' },
@@ -49,9 +51,7 @@ const OrderCard = ({ order }) => {
           {/* Macros snapshot */}
           {order.protein_snapshot && (
             <p className="text-xs text-slate-400">
-              Proteína: {order.protein_snapshot}
-              {order.protein_unit_snapshot} · Carbos: {order.carb_snapshot}
-              {order.carb_unit_snapshot}
+              Proteína: {order.protein_snapshot} {MACRO_UNIT} · Carbos: {order.carb_snapshot} {MACRO_UNIT}
             </p>
           )}
 

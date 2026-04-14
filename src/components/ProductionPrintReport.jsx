@@ -1,36 +1,37 @@
 import { useEffect, useRef } from 'react';
 import { X, Printer, FlameKindling, Wheat, Salad, UtensilsCrossed } from 'lucide-react';
 import { groupByRecipe } from './Kitchen';
+import { MACRO_UNIT } from './orderUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const round1 = (n) => Math.round(n * 10) / 10;
 
-const fmt = (val, unit) => {
+const fmt = (val) => {
   if (val == null || isNaN(Number(val))) return null;
-  return round1(Number(val)) + (unit ?? 'g');
+  const n = round1(Number(val));
+  return `${n} ${MACRO_UNIT}`;
 };
 
 /**
  * Distribuye el macro de CADA receta entre sus ingredientes de esa categoría.
  * Devuelve [{ name, total, unit, units }] ordenado por unidades desc.
  */
-const buildIngBreakdown = (recipes, category, macroKey, macroUnitKey) => {
+const buildIngBreakdown = (recipes, category, macroKey) => {
   const breakdown = {};
   for (const r of recipes) {
     const ings = r.effectiveIngredients?.[category] ?? [];
     if (ings.length === 0) continue;
     const macro = r[macroKey] ?? 0;
-    const unit = r[macroUnitKey] ?? 'g';
     const share = macro / ings.length; // porción por ingrediente (de esta receta)
     for (const name of ings) {
-      if (!breakdown[name]) breakdown[name] = { total: 0, unit, units: 0 };
+      if (!breakdown[name]) breakdown[name] = { total: 0, units: 0 };
       breakdown[name].total += share;
       breakdown[name].units += r.totalUnits;
     }
   }
   return Object.entries(breakdown)
-    .map(([name, { total, unit, units }]) => ({ name, total: round1(total), unit, units }))
+    .map(([name, { total, units }]) => ({ name, total: round1(total), units }))
     .sort((a, b) => b.units - a.units || b.total - a.total);
 };
 
@@ -51,34 +52,22 @@ const buildIngCount = (recipes, category) => {
 };
 
 const buildSummary = (grouped) => {
-  let totalProtein = 0,
-    totalCarb = 0,
-    proteinUnit = 'g',
-    carbUnit = 'g';
+  let totalProtein = 0, totalCarb = 0;
   const recipes = Object.values(grouped).sort((a, b) => b.totalUnits - a.totalUnits);
 
   for (const r of recipes) {
-    if (r.totalProtein != null) {
-      totalProtein += r.totalProtein;
-      proteinUnit = r.totalProteinUnit ?? 'g';
-    }
-    if (r.totalCarb != null) {
-      totalCarb += r.totalCarb;
-      carbUnit = r.totalCarbUnit ?? 'g';
-    }
+    if (r.totalProtein != null) totalProtein += r.totalProtein;
+    if (r.totalCarb != null) totalCarb += r.totalCarb;
   }
 
-  // Ahora ambas categorías usan buildIngBreakdown (mismo criterio: gramos por ingrediente)
-  const proteinByType = buildIngBreakdown(recipes, 'protein', 'totalProtein', 'totalProteinUnit');
-  const carbByType = buildIngBreakdown(recipes, 'carb', 'totalCarb', 'totalCarbUnit');
+  const proteinByType = buildIngBreakdown(recipes, 'protein', 'totalProtein');
+  const carbByType = buildIngBreakdown(recipes, 'carb', 'totalCarb');
   const extraByType = buildIngCount(recipes, 'extra');
 
   return {
     recipes,
     totalProtein,
     totalCarb,
-    proteinUnit,
-    carbUnit,
     proteinByType,
     carbByType,
     extraByType,
@@ -113,8 +102,6 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
     recipes,
     totalProtein,
     totalCarb,
-    proteinUnit,
-    carbUnit,
     proteinByType,
     carbByType,
     extraByType,
@@ -155,8 +142,6 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
       recipes,
       totalProtein,
       totalCarb,
-      proteinUnit,
-      carbUnit,
       proteinByType,
       carbByType,
       extraByType,
@@ -225,7 +210,7 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <SummaryCard
                   label="Proteínas"
-                  value={fmt(totalProtein, proteinUnit) ?? '—'}
+                  value={fmt(totalProtein) ?? '—'}
                   sub={`${proteinByType.length} tipo${proteinByType.length !== 1 ? 's' : ''}`}
                   colorClass="bg-red-50 border-red-200 text-red-800"
                   subClass="text-red-500"
@@ -233,7 +218,7 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                 />
                 <SummaryCard
                   label="Carbohidratos"
-                  value={fmt(totalCarb, carbUnit) ?? '—'}
+                  value={fmt(totalCarb) ?? '—'}
                   sub={`${carbByType.length} tipo${carbByType.length !== 1 ? 's' : ''}`}
                   colorClass="bg-amber-50 border-amber-200 text-amber-800"
                   subClass="text-amber-500"
@@ -267,15 +252,15 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                       <BreakdownCard
                         title="🥩 Proteínas"
                         headerClass="text-red-700"
-                        total={fmt(totalProtein, proteinUnit)}
+                        total={fmt(totalProtein)}
                         totalLabel="Total"
                         totalClass="text-red-600"
                       >
-                        {proteinByType.map(({ name, total, unit, units }) => (
+                        {proteinByType.map(({ name, total, units }) => (
                           <IngRow
                             key={name}
                             name={name}
-                            right={fmt(total, unit) ?? '—'}
+                            right={fmt(total) ?? '—'}
                             sub={`${units} plato${units !== 1 ? 's' : ''}`}
                             rightClass="text-red-700 font-bold"
                           />
@@ -288,15 +273,15 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                       <BreakdownCard
                         title="🍚 Carbohidratos"
                         headerClass="text-amber-700"
-                        total={fmt(totalCarb, carbUnit)}
+                        total={fmt(totalCarb)}
                         totalLabel="Total"
                         totalClass="text-amber-600"
                       >
-                        {carbByType.map(({ name, total, unit, units }) => (
+                        {carbByType.map(({ name, total, units }) => (
                           <IngRow
                             key={name}
                             name={name}
-                            right={fmt(total, unit) ?? '—'}
+                            right={fmt(total) ?? '—'}
                             sub={`${units} plato${units !== 1 ? 's' : ''}`}
                             rightClass="text-amber-700 font-bold"
                           />
@@ -408,12 +393,12 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                               {r.totalUnits}
                             </td>
                             <td className="px-4 py-3 text-center font-semibold text-red-600">
-                              {fmt(r.totalProtein, r.totalProteinUnit) ?? (
+                              {fmt(r.totalProtein) ?? (
                                 <span className="text-slate-300">—</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-center font-semibold text-amber-600">
-                              {fmt(r.totalCarb, r.totalCarbUnit) ?? (
+                              {fmt(r.totalCarb) ?? (
                                 <span className="text-slate-300">—</span>
                               )}
                             </td>
@@ -433,10 +418,10 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                           {totalUnits}
                         </td>
                         <td className="px-4 py-3 text-center font-bold text-red-600">
-                          {fmt(totalProtein, proteinUnit) ?? '—'}
+                          {fmt(totalProtein) ?? '—'}
                         </td>
                         <td className="px-4 py-3 text-center font-bold text-amber-600">
-                          {fmt(totalCarb, carbUnit) ?? '—'}
+                          {fmt(totalCarb) ?? '—'}
                         </td>
                       </tr>
                     </tfoot>
@@ -508,8 +493,6 @@ function buildPrintHTML({
   recipes,
   totalProtein,
   totalCarb,
-  proteinUnit,
-  carbUnit,
   proteinByType,
   carbByType,
   extraByType,
@@ -519,9 +502,9 @@ function buildPrintHTML({
   weekLabel,
   today,
 }) {
-  const fmtS = (val, unit) => {
+  const fmtS = (val) => {
     if (val == null || isNaN(Number(val))) return '—';
-    return Math.round(Number(val) * 10) / 10 + escapeHtml(unit ?? 'g');
+    return Math.round(Number(val) * 10) / 10 + ' ' + MACRO_UNIT;
   };
 
   // ── Tabla de recetas ────────────────────────────────────────────────────────
@@ -547,8 +530,8 @@ function buildPrintHTML({
       </td>
       <td style="padding:9px 10px;vertical-align:top;">${allIngs || '<em style="color:#cbd5e1;font-size:11px;">Sin ingredientes</em>'}</td>
       <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:13px;vertical-align:top;">${Number(r.totalUnits)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalProtein, r.totalProteinUnit)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalCarb, r.totalCarbUnit)}</td>
+      <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalProtein)}</td>
+      <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalCarb)}</td>
     </tr>`;
     })
     .join('');
@@ -567,22 +550,22 @@ function buildPrintHTML({
 
   const proteinRows = proteinByType
     .map(
-      ({ name, total, unit, units }) =>
+      ({ name, total, units }) =>
         `<tr style="border-bottom:1px solid #f8fafc;">
       <td style="padding:6px 10px;font-weight:600;color:#991b1b;">${escapeHtml(name)}</td>
       <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${Number(units)} plato${units !== 1 ? 's' : ''}</td>
-      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#dc2626;">${fmtS(total, unit)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#dc2626;">${fmtS(total)}</td>
     </tr>`
     )
     .join('');
 
   const carbRows = carbByType
     .map(
-      ({ name, total, unit, units }) =>
+      ({ name, total, units }) =>
         `<tr style="border-bottom:1px solid #f8fafc;">
       <td style="padding:6px 10px;font-weight:600;color:#92400e;">${escapeHtml(name)}</td>
       <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${Number(units)} plato${units !== 1 ? 's' : ''}</td>
-      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#d97706;">${fmtS(total, unit)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#d97706;">${fmtS(total)}</td>
     </tr>`
     )
     .join('');
@@ -615,12 +598,12 @@ function buildPrintHTML({
     <div style="display:flex;gap:12px;margin-bottom:20px;">
       <div style="flex:1;border:1px solid #fecaca;background:#fef2f2;border-radius:8px;padding:10px 14px;">
         <p style="font-size:9px;color:#991b1b;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Proteínas</p>
-        <p style="font-size:22px;font-weight:800;color:#b91c1c;margin:0;">${fmtS(totalProtein, proteinUnit)}</p>
+        <p style="font-size:22px;font-weight:800;color:#b91c1c;margin:0;">${fmtS(totalProtein)}</p>
         <p style="font-size:9px;color:#ef4444;margin:2px 0 0;">${proteinByType.length} tipo${proteinByType.length !== 1 ? 's' : ''}</p>
       </div>
       <div style="flex:1;border:1px solid #fde68a;background:#fffbeb;border-radius:8px;padding:10px 14px;">
         <p style="font-size:9px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Carbohidratos</p>
-        <p style="font-size:22px;font-weight:800;color:#b45309;margin:0;">${fmtS(totalCarb, carbUnit)}</p>
+        <p style="font-size:22px;font-weight:800;color:#b45309;margin:0;">${fmtS(totalCarb)}</p>
         <p style="font-size:9px;color:#f59e0b;margin:2px 0 0;">${carbByType.length} tipo${carbByType.length !== 1 ? 's' : ''}</p>
       </div>
       <div style="flex:1;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:8px;padding:10px 14px;">
@@ -641,8 +624,8 @@ function buildPrintHTML({
     <!-- Desglose por ingrediente -->
     <p style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;">Desglose por ingrediente</p>
     <div style="display:flex;gap:12px;margin-bottom:20px;">
-      ${proteinByType.length > 0 ? mkBreakdownTable('🥩 Proteínas', '#991b1b', proteinRows, 'Total', fmtS(totalProtein, proteinUnit)) : ''}
-      ${carbByType.length > 0 ? mkBreakdownTable('🍚 Carbohidratos', '#92400e', carbRows, 'Total', fmtS(totalCarb, carbUnit)) : ''}
+      ${proteinByType.length > 0 ? mkBreakdownTable('🥩 Proteínas', '#991b1b', proteinRows, 'Total', fmtS(totalProtein)) : ''}
+      ${carbByType.length > 0 ? mkBreakdownTable('🍚 Carbohidratos', '#92400e', carbRows, 'Total', fmtS(totalCarb)) : ''}
       ${extraByType.length > 0 ? mkBreakdownTable('🥗 Extras', '#166534', extraRows, 'Total', totalExtras > 0 ? totalExtras + '×' : null) : ''}
     </div>`
         : ''
@@ -668,8 +651,8 @@ function buildPrintHTML({
             Totales · ${recipes.length} receta${recipes.length !== 1 ? 's' : ''}
           </td>
           <td style="padding:9px 10px;text-align:center;font-weight:800;font-size:14px;color:#0f172a;">${totalUnits}</td>
-          <td style="padding:9px 10px;text-align:center;font-weight:800;color:#b91c1c;">${fmtS(totalProtein, proteinUnit)}</td>
-          <td style="padding:9px 10px;text-align:center;font-weight:800;color:#b45309;">${fmtS(totalCarb, carbUnit)}</td>
+          <td style="padding:9px 10px;text-align:center;font-weight:800;color:#b91c1c;">${fmtS(totalProtein)}</td>
+          <td style="padding:9px 10px;text-align:center;font-weight:800;color:#b45309;">${fmtS(totalCarb)}</td>
         </tr>
       </tfoot>
     </table>

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { MACRO_UNIT } from './orderUtils';
 
 import Modal from '../components/Modal';
 import AddOrder from '../components/AddOrder';
@@ -215,11 +216,9 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
               </p>
               <p className="text-sm text-slate-700">
                 {order.classification === 'Dinner' ? '🌙 ' : '☀️ '}
-                {order.protein_snapshot}
-                {order.protein_unit_snapshot} prot
+                {order.protein_snapshot} {MACRO_UNIT} prot
                 {' · '}
-                {order.carb_snapshot}
-                {order.carb_unit_snapshot} carbos
+                {order.carb_snapshot} {MACRO_UNIT} carbos
               </p>
             </div>
           )}
@@ -611,9 +610,7 @@ const Orders = () => {
         classification,
         status,
         protein_snapshot,
-        protein_unit_snapshot,
         carb_snapshot,
-        carb_unit_snapshot,
         clients ( id_client, name, client_type ),
         routes  ( id_route, name, route_delivery_days(day_of_week) ),
         order_days (
