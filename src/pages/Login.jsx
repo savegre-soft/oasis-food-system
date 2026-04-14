@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Mail, Lock, LogIn, Leaf } from 'lucide-react';
+import { Mail, Lock, LogIn, Leaf, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { sileo } from 'sileo';
@@ -13,6 +13,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // 🔹 Si ya hay sesión iniciada, redirigir
   useEffect(() => {
@@ -123,12 +124,21 @@ const Login = () => {
               <Lock className="text-gray-400 mr-2" size={18} />
 
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 className="w-full outline-none text-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="ml-2 text-gray-400 hover:text-gray-600 transition"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
