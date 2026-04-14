@@ -87,8 +87,8 @@ const Templates = () => {
     <>
       <ConfirmDialog
         open={!!toDelete}
-        title="¿Eliminar plantilla?"
-        message="Se eliminará la plantilla y todos sus días y recetas."
+        title="¿Eliminar menú?"
+        message="Se eliminará el menú y todos sus días y recetas."
         onConfirm={() => {
           eliminar(toDelete);
           setToDelete(null);
@@ -133,7 +133,7 @@ const Templates = () => {
         {/* Header */}
         <div className="mb-10 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Plantillas</h1>
+            <h1 className="text-3xl font-bold text-slate-800">Menús</h1>
             <p className="text-slate-500 mt-2">Crea y administra menús semanales reutilizables</p>
           </div>
 
@@ -142,7 +142,7 @@ const Templates = () => {
             className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium"
           >
             <LayoutTemplate size={16} />
-            Nueva Plantilla
+            Nuevo Menú
           </button>
         </div>
 
@@ -152,7 +152,7 @@ const Templates = () => {
         ) : templates.length === 0 ? (
           <div className="text-center py-20 text-slate-400">
             <LayoutTemplate size={40} className="mx-auto mb-3 opacity-30" />
-            <p>No hay plantillas registradas</p>
+            <p>No hay menús registrados</p>
           </div>
         ) : (
           <div className="space-y-4">

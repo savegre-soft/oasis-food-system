@@ -96,7 +96,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
       const { error } = await supabase
         .schema('operations')
         .from('order_templates')
-        .update({ name, description })
+        .update({ name, description, meal_type: mealType })
         .eq('id_template', initialData.id_template);
       if (error) {
         sileo.error('Error al actualizar la plantilla');
@@ -115,7 +115,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
       const { data, error } = await supabase
         .schema('operations')
         .from('order_templates')
-        .insert([{ name, description, is_active: true }])
+        .insert([{ name, description, meal_type: mealType, is_active: true }])
         .select('id_template')
         .single();
       if (error) {
@@ -165,9 +165,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
       }
     }
 
-    sileo.success(
-      isEdit ? 'Plantilla actualizada correctamente' : 'Plantilla creada correctamente'
-    );
+    sileo.success(isEdit ? 'Menú actualizado correctamente' : 'Menú creado correctamente');
     setLoading(false);
     if (onSuccess) onSuccess();
   };
@@ -180,7 +178,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">Nueva Plantilla</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-6">{isEdit ? 'Editar Menú' : 'Nuevo Menú'}</h1>
 
         {/* Stepper */}
         <div className="flex items-center mb-8">
@@ -222,7 +220,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
         {step === 1 && (
           <div className="space-y-5">
             <div>
-              <label className={labelClass}>Nombre de la plantilla</label>
+              <label className={labelClass}>Nombre del menú</label>
               <input
                 type="text"
                 value={name}
@@ -371,7 +369,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition text-sm font-medium disabled:opacity-40"
             >
               <Check size={16} />
-              {loading ? 'Guardando...' : 'Guardar Plantilla'}
+              {loading ? 'Guardando...' : 'Guardar Menú'}
             </button>
           )}
         </div>
