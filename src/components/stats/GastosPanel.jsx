@@ -1,30 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { DollarSign, Users, TrendingDown, Hash } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar,
+  BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
 
-import { useExpenseStatistics } from '../hooks/useExpenseStatistics';
-import { getThisMonth } from '../hooks/useDashboardData';
-import ChartCard from '../components/ChartCard';
-import DateRangeFilter from '../components/DateRangeFilter';
+import ChartCard from '../ChartCard';
+import StatCard from './StatCard';
 import {
   isoWeekMonday, fmtCRC, renderDonutLabel,
-  CATEGORY_COLORS, EXP_COLOR, EMP_COLOR,
-} from '../utils/chartUtils';
+  EXP_COLOR, EMP_COLOR, CATEGORY_COLORS,
+} from '../../utils/chartUtils';
 
-// ── Main ──────────────────────────────────────────────────────────────────────
-
-const ExpenseStadistic = () => {
-  const [dateRange, setDateRange] = useState(getThisMonth);
-
-  const { expenses, empCosts, loading, error } = useExpenseStatistics(dateRange);
-
+const GastosPanel = ({ expenses, empCosts, dateRange, loading }) => {
   const periodLabel = `${dateRange.from} → ${dateRange.to}`;
 
-  const chartData = useMemo(() => {
+  const { combinedByDay, categoryData, weeklyData, totalExpenses, totalEmp } = useMemo(() => {
     const dayMap = {};
     const empDayMap = {};
     for (
@@ -89,39 +81,15 @@ const ExpenseStadistic = () => {
     return { combinedByDay, categoryData, weeklyData, totalExpenses, totalEmp };
   }, [expenses, empCosts, dateRange]);
 
-  const { combinedByDay, categoryData, weeklyData, totalExpenses, totalEmp } = chartData;
   const totalCombined = totalExpenses + totalEmp;
 
-  if (error) return <p className="p-8 text-red-500 text-sm">Error: {error}</p>;
-
   return (
-    <div className="p-8 bg-slate-50 min-h-screen space-y-5">
-      <h1 className="text-3xl font-bold text-slate-800">Estadística de Gastos</h1>
-
-      <DateRangeFilter dateRange={dateRange} setDateRange={setDateRange} accent="orange" />
-
-      {/* Stat cards */}
+    <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-2"><DollarSign size={15} className="text-orange-500" /><p className="text-xs text-gray-500">Gastos operativos</p></div>
-          <p className="text-2xl font-bold text-orange-500">{loading ? '—' : fmtCRC(totalExpenses)}</p>
-          <p className="text-xs text-gray-400 mt-1">{loading ? '' : `${expenses.length} registro${expenses.length !== 1 ? 's' : ''}`}</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-2"><Users size={15} className="text-indigo-500" /><p className="text-xs text-gray-500">Costo de personal</p></div>
-          <p className="text-2xl font-bold text-indigo-500">{loading ? '—' : fmtCRC(totalEmp)}</p>
-          <p className="text-xs text-gray-400 mt-1">{loading ? '' : `${empCosts.length} registro${empCosts.length !== 1 ? 's' : ''}`}</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-2"><TrendingDown size={15} className="text-red-500" /><p className="text-xs text-gray-500">Total combinado</p></div>
-          <p className="text-2xl font-bold text-slate-800">{loading ? '—' : fmtCRC(totalCombined)}</p>
-          <p className="text-xs text-gray-400 mt-1">{periodLabel}</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-2"><Hash size={15} className="text-slate-400" /><p className="text-xs text-gray-500">Total registros</p></div>
-          <p className="text-2xl font-bold text-slate-700">{loading ? '—' : (expenses.length + empCosts.length).toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-1">{loading ? '' : `${expenses.length} gastos · ${empCosts.length} personal`}</p>
-        </div>
+        <StatCard icon={<DollarSign size={14} />} label="Gastos operativos"  value={loading ? '—' : fmtCRC(totalExpenses)} sub={loading ? '' : `${expenses.length} registros`}  accent="text-orange-500" bg="bg-orange-50" iconColor="text-orange-500" />
+        <StatCard icon={<Users size={14} />}      label="Costo de personal"  value={loading ? '—' : fmtCRC(totalEmp)}      sub={loading ? '' : `${empCosts.length} registros`} accent="text-indigo-500" bg="bg-indigo-50" iconColor="text-indigo-500" />
+        <StatCard icon={<TrendingDown size={14} />} label="Total combinado"  value={loading ? '—' : fmtCRC(totalCombined)} sub={periodLabel}                                    accent="text-slate-800"  bg="bg-slate-100" iconColor="text-slate-600" />
+        <StatCard icon={<Hash size={14} />}        label="Registros totales" value={loading ? '—' : (expenses.length + empCosts.length).toLocaleString()} sub={loading ? '' : `${expenses.length} gastos · ${empCosts.length} personal`} accent="text-slate-700" bg="bg-slate-100" iconColor="text-slate-500" />
       </div>
 
       <ChartCard title="Gastos por día" sub={periodLabel} loading={loading}>
@@ -149,11 +117,11 @@ const ExpenseStadistic = () => {
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={combinedByDay} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id="gradExp" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="sGradExp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={EXP_COLOR} stopOpacity={0.3} />
                   <stop offset="95%" stopColor={EXP_COLOR} stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="gradEmp" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="sGradEmp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={EMP_COLOR} stopOpacity={0.3} />
                   <stop offset="95%" stopColor={EMP_COLOR} stopOpacity={0} />
                 </linearGradient>
@@ -163,8 +131,8 @@ const ExpenseStadistic = () => {
               <YAxis tick={{ fontSize: 11 }} stroke="#cbd5e1" tickFormatter={(v) => `₡${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v, n) => [fmtCRC(v), n === 'acumGastos' ? 'Acum. Operativos' : 'Acum. Personal']} />
               <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 12 }} formatter={(v) => (v === 'acumGastos' ? 'Operativos (acum.)' : 'Personal (acum.)')} />
-              <Area type="monotone" dataKey="acumGastos" stroke={EXP_COLOR} strokeWidth={2} fill="url(#gradExp)" dot={false} activeDot={{ r: 4 }} />
-              <Area type="monotone" dataKey="acumPersonal" stroke={EMP_COLOR} strokeWidth={2} fill="url(#gradEmp)" dot={false} activeDot={{ r: 4 }} />
+              <Area type="monotone" dataKey="acumGastos" stroke={EXP_COLOR} strokeWidth={2} fill="url(#sGradExp)" dot={false} activeDot={{ r: 4 }} />
+              <Area type="monotone" dataKey="acumPersonal" stroke={EMP_COLOR} strokeWidth={2} fill="url(#sGradEmp)" dot={false} activeDot={{ r: 4 }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -213,8 +181,8 @@ const ExpenseStadistic = () => {
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="semana" tick={{ fontSize: 11 }} stroke="#cbd5e1" />
               <YAxis tick={{ fontSize: 11 }} stroke="#cbd5e1" tickFormatter={(v) => `₡${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v, n) => [fmtCRC(v), n === 'gastos' ? 'Operativos' : n === 'personal' ? 'Personal' : 'Total']} />
-              <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12 }} formatter={(v) => (v === 'gastos' ? 'Operativos' : v === 'personal' ? 'Personal' : 'Total')} />
+              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} formatter={(v, n) => [fmtCRC(v), n === 'gastos' ? 'Operativos' : 'Personal']} />
+              <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 12 }} formatter={(v) => (v === 'gastos' ? 'Operativos' : 'Personal')} />
               <Bar dataKey="gastos" fill={EXP_COLOR} radius={[4, 4, 0, 0]} maxBarSize={40} />
               <Bar dataKey="personal" fill={EMP_COLOR} radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>
@@ -225,4 +193,4 @@ const ExpenseStadistic = () => {
   );
 };
 
-export default ExpenseStadistic;
+export default GastosPanel;

@@ -129,7 +129,7 @@ export default function Customers() {
         )}
       </AnimatePresence>
 
-      <div className="p-8 bg-white rounded ">
+      <div className="p-8 bg-slate-50 rounded-2xl min-h-screen">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -197,8 +197,8 @@ export default function Customers() {
           <div className="flex items-center gap-1 mb-5 bg-white border border-slate-100 rounded-2xl p-1 w-fit shadow-sm">
             <button
               onClick={() => setViewSelector('grid')}
-              className={`p-2 ${
-                viewSelector === 'grid' ? 'bg-slate-800 text-white' : 'bg-white text-slate-500'
+              className={`p-2 rounded-xl transition ${
+                viewSelector === 'grid' ? 'bg-slate-800 text-white' : 'bg-white text-slate-500 hover:text-slate-700'
               }`}
             >
               <LayoutGrid size={18} />
@@ -206,8 +206,8 @@ export default function Customers() {
 
             <button
               onClick={() => setViewSelector('table')}
-              className={`p-2 ${
-                viewSelector === 'table' ? 'bg-slate-800 text-white' : 'bg-white text-slate-500'
+              className={`p-2 rounded-xl transition ${
+                viewSelector === 'table' ? 'bg-slate-800 text-white' : 'bg-white text-slate-500 hover:text-slate-700'
               }`}
             >
               <Table size={18} />
@@ -223,7 +223,7 @@ export default function Customers() {
             placeholder="Buscar cliente..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 transition text-sm"
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 transition text-sm"
           />
         </div>
         <hr className="my-4 border-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />

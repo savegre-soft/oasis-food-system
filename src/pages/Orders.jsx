@@ -712,7 +712,7 @@ const Orders = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar cliente o ruta..."
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
           />
         </div>
 

@@ -494,6 +494,16 @@ const IngRow = ({ name, right, sub, rightClass }) => (
 
 // ── HTML string for PDF/print ─────────────────────────────────────────────────
 
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 function buildPrintHTML({
   recipes,
   totalProtein,
@@ -511,7 +521,7 @@ function buildPrintHTML({
 }) {
   const fmtS = (val, unit) => {
     if (val == null || isNaN(Number(val))) return '—';
-    return Math.round(Number(val) * 10) / 10 + (unit ?? 'g');
+    return Math.round(Number(val) * 10) / 10 + escapeHtml(unit ?? 'g');
   };
 
   // ── Tabla de recetas ────────────────────────────────────────────────────────
@@ -519,7 +529,7 @@ function buildPrintHTML({
     .map((r, i) => {
       const ings = r.effectiveIngredients ?? {};
       const badgeFn = (name, bg, color) =>
-        `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${bg};color:${color};margin:2px;display:inline-block;">${name}</span>`;
+        `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${bg};color:${color};margin:2px;display:inline-block;">${escapeHtml(name)}</span>`;
 
       const allIngs = [
         ...(ings.protein ?? []).map((n) => badgeFn(n, '#fef2f2', '#b91c1c')),
@@ -531,12 +541,12 @@ function buildPrintHTML({
       return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;">
       <td style="padding:9px 10px;color:#94a3b8;font-size:11px;font-family:monospace;width:28px;">${i + 1}</td>
       <td style="padding:9px 10px;vertical-align:top;">
-        <span style="display:inline-block;background:#0f172a;color:#fff;border-radius:5px;padding:2px 7px;font-weight:700;font-size:12px;min-width:24px;text-align:center;margin-right:6px;">${r.totalUnits}</span>
-        <strong style="font-size:13px;">${r.recipe_name}</strong>
+        <span style="display:inline-block;background:#0f172a;color:#fff;border-radius:5px;padding:2px 7px;font-weight:700;font-size:12px;min-width:24px;text-align:center;margin-right:6px;">${Number(r.totalUnits)}</span>
+        <strong style="font-size:13px;">${escapeHtml(r.recipe_name)}</strong>
         ${r.isOverridden ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;">variante</span>' : ''}
       </td>
       <td style="padding:9px 10px;vertical-align:top;">${allIngs || '<em style="color:#cbd5e1;font-size:11px;">Sin ingredientes</em>'}</td>
-      <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:13px;vertical-align:top;">${r.totalUnits}</td>
+      <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:13px;vertical-align:top;">${Number(r.totalUnits)}</td>
       <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalProtein, r.totalProteinUnit)}</td>
       <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalCarb, r.totalCarbUnit)}</td>
     </tr>`;
@@ -559,8 +569,8 @@ function buildPrintHTML({
     .map(
       ({ name, total, unit, units }) =>
         `<tr style="border-bottom:1px solid #f8fafc;">
-      <td style="padding:6px 10px;font-weight:600;color:#991b1b;">${name}</td>
-      <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${units} plato${units !== 1 ? 's' : ''}</td>
+      <td style="padding:6px 10px;font-weight:600;color:#991b1b;">${escapeHtml(name)}</td>
+      <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${Number(units)} plato${units !== 1 ? 's' : ''}</td>
       <td style="padding:6px 10px;text-align:right;font-weight:700;color:#dc2626;">${fmtS(total, unit)}</td>
     </tr>`
     )
@@ -570,8 +580,8 @@ function buildPrintHTML({
     .map(
       ({ name, total, unit, units }) =>
         `<tr style="border-bottom:1px solid #f8fafc;">
-      <td style="padding:6px 10px;font-weight:600;color:#92400e;">${name}</td>
-      <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${units} plato${units !== 1 ? 's' : ''}</td>
+      <td style="padding:6px 10px;font-weight:600;color:#92400e;">${escapeHtml(name)}</td>
+      <td style="padding:6px 10px;font-size:10px;color:#94a3b8;text-align:center;">${Number(units)} plato${units !== 1 ? 's' : ''}</td>
       <td style="padding:6px 10px;text-align:right;font-weight:700;color:#d97706;">${fmtS(total, unit)}</td>
     </tr>`
     )
@@ -581,14 +591,14 @@ function buildPrintHTML({
     .map(
       ({ name, units }) =>
         `<tr style="border-bottom:1px solid #f8fafc;">
-      <td style="padding:6px 10px;font-weight:600;color:#166534;">${name}</td>
-      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#16a34a;">${units}×</td>
+      <td style="padding:6px 10px;font-weight:600;color:#166534;">${escapeHtml(name)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#16a34a;">${Number(units)}×</td>
     </tr>`
     )
     .join('');
 
   const hasBreakdown = proteinByType.length > 0 || carbByType.length > 0 || extraByType.length > 0;
-  const headerLine = [slotLabel, weekLabel].filter(Boolean).join(' · ');
+  const headerLine = [slotLabel, weekLabel].filter(Boolean).map(escapeHtml).join(' · ');
 
   return `<div style="padding:0 4px;font-family:system-ui,-apple-system,sans-serif;color:#1e293b;">
 
@@ -598,7 +608,7 @@ function buildPrintHTML({
         <h1 style="font-size:20px;font-weight:800;margin:0;letter-spacing:-0.3px;">Resumen de Producción</h1>
         ${headerLine ? `<p style="font-size:11px;color:#64748b;margin:3px 0 0;">${headerLine}</p>` : ''}
       </div>
-      <p style="font-size:10px;color:#94a3b8;margin:0;text-align:right;">${today}</p>
+      <p style="font-size:10px;color:#94a3b8;margin:0;text-align:right;">${escapeHtml(today)}</p>
     </div>
 
     <!-- Tarjetas de totales -->
@@ -665,7 +675,7 @@ function buildPrintHTML({
     </table>
 
     <p style="margin-top:24px;font-size:9px;color:#cbd5e1;text-align:center;border-top:1px solid #f1f5f9;padding-top:10px;">
-      Generado por Oasis Food System · ${today}
+      Generado por Oasis Food System · ${escapeHtml(today)}
     </p>
   </div>`;
 }
