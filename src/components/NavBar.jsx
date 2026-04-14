@@ -19,7 +19,7 @@ import {
 import { useApp } from '../context/AppContext'; // ✅ IMPORTAR CONTEXTO
 
 const links = [
-  { to: '/Main', label: 'Home', icon: Home },
+  { to: '/Main', label: 'Dashboards', icon: Home },
   { to: '/entregas', label: 'Entregas', icon: RouteIcon },
   { to: '/orders', label: 'Órdenes', icon: Handbag },
 ];

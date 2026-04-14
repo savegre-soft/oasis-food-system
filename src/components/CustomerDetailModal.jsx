@@ -1,26 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SafeMap from './SafeMap';
-import { useApp } from '../context/AppContext';
-
-const PAYMENT_TYPE_LABEL = {
-  monthly: 'Mensual',
-  weekly:  'Semanal',
-  express: 'Express',
-};
-
-const STATUS_STYLE = {
-  pending:   'bg-yellow-50 text-yellow-700',
-  paid:      'bg-green-50 text-green-700',
-  cancelled: 'bg-red-50 text-red-500',
-};
-
-const STATUS_LABEL = {
-  pending:   'Pendiente',
-  paid:      'Pagado',
-  cancelled: 'Cancelado',
-};
 
 const CLIENT_TYPE = {
   personal: { label: 'Personal', className: 'bg-blue-50 text-blue-700' },
@@ -62,7 +43,6 @@ const MacroPanel = ({ label, accent, macro }) => {
 };
 
 const CustomerDetailModal = ({ customer, onClose }) => {
-  const { supabase } = useApp();
   const overlayRef = useRef(null);
   const typeStyle = CLIENT_TYPE[customer.client_type] ?? CLIENT_TYPE.personal;
   const planStyle = customer.plan_type
@@ -71,9 +51,6 @@ const CustomerDetailModal = ({ customer, onClose }) => {
   const hasMap = customer.latitude && customer.longitude;
   const hasMacros = customer.lunch_macro || customer.dinner_macro;
 
-  const [payments, setPayments]     = useState([]);
-  const [loadingPay, setLoadingPay] = useState(true);
-
   // Close on Escape
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -81,22 +58,6 @@ const CustomerDetailModal = ({ customer, onClose }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Fetch payments for this client
-  useEffect(() => {
-    const fetchPayments = async () => {
-      setLoadingPay(true);
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('payments')
-        .select('id_payment, payment_type, amount, payment_date, status, notes, payment_orders(id_payment_order)')
-        .eq('client_id', customer.id_client)
-        .order('payment_date', { ascending: false })
-        .limit(10);
-      if (!error) setPayments(data ?? []);
-      setLoadingPay(false);
-    };
-    fetchPayments();
-  }, [customer.id_client, supabase]);
 
   return (
     <motion.div
@@ -183,58 +144,6 @@ const CustomerDetailModal = ({ customer, onClose }) => {
               )}
             </div>
           )}
-
-          {/* Pagos recientes */}
-          <div className="space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-              Pagos recientes
-            </p>
-            {loadingPay ? (
-              <p className="text-xs text-slate-400">Cargando pagos...</p>
-            ) : payments.length === 0 ? (
-              <p className="text-sm text-slate-400 italic">Sin pagos registrados</p>
-            ) : (
-              <div className="space-y-2">
-                {payments.map((p) => {
-                  const [y, m, d] = p.payment_date.split('-');
-                  const orderCount = p.payment_orders?.length ?? 0;
-                  return (
-                    <div
-                      key={p.id_payment}
-                      className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 py-3 border border-slate-100"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-800">
-                            ₡{Number(p.amount).toLocaleString()}
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            {PAYMENT_TYPE_LABEL[p.payment_type] ?? p.payment_type}
-                          </span>
-                          {orderCount > 0 && (
-                            <span className="text-xs text-slate-400">
-                              · {orderCount} orden{orderCount !== 1 ? 'es' : ''}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400 mt-0.5">{d}/{m}/{y}</p>
-                        {p.notes && (
-                          <p className="text-xs text-slate-500 truncate mt-0.5">{p.notes}</p>
-                        )}
-                      </div>
-                      <span
-                        className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${
-                          STATUS_STYLE[p.status] ?? 'bg-slate-100 text-slate-500'
-                        }`}
-                      >
-                        {STATUS_LABEL[p.status] ?? p.status}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
           {/* Mapa */}
           {hasMap && (

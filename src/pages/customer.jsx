@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
 import OrdersSection from '../components/orders/OrdersSection';
 import MacroPanel from '../components/macro/MacroPanel';
+import PaymentSection from '../components/PaymentsSection';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -125,8 +126,7 @@ const Customer = () => {
       )}
 
       {/* Pagos */}
-
-      {/*< PaymentSection clientId={Number(id)} />*/}
+      <PaymentSection clientId={Number(id)} />
 
       {/* Orders */}
       <OrdersSection clientId={Number(id)} />
