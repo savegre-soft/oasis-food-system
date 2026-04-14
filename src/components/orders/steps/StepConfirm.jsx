@@ -1,5 +1,5 @@
 import { Zap } from 'lucide-react';
-import { DAYS_ORDER, DAY_LABELS, DAY_SHORT } from '../../orderUtils';
+import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT } from '../../orderUtils';
 
 const StepConfirm = ({
   selectedClient,
@@ -106,9 +106,7 @@ const StepConfirm = ({
       <div>
         <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros</p>
         <p className="text-sm text-slate-700">
-          {expressType === 'Lunch' ? '☀️' : '🌙'} {expressMacros.protein_value}
-          {expressMacros.protein_unit} prot · {expressMacros.carb_value}
-          {expressMacros.carb_unit} carbos
+          {expressType === 'Lunch' ? '☀️' : '🌙'} {expressMacros.protein_value} {MACRO_UNIT} prot · {expressMacros.carb_value} {MACRO_UNIT} carbos
         </p>
       </div>
     )}
@@ -120,16 +118,12 @@ const StepConfirm = ({
         <p className="text-sm text-slate-700">
           {(menuType === 'Lunch' || menuType === 'both') && lunchMacros && (
             <span>
-              ☀️ {lunchMacros.protein_value}
-              {lunchMacros.protein_unit} prot · {lunchMacros.carb_value}
-              {lunchMacros.carb_unit} carbos
+              ☀️ {lunchMacros.protein_value} {MACRO_UNIT} prot · {lunchMacros.carb_value} {MACRO_UNIT} carbos
             </span>
           )}
           {(menuType === 'Dinner' || menuType === 'both') && dinnerMacros && (
             <span className={menuType === 'both' ? 'ml-2' : ''}>
-              🌙 {dinnerMacros.protein_value}
-              {dinnerMacros.protein_unit} prot · {dinnerMacros.carb_value}
-              {dinnerMacros.carb_unit} carbos
+              🌙 {dinnerMacros.protein_value} {MACRO_UNIT} prot · {dinnerMacros.carb_value} {MACRO_UNIT} carbos
             </span>
           )}
         </p>

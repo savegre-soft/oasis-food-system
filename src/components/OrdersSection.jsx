@@ -22,9 +22,7 @@ const OrdersSection = ({ clientId }) => {
           classification,
           status,
           protein_snapshot,
-          protein_unit_snapshot,
           carb_snapshot,
-          carb_unit_snapshot,
           routes ( id_route, name ),
           order_days (
             id_order_day,

@@ -98,9 +98,7 @@ const ORDER_DAY_SELECT = `
     id_order_day_detail,
     quantity,
     protein_value_applied,
-    protein_unit_applied,
     carb_value_applied,
-    carb_unit_applied,
     recipes (
       id_recipe, name,
       recipe_ingredients ( name, category )

@@ -1,18 +1,16 @@
 import { RefreshCw } from 'lucide-react';
 
-const STANDARD_MACRO = { protein_value: 120, protein_unit: 'g', carb_value: 120, carb_unit: 'g' };
+const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
 
 // Helper: are the current macros equal to standard values?
 const isStandard = (m) =>
   m &&
-  String(m.protein_value) === '120' &&
-  m.protein_unit === 'g' &&
-  String(m.carb_value) === '120' &&
-  m.carb_unit === 'g';
+  String(m.protein_value) === '1' &&
+  String(m.carb_value) === '1';
 import MacroPanel from './MacroPanel';
 import RouteSelector from './RouteSelector';
 import DayRecipeBlock from './DayRecipeBlock';
-import { DAYS_ORDER } from './orderUtils';
+import { DAYS_ORDER, MACRO_UNIT } from './orderUtils';
 
 // Shared "step 3" UI: route selector + base macros + per-day recipe blocks
 // Used by both AddOrder (step 3) and EditOrder (single view)
@@ -125,8 +123,8 @@ const OrderAdjustments = ({
                       onClick={onApplyClientLunch}
                       className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                         !isStandard(lunchMacros) &&
-                        String(lunchMacros?.protein_value) ===
-                          String(clientLunchMacro.protein_value)
+                        String(lunchMacros?.protein_value) === String(clientLunchMacro.protein_value) &&
+                        String(lunchMacros?.carb_value) === String(clientLunchMacro.carb_value)
                           ? 'bg-slate-800 text-white border-slate-800'
                           : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
                       }`}
@@ -144,7 +142,7 @@ const OrderAdjustments = ({
                           : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                       }`}
                     >
-                      ⭐ Estándar (120g)
+                      ⭐ Estándar (1 {MACRO_UNIT})
                     </button>
                   )}
                 </div>
@@ -166,8 +164,8 @@ const OrderAdjustments = ({
                       onClick={onApplyClientDinner}
                       className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                         !isStandard(dinnerMacros) &&
-                        String(dinnerMacros?.protein_value) ===
-                          String(clientDinnerMacro.protein_value)
+                        String(dinnerMacros?.protein_value) === String(clientDinnerMacro.protein_value) &&
+                        String(dinnerMacros?.carb_value) === String(clientDinnerMacro.carb_value)
                           ? 'bg-slate-800 text-white border-slate-800'
                           : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
                       }`}
@@ -185,7 +183,7 @@ const OrderAdjustments = ({
                           : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                       }`}
                     >
-                      ⭐ Estándar (120g)
+                      ⭐ Estándar (1 {MACRO_UNIT})
                     </button>
                   )}
                 </div>

@@ -1,6 +1,6 @@
-import { MACRO_UNITS } from './orderUtils';
+import { MACRO_UNIT } from './orderUtils';
 
-// Reusable macro input panel (protein + carbs)
+// Reusable macro input panel (protein + carbs) — values are unit counts, not grams
 const MacroPanel = ({ label, colorClass = 'amber', macros, overridden, onUpdate, onReset }) => {
   const palette = {
     amber: { border: 'border-amber-200', bg: 'bg-amber-50', text: 'text-amber-700' },
@@ -9,8 +9,6 @@ const MacroPanel = ({ label, colorClass = 'amber', macros, overridden, onUpdate,
   const c = palette[colorClass] ?? palette.amber;
   const inp =
     'w-24 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white';
-  const sel =
-    'px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white';
 
   return (
     <div className={`rounded-xl p-3 border ${c.border} ${c.bg}`}>
@@ -33,25 +31,16 @@ const MacroPanel = ({ label, colorClass = 'amber', macros, overridden, onUpdate,
         ].map(({ key, label: lbl }) => (
           <div key={key}>
             <label className="text-xs text-slate-500 mb-1 block">{lbl}</label>
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
               <input
                 type="number"
                 min="0"
+                step="1"
                 value={macros?.[`${key}_value`] ?? ''}
                 onChange={(e) => onUpdate(`${key}_value`, e.target.value)}
                 className={inp}
               />
-              <select
-                value={macros?.[`${key}_unit`] ?? 'g'}
-                onChange={(e) => onUpdate(`${key}_unit`, e.target.value)}
-                className={sel}
-              >
-                {MACRO_UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
+              <span className="text-xs text-slate-400">{MACRO_UNIT}</span>
             </div>
           </div>
         ))}

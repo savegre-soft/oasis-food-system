@@ -1,5 +1,9 @@
 // ── Shared constants & date utilities for order management ────────────────────
 
+/** Unidad de medida estandarizada para macros (proteína y carbohidratos).
+ *  Cambiar este valor actualiza toda la UI y los reportes automáticamente. */
+export const MACRO_UNIT = 'ud.';
+
 export const DAYS_ORDER = [
   'Monday',
   'Tuesday',
@@ -29,8 +33,6 @@ export const DAY_SHORT = {
   Saturday: 'Sáb',
   Sunday: 'Dom',
 };
-
-export const MACRO_UNITS = ['g', 'oz', 'kg'];
 
 export const isFamily = (client) => client?.client_type === 'family';
 
