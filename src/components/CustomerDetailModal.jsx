@@ -53,12 +53,11 @@ const CustomerDetailModal = ({ customer, onClose }) => {
 
   // Close on Escape
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
 
   return (
     <motion.div

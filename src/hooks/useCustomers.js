@@ -24,7 +24,7 @@ export default function useCustomers() {
         )
       `
       )
-      .order('id_client', { ascending: false });
+      .order('name', { ascending: true });
 
     if (data) setCustomers(data);
     if (error) console.error(error);
