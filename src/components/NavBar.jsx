@@ -221,6 +221,7 @@ function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
               <NavLink
                 key={link.to}
                 to={link.to}
+                onClick={() => toggleMenu(menuKey)}
                 className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100"
               >
                 <Icon size={16} />
