@@ -31,7 +31,7 @@ const EXPRESS_STEPS  = ['Cliente', 'Menú', 'Pago', 'Confirmar'];
 // ── AddOrder ──────────────────────────────────────────────────────────────────
 const AddOrder = ({ onSuccess }) => {
   const { supabase } = useApp();
-  const { weekStart, weekEnd } = getWeekRange();
+  const { weekStart, weekEnd, tuesdayDelivery } = getWeekRange();
 
   // ── Wizard state ─────────────────────────────────────────────────────────────
   const [step, setStep] = useState(1);
@@ -418,7 +418,11 @@ const AddOrder = ({ onSuccess }) => {
           .insert([{
             order_id: orderId,
             day_of_week: day,
-            delivery_date: isExpress ? todayStr : getDateForDay(day, weekStart, routeDelDays),
+            delivery_date: isExpress
+              ? todayStr
+              : tuesdayDelivery
+                ? toDateString(tuesdayDelivery)
+                : getDateForDay(day, weekStart, routeDelDays),
             status: 'PENDING',
           }])
           .select('id_order_day')
