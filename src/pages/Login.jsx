@@ -155,16 +155,6 @@ const Login = () => {
           </motion.button>
         </form>
 
-        {/* Registro */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
-            ¿No tienes cuenta?{' '}
-            <Link to="/register" className="text-emerald-600 font-semibold hover:underline">
-              Crear cuenta
-            </Link>
-          </p>
-        </div>
-
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">© 2026 Oasis Food Operativo</p>
       </motion.div>
