@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { MACRO_UNIT } from './orderUtils';
 
 const CLIENT_TYPE = {
   personal: { label: 'Personal', className: 'bg-blue-50 text-blue-700' },
@@ -29,13 +30,13 @@ const MacroPanel = ({ label, accent, macro }) => {
           <p className="text-xs text-slate-500 mb-0.5">Proteína</p>
           <p className="text-sm font-semibold text-slate-800">
             {macro.protein_value}{' '}
-            <span className="font-normal text-slate-500">{macro.protein_unit}</span>
+            <span className="font-normal text-slate-500">{MACRO_UNIT}</span>
           </p>
         </div>
         <div>
           <p className="text-xs text-slate-500 mb-0.5">Carbohidratos</p>
           <p className="text-sm font-semibold text-slate-800">
-            {macro.carb_value} <span className="font-normal text-slate-500">{macro.carb_unit}</span>
+            {macro.carb_value} <span className="font-normal text-slate-500">{MACRO_UNIT}</span>
           </p>
         </div>
       </div>

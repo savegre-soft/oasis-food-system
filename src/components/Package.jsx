@@ -1,4 +1,5 @@
-import { Truck, Archive, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Truck, Archive, AlertTriangle, CheckCircle, GripVertical, ClipboardCopy, ClipboardCheck } from 'lucide-react';
 
 // ── Group order_days by client ────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ const groupByClient = (orderDays) => {
   return clients;
 };
 
-// ── ClientEmpaqueCard ─────────────────────────────────────────────────────────
+// ── ClassificationBadge ───────────────────────────────────────────────────────
 
 const ClassificationBadge = ({ classification }) => {
   if (classification === 'Lunch')
@@ -43,16 +44,32 @@ const ClassificationBadge = ({ classification }) => {
   );
 };
 
-const ClientEmpaqueCard = ({ client, onDeliver }) => {
+// ── ClientEmpaqueCard ─────────────────────────────────────────────────────────
+
+const ClientEmpaqueCard = ({ client, onDeliver, isDragging }) => {
   const packed = client.orderDays.filter((od) => od.status === 'PACKED');
   const pending = client.orderDays.filter((od) => od.status === 'PENDING');
   const allPackedIds = packed.map((od) => od.id_order_day);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div
+      className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
+        isDragging
+          ? 'border-orange-300 shadow-md opacity-60 scale-[0.98]'
+          : 'border-slate-100'
+      }`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
+          {/* Drag handle — visual only, drag is on the wrapper */}
+          <div
+            className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 transition shrink-0"
+            title="Arrastrar para reordenar"
+          >
+            <GripVertical size={18} />
+          </div>
+
           <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
             {client.name.charAt(0).toUpperCase()}
           </div>
@@ -146,11 +163,67 @@ const ClientEmpaqueCard = ({ client, onDeliver }) => {
 // ── EmpaqueView ───────────────────────────────────────────────────────────────
 
 const EmpaqueView = ({ pendingDays, packedDays, onDeliver }) => {
-  // Merge both sets keyed by client
   const allDays = [...(pendingDays ?? []), ...(packedDays ?? [])];
   const byClient = groupByClient(allDays);
-  const clients = Object.values(byClient).sort((a, b) => a.name.localeCompare(b.name));
 
+  // Ordered list of client IDs — allows manual reordering
+  const [order, setOrder] = useState([]);
+  const [draggingIndex, setDraggingIndex] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Use a ref so drag callbacks always see the current dragging index
+  const draggingIndexRef = useRef(null);
+
+  // Sync order when client list changes (keeps existing order, appends new clients)
+  useEffect(() => {
+    const incoming = Object.values(byClient)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((c) => c.id);
+
+    setOrder((prev) => {
+      const kept = prev.filter((id) => byClient[id]);
+      const added = incoming.filter((id) => !kept.includes(id));
+      return [...kept, ...added];
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDays, packedDays]);
+
+  const clients = order.map((id) => byClient[id]).filter(Boolean);
+
+  // ── Drag handlers ─────────────────────────────────────────────────────────
+  const handleDragStart = useCallback((index) => {
+    draggingIndexRef.current = index;
+    setDraggingIndex(index);
+  }, []);
+
+  const handleDragEnter = useCallback((toIndex) => {
+    const fromIndex = draggingIndexRef.current;
+    if (fromIndex === null || fromIndex === toIndex) return;
+    setOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+    draggingIndexRef.current = toIndex;
+    setDraggingIndex(toIndex);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    draggingIndexRef.current = null;
+    setDraggingIndex(null);
+  }, []);
+
+  // ── Copy list ─────────────────────────────────────────────────────────────
+  const handleCopy = useCallback(() => {
+    const text = clients.map((c) => c.name).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [clients]);
+
+  // ── Empty state ───────────────────────────────────────────────────────────
   if (clients.length === 0) {
     return (
       <div className="text-center py-16 text-slate-400">
@@ -171,23 +244,51 @@ const EmpaqueView = ({ pendingDays, packedDays, onDeliver }) => {
 
   return (
     <div className="space-y-4">
-      {/* Summary row */}
-      <div className="flex items-center gap-4 text-sm text-slate-500 mb-2">
-        {packedCount > 0 && (
-          <span className="flex items-center gap-1.5">
-            <Truck size={14} className="text-green-500" /> {packedCount} empacado
-            {packedCount !== 1 ? 's' : ''}
-          </span>
-        )}
-        {pendingCount > 0 && (
-          <span className="flex items-center gap-1.5">
-            <Archive size={14} className="text-amber-400" /> {pendingCount} sin empacar
-          </span>
-        )}
+      {/* Summary row + Copy button */}
+      <div className="flex items-center justify-between gap-4 mb-2">
+        <div className="flex items-center gap-4 text-sm text-slate-500">
+          {packedCount > 0 && (
+            <span className="flex items-center gap-1.5">
+              <Truck size={14} className="text-green-500" /> {packedCount} empacado
+              {packedCount !== 1 ? 's' : ''}
+            </span>
+          )}
+          {pendingCount > 0 && (
+            <span className="flex items-center gap-1.5">
+              <Archive size={14} className="text-amber-400" /> {pendingCount} sin empacar
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl border transition shrink-0 ${
+            copied
+              ? 'text-green-700 bg-green-50 border-green-200'
+              : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          {copied ? <ClipboardCheck size={13} /> : <ClipboardCopy size={13} />}
+          {copied ? 'Copiado' : 'Copiar lista'}
+        </button>
       </div>
 
-      {clients.map((client) => (
-        <ClientEmpaqueCard key={client.id} client={client} onDeliver={onDeliver} />
+      {clients.map((client, index) => (
+        <div
+          key={client.id}
+          draggable
+          onDragStart={() => handleDragStart(index)}
+          onDragEnter={() => handleDragEnter(index)}
+          onDragEnd={handleDragEnd}
+          onDragOver={(e) => e.preventDefault()}
+        >
+          <ClientEmpaqueCard
+            client={client}
+            onDeliver={onDeliver}
+            isDragging={draggingIndex === index}
+          />
+        </div>
       ))}
     </div>
   );

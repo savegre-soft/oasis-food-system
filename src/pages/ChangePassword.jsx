@@ -55,6 +55,11 @@ const ChangePassword = () => {
       return;
     }
 
+    if (password.length < 8) {
+      sileo.error({ title: 'La contraseña debe tener al menos 8 caracteres' });
+      return;
+    }
+
     if (password !== confirm) {
       sileo.error({ title: 'Las contraseñas no coinciden' });
       return;
@@ -69,8 +74,8 @@ const ChangePassword = () => {
 
       if (error) {
         sileo.error({
-          title: 'Error',
-          description: error.message,
+          title: 'No se pudo actualizar la contraseña',
+          description: 'Verifica que el enlace sea válido e intenta de nuevo',
         });
         return;
       }
@@ -80,10 +85,10 @@ const ChangePassword = () => {
       });
 
       navigate('/login');
-    } catch (err) {
+    } catch {
       sileo.error({
         title: 'Error inesperado',
-        description: err.message,
+        description: 'Ocurrió un error. Intenta de nuevo.',
       });
     } finally {
       setLoading(false);

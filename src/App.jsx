@@ -26,8 +26,10 @@ import Customer from './pages/customer';
 import Orders from './pages/Orders';
 import ExpenseEmployees from './pages/ExpenseEmployees';
 import ExpenseStadistic from './pages/ExpenseStadistic';
+import Estadisticas from './pages/Estadisticas';
 import ChangePassword from './pages/ChangePassword';
 import Payments from './pages/Payments';
+import Profile from './pages/Profile';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -53,6 +55,8 @@ export default function App() {
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />
             <Route path="/empleados" element={<ExpenseEmployees />} />
+            <Route path="/estadisticas" element={<Estadisticas />} />
+            <Route path="/perfil" element={<Profile />} />
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />

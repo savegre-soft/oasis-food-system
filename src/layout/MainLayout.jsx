@@ -20,12 +20,12 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-300 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Navbar */}
       <Navbar />
 
       {/* Contenido */}
-      <main className="flex-1 max-w-6xl mx-auto w-full  overflow-auto p-2 pt-6 pb-8 ">
+      <main className="flex-1 max-w-6xl mx-auto w-full p-2 pt-6 pb-16">
         <Outlet />
       </main>
 

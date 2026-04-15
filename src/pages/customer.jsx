@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
 import OrdersSection from '../components/orders/OrdersSection';
 import MacroPanel from '../components/macro/MacroPanel';
+import PaymentSection from '../components/PaymentsSection';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -35,10 +36,10 @@ const Customer = () => {
           `
           *,
           lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey (
-            id_macro_profile, name, protein_value, protein_unit, carb_value, carb_unit
+            id_macro_profile, name, protein_value, carb_value
           ),
           dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
-            id_macro_profile, name, protein_value, protein_unit, carb_value, carb_unit
+            id_macro_profile, name, protein_value, carb_value
           )
         `
         )
@@ -125,8 +126,7 @@ const Customer = () => {
       )}
 
       {/* Pagos */}
-
-      {/*< PaymentSection clientId={Number(id)} />*/}
+      <PaymentSection clientId={Number(id)} />
 
       {/* Orders */}
       <OrdersSection clientId={Number(id)} />

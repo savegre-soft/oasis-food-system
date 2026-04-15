@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
+import { MACRO_UNIT } from '../orderUtils';
 
 const STATUS_CONFIG = {
   PENDING: {
@@ -75,9 +76,7 @@ const OrderBlock = ({ order }) => {
           {order.routes && <span className="text-xs text-slate-500">📍 {order.routes.name}</span>}
           {order.protein_snapshot && (
             <span className="text-xs text-slate-400">
-              {order.protein_snapshot}
-              {order.protein_unit_snapshot} prot · {order.carb_snapshot}
-              {order.carb_unit_snapshot} carb
+              {order.protein_snapshot} {MACRO_UNIT} prot · {order.carb_snapshot} {MACRO_UNIT} carb
             </span>
           )}
         </div>

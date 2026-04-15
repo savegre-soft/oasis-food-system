@@ -37,12 +37,13 @@ const EXPRESS_SUBTABS = [
 
 // ── Week range ─────────────────────────────────────────────────────────────────
 
-const getWeekRange = () => {
+// offset: -1 = previous week, 0 = current week, 1 = next week
+const computeWeekRange = (offset = 0) => {
   const today = new Date();
   const day = today.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
+  const diff = day === 0 ? -6 : 1 - day; // to Monday of current week
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diff + 7);
+  monday.setDate(today.getDate() + diff + offset * 7);
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -51,6 +52,12 @@ const getWeekRange = () => {
     weekEnd: sunday.toISOString().split('T')[0],
   };
 };
+
+const WEEK_SEGMENTS = [
+  { offset: -1, label: 'Sem. anterior' },
+  { offset: 0, label: 'Sem. actual' },
+  { offset: 1, label: 'Sem. siguiente' },
+];
 
 // ── Delivery slot helpers ──────────────────────────────────────────────────────
 
@@ -91,9 +98,7 @@ const ORDER_DAY_SELECT = `
     id_order_day_detail,
     quantity,
     protein_value_applied,
-    protein_unit_applied,
     carb_value_applied,
-    carb_unit_applied,
     recipes (
       id_recipe, name,
       recipe_ingredients ( name, category )
@@ -237,8 +242,10 @@ const ExpressView = ({
 
 const Production = () => {
   const { supabase } = useApp();
-  const { weekStart, weekEnd } = getWeekRange();
   const todayStr = new Date().toISOString().split('T')[0];
+
+  const [weekOffset, setWeekOffset] = useState(0);
+  const { weekStart, weekEnd } = computeWeekRange(weekOffset);
 
   const [activeTab, setActiveTab] = useState('cocina');
   const [expressTab, setExpressTab] = useState('cocina');
@@ -256,7 +263,7 @@ const Production = () => {
 
   // ── Load routes → build delivery slots ──────────────────────────────────────
 
-  const getAvailableDays = async () => {
+  const getAvailableDays = async (wsStr, weStr) => {
     setLoadingDays(true);
 
     const { data: routes, error } = await supabase
@@ -283,8 +290,8 @@ const Production = () => {
         .from('order_days')
         .select('delivery_date, day_of_week')
         .in('status', ['PENDING', 'PACKED', 'DELIVERED'])
-        .gte('delivery_date', weekStart)
-        .lte('delivery_date', weekEnd);
+        .gte('delivery_date', wsStr)
+        .lte('delivery_date', weStr);
 
       const uniqueDates = [...new Set((fallback ?? []).map((d) => d.delivery_date))].sort();
       const fallbackSlots = uniqueDates.map((dateStr) => {
@@ -293,31 +300,31 @@ const Production = () => {
         return { name, label: DAY_LABELS[name] ?? name, deliveryDate: dateStr };
       });
       setSlots(fallbackSlots);
-      if (fallbackSlots.length > 0 && !selectedSlot) setSelectedSlot(fallbackSlots[0]);
+      setSelectedSlot((prev) => prev ?? (fallbackSlots.length > 0 ? fallbackSlots[0] : null));
       setLoadingDays(false);
       return;
     }
 
-    const weekMonday = new Date(weekStart + 'T00:00:00');
+    const weekMonday = new Date(wsStr + 'T00:00:00');
     const allSlots = buildDeliverySlots(allDayNames, weekMonday);
-    const queryFrom = new Date(weekMonday);
-    queryFrom.setDate(weekMonday.getDate() - 1);
-    const queryFromStr = queryFrom.toISOString().split('T')[0];
-    const effectiveFrom = todayStr < queryFromStr ? todayStr : queryFromStr;
+    // Include the Sunday before weekMonday — it belongs to this delivery cycle
+    const sundayBefore = new Date(weekMonday);
+    sundayBefore.setDate(weekMonday.getDate() - 1);
+    const sundayBeforeStr = sundayBefore.toISOString().split('T')[0];
 
     const { data: activeDates } = await supabase
       .schema('operations')
       .from('order_days')
       .select('delivery_date')
       .in('status', ['PENDING', 'PACKED', 'DELIVERED'])
-      .gte('delivery_date', effectiveFrom)
-      .lte('delivery_date', weekEnd);
+      .gte('delivery_date', sundayBeforeStr)
+      .lte('delivery_date', weStr);
 
     const activeDateSet = new Set((activeDates ?? []).map((d) => d.delivery_date));
     const activeSlots = allSlots.filter((slot) => activeDateSet.has(slot.deliveryDate));
 
     setSlots(activeSlots);
-    if (activeSlots.length > 0 && !selectedSlot) setSelectedSlot(activeSlots[0]);
+    setSelectedSlot((prev) => prev ?? (activeSlots.length > 0 ? activeSlots[0] : null));
     setLoadingDays(false);
   };
 
@@ -376,17 +383,31 @@ const Production = () => {
   };
 
   useEffect(() => {
-    getAvailableDays();
-    getExpressData();
-  }, []);
+    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
+    // Clear stale data immediately so old week's orders don't linger
+    setSelectedSlot(null);
+    setPendingDays([]);
+    setPackedDays([]);
+    setDeliveredDays([]);
+    // Express is always today-based; clear it when not on current week
+    if (weekOffset !== 0) {
+      setExpressPendingAll([]);
+      setExpressPackedAll([]);
+      setExpressDeliveredAll([]);
+    }
+    getAvailableDays(ws, we);
+    if (weekOffset === 0) getExpressData();
+  }, [weekOffset]);
+
   useEffect(() => {
     getData();
   }, [selectedSlot]);
 
   const refresh = async () => {
-    await getAvailableDays();
+    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
+    await getAvailableDays(ws, we);
     await getData();
-    await getExpressData();
+    if (weekOffset === 0) await getExpressData();
   };
 
   // ── Status transitions ─────────────────────────────────────────────────────────
@@ -467,7 +488,7 @@ const Production = () => {
         />
       )}
 
-      <div className="mb-8 flex items-start justify-between gap-4">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
           <p className="text-slate-500 mt-1">
@@ -490,6 +511,23 @@ const Production = () => {
         >
           <Printer size={15} /> Imprimir resumen
         </button>
+      </div>
+
+      {/* Week segmenter */}
+      <div className="flex gap-1 bg-slate-200 p-1 rounded-xl w-fit mb-8">
+        {WEEK_SEGMENTS.map(({ offset, label }) => (
+          <button
+            key={offset}
+            onClick={() => setWeekOffset(offset)}
+            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+              weekOffset === offset
+                ? 'bg-white shadow text-slate-800'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {loadingDays ? (

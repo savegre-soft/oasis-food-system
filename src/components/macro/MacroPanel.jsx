@@ -1,3 +1,5 @@
+import { MACRO_UNIT } from '../orderUtils';
+
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 const MacroPanel = ({ label, accent, macro }) => {
@@ -14,13 +16,13 @@ const MacroPanel = ({ label, accent, macro }) => {
         <div>
           <p className="text-xs text-slate-500">Proteína</p>
           <p className="text-sm font-semibold text-slate-800">
-            {macro.protein_value} {macro.protein_unit}
+            {macro.protein_value} {MACRO_UNIT}
           </p>
         </div>
         <div>
           <p className="text-xs text-slate-500">Carbohidratos</p>
           <p className="text-sm font-semibold text-slate-800">
-            {macro.carb_value} {macro.carb_unit}
+            {macro.carb_value} {MACRO_UNIT}
           </p>
         </div>
       </div>

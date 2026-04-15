@@ -170,7 +170,7 @@ const Routes = () => {
 
               {customRoutes.length === 0 ? (
                 <div className="text-center py-16 text-slate-400">
-                  <MapPin size={36} className="mx-auto mb-3 opacity-30" />
+                  <MapPin size={40} className="mx-auto mb-3 opacity-30" />
                   <p>No hay rutas personalizadas registradas</p>
                 </div>
               ) : (

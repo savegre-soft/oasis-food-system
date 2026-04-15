@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Mail, Lock, LogIn, Leaf } from 'lucide-react';
+import { Mail, Lock, LogIn, Leaf, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { sileo } from 'sileo';
@@ -13,6 +13,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // 🔹 Si ya hay sesión iniciada, redirigir
   useEffect(() => {
@@ -42,8 +43,8 @@ const Login = () => {
 
       if (error) {
         sileo.error({
-          title: 'Error al iniciar sesión',
-          description: error.message,
+          title: 'Credenciales inválidas',
+          description: 'Correo o contraseña incorrectos',
         });
         return;
       }
@@ -54,10 +55,10 @@ const Login = () => {
       });
 
       navigate('/main');
-    } catch (err) {
+    } catch {
       sileo.error({
         title: 'Error inesperado',
-        description: err.message,
+        description: 'Ocurrió un error. Intenta de nuevo.',
       });
     } finally {
       setLoading(false);
@@ -123,12 +124,21 @@ const Login = () => {
               <Lock className="text-gray-400 mr-2" size={18} />
 
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 className="w-full outline-none text-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="ml-2 text-gray-400 hover:text-gray-600 transition"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
@@ -144,16 +154,6 @@ const Login = () => {
             {loading ? 'Ingresando...' : 'Iniciar Sesión'}
           </motion.button>
         </form>
-
-        {/* Registro */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
-            ¿No tienes cuenta?{' '}
-            <Link to="/register" className="text-emerald-600 font-semibold hover:underline">
-              Crear cuenta
-            </Link>
-          </p>
-        </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-6">© 2026 Oasis Food Operativo</p>

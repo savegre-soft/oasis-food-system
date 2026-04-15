@@ -28,14 +28,21 @@ const Register = () => {
       if (error) throw error;
 
       // 2️⃣ Crear perfil en tabla profiles
-  
-      
+      if (data.user) {
+        const { error: profileError } = await supabase.from('profiles').insert([
+          {
+            id: data.user.id,
+            name: name,
+            role: 'operador',
+          },
+        ]);
 
+        if (profileError) throw profileError;
+      }
       sileo.success('Cuenta creada correctamente 🎉');
-    } catch (error) {
+    } catch (err) {
       sileo.error('Error al crear la cuenta');
-      console.log(error)
-      setError(error.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }

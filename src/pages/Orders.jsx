@@ -17,6 +17,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Modal from '../components/Modal';
 import AddOrder from '../components/AddOrder';
 import EditOrder from '../components/EditOrder';
+import { MACRO_UNIT } from '../components/orderUtils';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -208,18 +209,16 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
             )}
           </div>
 
-          {!isFamilyClient && order.protein_snapshot && (
+          {!isFamilyClient && order.protein_snapshot != null && (
             <div>
               <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
                 Macros globales
               </p>
               <p className="text-sm text-slate-700">
                 {order.classification === 'Dinner' ? '🌙 ' : '☀️ '}
-                {order.protein_snapshot}
-                {order.protein_unit_snapshot} prot
+                {order.protein_snapshot} {MACRO_UNIT} prot
                 {' · '}
-                {order.carb_snapshot}
-                {order.carb_unit_snapshot} carbos
+                {order.carb_snapshot} {MACRO_UNIT} carbos
               </p>
             </div>
           )}
@@ -562,9 +561,7 @@ const Orders = () => {
         classification,
         status,
         protein_snapshot,
-        protein_unit_snapshot,
         carb_snapshot,
-        carb_unit_snapshot,
         clients ( id_client, name, client_type ),
         routes  ( id_route, name, route_delivery_days(day_of_week) ),
         order_days (
@@ -712,7 +709,7 @@ const Orders = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar cliente o ruta..."
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
           />
         </div>
 

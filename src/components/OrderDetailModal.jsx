@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, User, Pencil, X } from 'lucide-react';
+import { MACRO_UNIT } from './orderUtils';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -173,11 +174,9 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
               </p>
               <p className="text-sm text-slate-700">
                 {order.classification === 'Dinner' ? '🌙 ' : '☀️ '}
-                {order.protein_snapshot}
-                {order.protein_unit_snapshot} prot
+                {order.protein_snapshot} {MACRO_UNIT} prot
                 {' · '}
-                {order.carb_snapshot}
-                {order.carb_unit_snapshot} carbos
+                {order.carb_snapshot} {MACRO_UNIT} carbos
               </p>
             </div>
           )}

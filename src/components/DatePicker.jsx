@@ -102,7 +102,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         <select
           value={mode}
           onChange={(e) => handleModeChange(e.target.value)}
-          className="px-3 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
+          className="px-3 py-2 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
         >
           <option value="day">Hoy</option>
           <option value="week">Esta semana</option>
@@ -123,7 +123,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
             />
           </div>
 
@@ -134,13 +134,13 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
               type="date"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
             />
           </div>
 
           <button
             onClick={applyCustom}
-            className="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition active:scale-95"
+            className="bg-slate-800 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition active:scale-95 text-sm font-medium"
           >
             Aplicar
           </button>
