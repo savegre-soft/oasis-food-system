@@ -172,7 +172,7 @@ const EditRecipe = ({ recipe, onSuccess }) => {
   return (
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 mb-6">Editar Receta</h1>
+        <h1 className="text-2xl font-bold text-slate-800 mb-6">Editar Plato</h1>
 
         {/* Imagen */}
         <div className="mb-6">
