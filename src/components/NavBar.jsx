@@ -20,6 +20,7 @@ import { useApp } from '../context/AppContext'; // ✅ IMPORTAR CONTEXTO
 
 const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
+    { to: '/settings', label: 'Configuracion', icon: Home },
   { to: '/entregas', label: 'Entregas', icon: RouteIcon },
   { to: '/orders', label: 'Órdenes', icon: Handbag },
 ];
