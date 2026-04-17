@@ -106,9 +106,9 @@ const Menus = () => {
 
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Recetas</h1>
+            <h1 className="text-3xl font-bold text-slate-800">Platos</h1>
 
-            <p className="text-slate-500 mt-1">Gestión de recetas y su composición</p>
+            <p className="text-slate-500 mt-1">Gestión de platos y su composición</p>
           </div>
 
           <button
@@ -116,7 +116,7 @@ const Menus = () => {
             className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium"
           >
             <UtensilsCrossed size={16} />
-            Agregar Receta
+            Agregar Plato
           </button>
         </div>
 
@@ -127,7 +127,7 @@ const Menus = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar receta..."
+            placeholder="Buscar plato..."
             className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 text-sm bg-white"
           />
         </div>
@@ -140,7 +140,7 @@ const Menus = () => {
           <div className="text-center py-20 text-slate-400">
             <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
 
-            <p>No hay recetas registradas</p>
+            <p>No hay platos registrados</p>
           </div>
         ) : (
           <div className="space-y-3">

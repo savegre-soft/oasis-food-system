@@ -26,7 +26,7 @@ const links = [
 
 const gestionLinks = [
   { to: '/Clientes', label: 'Clientes', icon: Users },
-  { to: '/menus', label: 'Recetas', icon: HamburgerIcon },
+  { to: '/menus', label: 'Platos', icon: HamburgerIcon },
   { to: '/routes', label: 'Rutas', icon: RouteIcon },
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
 ];

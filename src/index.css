@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html,
+body {
+  overflow-y: auto;
+  height: auto;
+}
 
 .bg-primary {
   background-color: var(--color-primary);

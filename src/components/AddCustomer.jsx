@@ -90,22 +90,23 @@ const AddCustomer = ({ onAdd, initialData }) => {
   const filteredCantons = cantons.filter((c) => c.province_id === Number(selectedProvince));
   const filteredDistricts = districts.filter((d) => d.canton_id === Number(selectedCanton));
 
-  const STANDARD_MACRO = '1';
-  const isStandard = (p, c) => String(p) === STANDARD_MACRO && String(c) === STANDARD_MACRO;
+  const STANDARD_PROTEIN = '4';
+  const STANDARD_CARB = '2';
+  const isStandard = (p, c) => String(p) === STANDARD_PROTEIN && String(c) === STANDARD_CARB;
 
   const handleLunchPlanChange = (value) => {
     setLunchPlanType(value);
     if (value === 'estandar') {
-      setLunchProtein(STANDARD_MACRO);
-      setLunchCarb(STANDARD_MACRO);
+      setLunchProtein(STANDARD_PROTEIN);
+      setLunchCarb(STANDARD_CARB);
     }
   };
 
   const handleDinnerPlanChange = (value) => {
     setDinnerPlanType(value);
     if (value === 'estandar') {
-      setDinnerProtein(STANDARD_MACRO);
-      setDinnerCarb(STANDARD_MACRO);
+      setDinnerProtein(STANDARD_PROTEIN);
+      setDinnerCarb(STANDARD_CARB);
     }
   };
 
