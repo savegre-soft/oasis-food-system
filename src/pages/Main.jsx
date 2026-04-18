@@ -18,6 +18,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+import AuthRoles from '../components/auth/AuthRoles';
+
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -187,7 +189,7 @@ export default function Main() {
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen space-y-5">
-      <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
+    <h1 className="text-3xl font-bold text-slate-800">Dashboard</h1>
 
       {/* ── Date filter ── */}
       <DateFilter dateRange={dateRange} setDateRange={setDateRange} />

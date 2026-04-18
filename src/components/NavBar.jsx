@@ -12,6 +12,7 @@ import {
   HamburgerIcon,
   Utensils,
   ChevronDown,
+  Settings,
   Handbag,
   ChartScatterIcon,
 } from 'lucide-react';
@@ -20,9 +21,10 @@ import { useApp } from '../context/AppContext'; // ✅ IMPORTAR CONTEXTO
 
 const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
-    { to: '/settings', label: 'Configuracion', icon: Home },
   { to: '/entregas', label: 'Entregas', icon: RouteIcon },
   { to: '/orders', label: 'Órdenes', icon: Handbag },
+  { to: '/settings', label: 'Configuracion', icon: Settings }
+  
 ];
 
 const gestionLinks = [
