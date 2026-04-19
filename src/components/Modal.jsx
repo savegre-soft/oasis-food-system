@@ -24,7 +24,7 @@ export default function Modal({ isOpen, onClose, children }) {
 
           {/* Contenedor */}
           <motion.div
-            className="fixed inset-0 z-50 flex justify-center items-center p-4"
+            className="fixed inset-0 z-50 flex justify-center items-center p-2"
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
@@ -41,7 +41,7 @@ export default function Modal({ isOpen, onClose, children }) {
               </button>
 
               {/* Contenido */}
-              <div className="mt-4">{children}</div>
+              <div className="mt-4 rounded">{children}</div>
             </div>
           </motion.div>
         </>

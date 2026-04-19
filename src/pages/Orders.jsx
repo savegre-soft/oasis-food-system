@@ -105,36 +105,39 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <motion.div
         initial={{ opacity: 0, scale: 0.97, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 8 }}
         transition={{ duration: 0.18 }}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto border border-transparent dark:border-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between p-5 border-b border-slate-100">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-bold text-slate-800 text-lg">{order.clients?.name}</p>
+        {/* Cabecera */}
+        <div className="flex items-start justify-between p-5 border-b border-slate-100 dark:border-slate-800 transition-colors">
+          <div className="flex-1 flex items-center gap-2 flex-wrap min-w-0">
+            <p className="font-bold text-slate-800 dark:text-slate-100 text-lg truncate">
+              {order.clients?.name}
+            </p>
             <span className={'text-xs font-medium px-2.5 py-0.5 rounded-full border ' + st.cls}>
               {st.label}
             </span>
             <span
               className={
                 'text-xs font-medium px-2.5 py-0.5 rounded-full ' +
-                (isFamilyClient ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700')
+                (isFamilyClient
+                  ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                  : 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400')
               }
             >
               {isFamilyClient ? (
                 <>
-                  <Users size={10} className="inline mr-1" />
-                  Familiar
+                  <Users size={10} className="inline mr-1" /> Familiar
                 </>
               ) : (
                 <>
-                  <User size={10} className="inline mr-1" />
-                  Personal
+                  <User size={10} className="inline mr-1" /> Personal
                 </>
               )}
             </span>
@@ -143,37 +146,38 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
             {onEdit && (
               <button
                 onClick={() => onEdit(order)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 transition"
+                className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition shadow-sm"
               >
                 <Pencil size={12} /> Editar
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl hover:bg-slate-100 transition text-slate-400 hover:text-slate-600"
+              className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-400 dark:text-slate-500"
             >
               <X size={18} />
             </button>
           </div>
         </div>
 
+        {/* Contenido */}
         <div className="p-5 space-y-5">
-          <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
+          <section>
+            <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold mb-1">
               Semana
             </p>
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
               {fmtDate(order.week_start_date, { day: '2-digit', month: 'long' })}
               {' — '}
               {fmtDate(order.week_end_date, { day: '2-digit', month: 'long', year: 'numeric' })}
             </p>
-          </div>
+          </section>
 
-          <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
-              Menu
+          <section>
+            <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold mb-1">
+              Menú
             </p>
-            <p className="text-sm text-slate-700">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
               {isFamilyClient
                 ? 'Familiar'
                 : order.classification === 'both'
@@ -184,51 +188,57 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
                       ? 'Cena'
                       : order.classification}
             </p>
-          </div>
+          </section>
 
-          <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-1">Ruta</p>
+          <section>
+            <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold mb-1">
+              Ruta
+            </p>
             {order.routes ? (
-              <>
-                <p className="text-sm font-medium text-slate-800">{order.routes.name}</p>
+              <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  {order.routes.name}
+                </p>
                 {deliveryDays.length > 0 && (
-                  <div className="flex gap-1 mt-1 flex-wrap">
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
                     {deliveryDays.map((d, i) => (
                       <span
                         key={i}
-                        className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                        className="text-xs bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-lg border border-slate-100 dark:border-slate-600"
                       >
                         {DAY_LABELS[d.day_of_week] ?? d.day_of_week}
                       </span>
                     ))}
                   </div>
                 )}
-              </>
+              </div>
             ) : (
-              <p className="text-sm text-slate-400">Sin ruta asignada</p>
+              <p className="text-sm text-slate-400 dark:text-slate-600 italic">Sin ruta asignada</p>
             )}
-          </div>
+          </section>
 
+          {/* Macros */}
           {!isFamilyClient && order.protein_snapshot != null && (
-            <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
+            <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800/50">
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold mb-1.5">
                 Macros globales
               </p>
-              <p className="text-sm text-slate-700">
+              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                 {order.classification === 'Dinner' ? '🌙 ' : '☀️ '}
                 {order.protein_snapshot} {MACRO_UNIT} prot
-                {' · '}
+                <span className="mx-2 text-slate-300 dark:text-slate-700">|</span>
                 {order.carb_snapshot} {MACRO_UNIT} carbos
               </p>
             </div>
           )}
 
+          {/* Listado de Días */}
           {orderedDays.length > 0 && (
-            <div>
-              <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">
-                Dias con recetas
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold mb-3">
+                Días con recetas
               </p>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {orderedDays.map((day) => {
                   const od = dayMap[day];
                   const details = od.details ?? [];
@@ -237,37 +247,49 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
                     cls: 'bg-slate-100 text-slate-600 border-slate-200',
                   };
                   return (
-                    <div key={day} className="flex items-start gap-2">
-                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium min-w-[48px] text-center shrink-0 mt-0.5">
+                    <div
+                      key={day}
+                      className="flex items-start gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-lg font-bold min-w-[48px] text-center shrink-0">
                         {DAY_SHORT[day]}
                       </span>
                       <div className="flex-1 min-w-0">
                         {details.length > 0 ? (
-                          <div className="space-y-0.5">
+                          <div className="space-y-1">
                             {details.map((det, i) => (
-                              <p key={i} className="text-xs text-slate-600">
-                                {det.recipes?.name ?? 'Receta'}
+                              <p
+                                key={i}
+                                className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed"
+                              >
+                                <span className="font-medium">{det.recipes?.name ?? 'Receta'}</span>
                                 {det.quantity > 1 && (
-                                  <span className="text-slate-400"> x{det.quantity}</span>
+                                  <span className="text-indigo-500 dark:text-indigo-400 font-bold">
+                                    {' '}
+                                    ×{det.quantity}
+                                  </span>
                                 )}
                               </p>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-400">Sin recetas</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-600">Sin recetas</p>
                         )}
                         {od.delivery_date && (
-                          <p className="text-[10px] text-slate-400 mt-0.5">
-                            {'Entrega: '}
-                            {fmtDate(od.delivery_date, { day: '2-digit', month: 'short' })}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                              <Calendar size={10} />
+                              {fmtDate(od.delivery_date, { day: '2-digit', month: 'short' })}
+                            </p>
                             <span
                               className={
-                                'ml-2 px-1.5 py-0.5 rounded-full border text-[10px] ' + daySt.cls
+                                'px-1.5 py-0.5 rounded-full border text-[9px] font-bold uppercase ' +
+                                daySt.cls
                               }
                             >
                               {daySt.label}
                             </span>
-                          </p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -290,16 +312,22 @@ const OrderCard = ({ order, onClick, onEdit }) => {
     cls: 'bg-slate-100 text-slate-600 border-slate-200',
   };
   return (
-    <div className="group relative bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition">
+    <div className="group relative bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md transition-all">
       <button type="button" onClick={() => onClick(order)} className="w-full text-left">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 space-y-2 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-slate-800">{order.clients?.name}</p>
+              <p className="font-semibold text-slate-800 dark:text-slate-100">
+                {order.clients?.name}
+              </p>
+
+              {/* Badge de Estado Principal (asumiendo que st.cls viene del backend/helper) */}
               <span className={'text-xs font-medium px-2.5 py-0.5 rounded-full border ' + st.cls}>
                 {st.label}
               </span>
-              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+
+              {/* Badge de Clasificación (Almuerzo/Cena) */}
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                 {order.classification === 'Lunch'
                   ? 'Almuerzo'
                   : order.classification === 'Dinner'
@@ -307,12 +335,18 @@ const OrderCard = ({ order, onClick, onEdit }) => {
                     : order.classification}
               </span>
             </div>
-            <p className="text-sm text-slate-500">
+
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {fmtDate(order.week_start_date, { day: '2-digit', month: 'short' })}
               {' — '}
               {fmtDate(order.week_end_date, { day: '2-digit', month: 'short', year: 'numeric' })}
-              {order.routes && <span className="ml-3">{'· ' + order.routes.name}</span>}
+              {order.routes && (
+                <span className="ml-3 font-medium text-slate-600 dark:text-slate-300">
+                  {'· ' + order.routes.name}
+                </span>
+              )}
             </p>
+
             {order.order_days?.length > 0 && (
               <div className="flex gap-1.5 flex-wrap">
                 {[...order.order_days]
@@ -325,8 +359,8 @@ const OrderCard = ({ order, onClick, onEdit }) => {
                       className={
                         'text-xs font-medium px-2 py-0.5 rounded-full ' +
                         (d.status === 'DELIVERED'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-slate-100 text-slate-600')
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400')
                       }
                     >
                       {DAY_SHORT[d.day_of_week]}
@@ -335,9 +369,10 @@ const OrderCard = ({ order, onClick, onEdit }) => {
               </div>
             )}
           </div>
-          <ChevronRight size={16} className="text-slate-300 shrink-0 mt-1" />
+          <ChevronRight size={16} className="text-slate-300 dark:text-slate-600 shrink-0 mt-1" />
         </div>
       </button>
+
       {onEdit && (
         <button
           type="button"
@@ -345,7 +380,7 @@ const OrderCard = ({ order, onClick, onEdit }) => {
             e.stopPropagation();
             onEdit(order);
           }}
-          className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium bg-slate-800 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 transition shadow-md opacity-0 group-hover:opacity-100"
+          className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition shadow-md opacity-0 group-hover:opacity-100"
         >
           <Pencil size={12} /> Editar
         </button>
@@ -488,15 +523,17 @@ const HistoryView = ({ orders, onOrderClick, onEdit }) => {
     <div className="space-y-8">
       {paginated.map(({ weekStart, weekEnd, orders: weekOrders }) => (
         <div key={weekStart}>
+          {/* Separador de Fecha */}
           <div className="flex items-center gap-3 mb-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+            <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">
               {fmtDate(weekStart, { day: '2-digit', month: 'long' })}
               {' - '}
               {fmtDate(weekEnd, { day: '2-digit', month: 'long', year: 'numeric' })}
             </span>
-            <div className="h-px flex-1 bg-slate-200" />
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
           </div>
+
           <div className="space-y-3">
             {weekOrders.map((order) => (
               <OrderCard
@@ -509,22 +546,26 @@ const HistoryView = ({ orders, onOrderClick, onEdit }) => {
           </div>
         </div>
       ))}
+
+      {/* Paginación */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             onClick={() => setPage((p) => Math.max(0, p - 1))}
             disabled={page === 0}
-            className="p-2 rounded-xl border border-slate-200 hover:border-slate-400 disabled:opacity-30 transition"
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-30 transition shadow-sm"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="text-sm text-slate-500">
-            {'Pagina ' + (page + 1) + ' de ' + totalPages}
+
+          <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+            {'Página ' + (page + 1) + ' de ' + totalPages}
           </span>
+
           <button
             onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
             disabled={page === totalPages - 1}
-            className="p-2 rounded-xl border border-slate-200 hover:border-slate-400 disabled:opacity-30 transition"
+            className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-30 transition shadow-sm"
           >
             <ChevronRight size={16} />
           </button>
@@ -688,20 +729,23 @@ const Orders = () => {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-slate-50 p-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Pedidos</h1>
-            <p className="text-slate-500 mt-1">Gestiona y consulta los pedidos semanales</p>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Pedidos</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
+              Gestiona y consulta los pedidos semanales
+            </p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium shrink-0"
+            className="bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 dark:hover:bg-indigo-500 transition text-sm font-medium shrink-0 shadow-sm"
           >
             <ClipboardList size={16} /> Nuevo Pedido
           </button>
         </div>
 
+        {/* Input de Búsqueda */}
         <div className="relative mb-5 max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -709,22 +753,25 @@ const Orders = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar cliente o ruta..."
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 bg-white"
+            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700 bg-white dark:bg-slate-900 dark:text-slate-200 transition-colors"
           />
         </div>
 
-        <div className="flex items-center gap-1 mb-6 bg-white border border-slate-100 rounded-2xl p-1 w-fit shadow-sm">
+        {/* Tabs Principales */}
+        <div className="flex items-center gap-1 mb-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm">
           {TABS.map(({ id, label, Icon }) => {
             const count = id === 'week' ? filteredWeek.length : filteredHistory.length;
             const active = activeTab === id;
             const cls =
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
               (active
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-700');
+                ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200');
             const badgeCls =
               'text-xs px-1.5 py-0.5 rounded-full font-semibold ' +
-              (active ? 'bg-slate-600 text-slate-200' : 'bg-slate-100 text-slate-500');
+              (active
+                ? 'bg-slate-600 dark:bg-slate-500 text-slate-200'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400');
             return (
               <button key={id} onClick={() => setActiveTab(id)} className={cls}>
                 <Icon size={15} />
@@ -736,7 +783,7 @@ const Orders = () => {
         </div>
 
         {loading ? (
-          <p className="text-slate-400 text-sm">Cargando...</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando...</p>
         ) : (
           <AnimatePresence mode="wait">
             {activeTab === 'week' && (
@@ -749,20 +796,24 @@ const Orders = () => {
               >
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <div>
-                    <p className="text-xs text-slate-400 uppercase tracking-wide font-medium">
+                    <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-medium">
                       Semana de entrega
                     </p>
-                    <p className="text-sm font-semibold text-slate-700 mt-0.5">{weekLabel}</p>
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-0.5">
+                      {weekLabel}
+                    </p>
                   </div>
+
+                  {/* Selector Vista Lista/Calendario */}
                   {filteredWeek.length > 0 && (
-                    <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 rounded-xl p-1 border dark:border-slate-800">
                       <button
                         onClick={() => setCalendarView(false)}
                         className={
                           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ' +
                           (!calendarView
-                            ? 'bg-white text-slate-800 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700')
+                            ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')
                         }
                       >
                         <ClipboardList size={13} /> Lista
@@ -772,8 +823,8 @@ const Orders = () => {
                         className={
                           'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ' +
                           (calendarView
-                            ? 'bg-white text-slate-800 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700')
+                            ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')
                         }
                       >
                         <Calendar size={13} /> Calendario
@@ -783,10 +834,12 @@ const Orders = () => {
                 </div>
 
                 {filteredWeek.length === 0 ? (
-                  <div className="text-center py-20 text-slate-400">
+                  <div className="text-center py-20 text-slate-400 dark:text-slate-600">
                     <Calendar size={40} className="mx-auto mb-3 opacity-30" />
                     <p>{search ? 'Sin resultados' : 'No hay pedidos para esta semana'}</p>
-                    {!search && <p className="text-xs mt-1 text-slate-300">{weekLabel}</p>}
+                    {!search && (
+                      <p className="text-xs mt-1 text-slate-300 dark:text-slate-700">{weekLabel}</p>
+                    )}
                   </div>
                 ) : calendarView ? (
                   <CalendarView orders={filteredWeek} onOrderClick={setSelectedOrder} />
