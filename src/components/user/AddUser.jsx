@@ -43,7 +43,7 @@ const AddUser = ({ onClose }) => {
 
         if (profileError) throw profileError;
       }
-      sileo.success("Usuario registrado correctamente ");
+      sileo.success("Usuario registrado correctamente +, refresca la página para ver los cambios");
    
       if (onClose) onClose();
     } catch (err) {
