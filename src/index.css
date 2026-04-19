@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
 
 .bg-primary {
   background-color: var(--color-primary);

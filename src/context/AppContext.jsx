@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -8,16 +8,32 @@ import { supabase } from '../lib/supabase';
  */
 
 /**
+ * @typedef {'light' | 'dark' | 'system'} ThemeMode
+ */
+
+/**
  * @typedef {Object} AppContextValue
  * @property {SupabaseClient} supabase - Instancia de Supabase
  * @property {Session|null} session - Sesión actual
  * @property {User|null} user - Usuario autenticado
  * @property {boolean} loading - Estado de carga inicial
  * @property {boolean} isAuthenticated - Indica si hay sesión activa
+ * @property {ThemeMode} theme - Tema seleccionado por el usuario ('light' | 'dark' | 'system')
+ * @property {boolean} isDark - true si el tema efectivo actual es oscuro
+ * @property {(mode: ThemeMode) => void} setTheme - Cambia el tema
+ * @property {() => void} toggleTheme - Alterna entre light y dark
  */
+
+const THEME_KEY = 'app-theme';
 
 /** @type {import('react').Context<AppContextValue|null>} */
 const AppContext = createContext(null);
+
+/**
+ * Determina si el sistema operativo prefiere el tema oscuro.
+ * @returns {boolean}
+ */
+const systemPrefersDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 /**
  * Proveedor global de la aplicación.
@@ -25,6 +41,7 @@ const AppContext = createContext(null);
  * - Estado de autenticación
  * - Sesión de usuario
  * - Suscripción a cambios de auth (login/logout)
+ * - Tema de la interfaz (light / dark / system)
  *
  * @param {{ children: import('react').ReactNode }} props
  * @returns {JSX.Element}
@@ -39,9 +56,71 @@ export const AppProvider = ({ children }) => {
   /** @type {[boolean, Function]} */
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Tema preferido por el usuario. Se persiste en localStorage.
+   * @type {[ThemeMode, Function]}
+   */
+  const [theme, setThemeState] = useState(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+  });
+
+  /**
+   * Resuelve si el tema efectivo es oscuro,
+   * teniendo en cuenta la preferencia 'system'.
+   * @type {boolean}
+   */
+  const isDark = theme === 'dark' || (theme === 'system' && systemPrefersDark());
+
+  // Aplica / quita la clase 'dark' en <html> cada vez que cambia el tema efectivo
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      console.log('is dark')
+      root.classList.add('dark');
+    } else {
+      console.log('light')
+      root.classList.remove('dark');
+    }
+  }, [isDark]);
+
+  // Escucha cambios en la preferencia del sistema cuando el tema es 'system'
+  useEffect(() => {
+    if (theme !== 'system') return;
+
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleChange = () => {
+      // Forzar re-render recalculando isDark
+      setThemeState('system');
+    };
+
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, [theme]);
+
+  /**
+   * Cambia el tema y lo persiste en localStorage.
+   * @type {(mode: ThemeMode) => void}
+   */
+  const setTheme = useCallback((mode) => {
+    localStorage.setItem(THEME_KEY, mode);
+    setThemeState(mode);
+  }, []);
+
+  /**
+   * Alterna entre light y dark (ignora 'system').
+   * @type {() => void}
+   */
+  const toggleTheme = useCallback(() => {
+    setTheme(isDark ? 'light' : 'dark');
+  }, [isDark, setTheme]);
+
+  // ── Autenticación ────────────────────────────────────────────────────────────
+
   useEffect(() => {
     /**
-     * Obtiene la sesión inicial al montar la app
+     * Obtiene la sesión inicial al montar la app.
      * @returns {Promise<void>}
      */
     const getSession = async () => {
@@ -49,21 +128,16 @@ export const AppProvider = ({ children }) => {
 
       setSession(data.session);
       setUser(data.session?.user ?? null);
-
       setLoading(false);
     };
 
     getSession();
 
-    /**
-     * Listener de cambios de autenticación
-     */
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-    );
+    /** Listener de cambios de autenticación */
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
 
     return () => {
       listener.subscription.unsubscribe();
@@ -77,6 +151,10 @@ export const AppProvider = ({ children }) => {
     user,
     loading,
     isAuthenticated: !!session,
+    theme,
+    isDark,
+    setTheme,
+    toggleTheme,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
