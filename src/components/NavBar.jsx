@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -55,33 +55,70 @@ export default function Navbar() {
   // Búsqueda
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [linkResults, setLinkResults] = useState([]);
+  const [clientResults, setClientResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
   const searchRef = useRef(null);
   const inputRef = useRef(null);
-
   const navRef = useRef(null);
+  const debounceRef = useRef(null); // ← referencia al timer del debounce
 
-  // ── Búsqueda ────────────────────────────────────────────────────────────────
+  // ── Búsqueda ──────────────────────────────────────────────────────────────
 
   function openSearch() {
     setSearchExpanded(true);
-    // Espera al siguiente frame para que el input sea visible antes de focusearlo
     requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   function closeSearch() {
     setSearchExpanded(false);
     setSearchQuery('');
-    setSearchResults([]);
+    setLinkResults([]);
+    setClientResults([]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
   }
 
+  // Filtra links localmente (instantáneo) y clientes con debounce
   useEffect(() => {
     const q = searchQuery.trim().toLowerCase();
+
+    // Limpiar timer anterior
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
     if (!q) {
-      setSearchResults([]);
+      setLinkResults([]);
+      setClientResults([]);
+      setSearchLoading(false);
       return;
     }
-    setSearchResults(allLinks.filter((l) => l.label.toLowerCase().includes(q)));
+
+    // Links: filtrado local, sin petición
+    setLinkResults(allLinks.filter((l) => l.label.toLowerCase().includes(q)));
+
+    // Clientes: espera 350ms sin tipear antes de consultar
+    setSearchLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .schema('operations')
+          .from('clients')
+          .select('id_client, name')
+          .ilike('name', `%${q.trim()}%`)
+          .limit(6);
+
+        if (error) throw error;
+        setClientResults(data || []);
+      } catch (err) {
+        console.error(err);
+        setClientResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 350);
+
+    // Limpiar el timer si el componente se desmonta o el query cambia
+    return () => clearTimeout(debounceRef.current);
   }, [searchQuery]);
 
   function handleSearchSelect(to) {
@@ -98,8 +135,7 @@ export default function Navbar() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  // ── Click fuera ─────────────────────────────────────────────────────────────
-
+  // Click fuera
   useEffect(() => {
     function handleClickOutside(e) {
       if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null);
@@ -109,7 +145,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ── Auth ─────────────────────────────────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
   async function handleLogout() {
     setOpenMenu(null);
@@ -122,7 +158,7 @@ export default function Navbar() {
     setOpenMenu(openMenu === menu ? null : menu);
   }
 
-  // ── Tema ─────────────────────────────────────────────────────────────────────
+  // ── Tema ──────────────────────────────────────────────────────────────────
 
   function cycleTheme() {
     if (theme === 'system') setTheme('light');
@@ -140,6 +176,73 @@ export default function Navbar() {
   const baseStyle =
     'px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2';
 
+  // ¿Hay algo que mostrar en el dropdown?
+  const hasResults = linkResults.length > 0 || clientResults.length > 0;
+  const showDropdown = searchExpanded && (hasResults || searchLoading || searchQuery.trim());
+
+  // ── Dropdown de resultados (reutilizado en desktop y mobile) ──────────────
+
+  function SearchResults({ onSelect }) {
+    return (
+      <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 z-50 border border-gray-100 dark:border-gray-700">
+        {/* Secciones */}
+        {linkResults.length > 0 && (
+          <>
+            <p className="px-4 pt-1 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+              Secciones
+            </p>
+            {linkResults.map((link) => {
+              const Icon = link.icon;
+              return (
+                <button
+                  key={link.to}
+                  onClick={() => onSelect(link.to)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-800 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 text-left"
+                >
+                  <Icon size={15} />
+                  {link.label}
+                </button>
+              );
+            })}
+          </>
+        )}
+
+        {/* Clientes */}
+        {(searchLoading || clientResults.length > 0) && (
+          <>
+            <p
+              className={`px-4 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide ${linkResults.length > 0 ? 'pt-3 border-t border-gray-100 dark:border-gray-700 mt-1' : 'pt-1'}`}
+            >
+              Clientes
+            </p>
+            {searchLoading ? (
+              <div className="flex items-center gap-2 px-4 py-2">
+                <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-gray-400 dark:text-gray-500">Buscando...</span>
+              </div>
+            ) : (
+              clientResults.map((client) => (
+                <button
+                  key={client.id_client}
+                  onClick={() => onSelect(`/cliente/${client.id_client}`)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30 text-left"
+                >
+                  <Users size={15} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                  <span className="truncate">{client.name}</span>
+                </button>
+              ))
+            )}
+          </>
+        )}
+
+        {/* Sin resultados */}
+        {!searchLoading && !hasResults && searchQuery.trim() && (
+          <p className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">Sin resultados</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <nav
       ref={navRef}
@@ -152,7 +255,6 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {/* ── Barra de búsqueda colapsable ── */}
           <div ref={searchRef} className="relative flex items-center">
-            {/* Input — se expande/colapsa con max-width */}
             <div
               className={`flex items-center overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${
                 searchExpanded ? 'max-w-xs bg-white/20 px-3 py-1.5 gap-2' : 'max-w-0 px-0 py-0'
@@ -163,8 +265,8 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar sección..."
-                className="bg-transparent text-white placeholder-white/50 text-sm outline-none w-44"
+                placeholder="Buscar sección o cliente..."
+                className="bg-transparent text-white placeholder-white/50 text-sm outline-none w-48"
               />
               {searchQuery && (
                 <button
@@ -179,7 +281,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Botón lupa / cerrar */}
             <button
               onClick={searchExpanded ? closeSearch : openSearch}
               title={searchExpanded ? 'Cerrar búsqueda' : 'Buscar'}
@@ -188,28 +289,7 @@ export default function Navbar() {
               {searchExpanded ? <X size={18} /> : <Search size={18} />}
             </button>
 
-            {/* Dropdown de resultados */}
-            {searchExpanded && (searchResults.length > 0 || searchQuery.trim()) && (
-              <div className="absolute top-full right-0 mt-2 w-40 bg-white text-green-800 rounded-xl shadow-xl py-2 z-50">
-                {searchResults.length > 0 ? (
-                  searchResults.map((link) => {
-                    const Icon = link.icon;
-                    return (
-                      <button
-                        key={link.to}
-                        onClick={() => handleSearchSelect(link.to)}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100 text-left"
-                      >
-                        <Icon size={15} />
-                        {link.label}
-                      </button>
-                    );
-                  })
-                ) : (
-                  <p className="px-4 py-2 text-sm text-gray-400">Sin resultados</p>
-                )}
-              </div>
-            )}
+            {showDropdown && <SearchResults onSelect={handleSearchSelect} />}
           </div>
 
           {links.map((link) => {
@@ -219,11 +299,7 @@ export default function Navbar() {
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `${baseStyle} ${
-                    isActive
-                      ? 'bg-white text-green-800 shadow-md'
-                      : 'hover:bg-green-700 hover:scale-105'
-                  }`
+                  `${baseStyle} ${isActive ? 'bg-white text-green-800 shadow-md' : 'hover:bg-green-700 hover:scale-105'}`
                 }
               >
                 <Icon size={18} />
@@ -240,7 +316,6 @@ export default function Navbar() {
             links={gestionLinks}
             baseStyle={baseStyle}
           />
-
           <Dropdown
             label="Finanzas"
             menuKey="finanzas"
@@ -250,7 +325,6 @@ export default function Navbar() {
             baseStyle={baseStyle}
           />
 
-          {/* ── Botón de tema ── */}
           <button
             onClick={cycleTheme}
             title={`Tema: ${themeLabel}`}
@@ -259,7 +333,7 @@ export default function Navbar() {
             <ThemeIcon size={18} />
           </button>
 
-          {/* ── Perfil ── */}
+          {/* Perfil */}
           <div className="relative">
             <button
               onClick={() => toggleMenu('profile')}
@@ -269,9 +343,9 @@ export default function Navbar() {
             </button>
 
             {openMenu === 'profile' && (
-              <div className="absolute right-0 mt-3 w-52 bg-white text-green-800 rounded-xl shadow-xl py-2">
+              <div className="absolute right-0 mt-3 w-52 bg-white dark:bg-gray-800 text-green-800 dark:text-green-300 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-gray-700">
                 {user && (
-                  <div className="px-4 py-2 text-xs text-gray-500 border-b truncate">
+                  <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 truncate">
                     {user.email}
                   </div>
                 )}
@@ -281,15 +355,15 @@ export default function Navbar() {
                     setOpenMenu(null);
                     nav('/perfil');
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
                 >
                   <User size={16} />
                   Perfil
                 </button>
 
-                <div className="px-4 py-2 border-t border-b">
-                  <p className="text-xs text-gray-400 mb-2">Apariencia</p>
-                  <div className="flex rounded-lg overflow-hidden border border-green-200">
+                <div className="px-4 py-2 border-t border-b border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Apariencia</p>
+                  <div className="flex rounded-lg overflow-hidden border border-green-200 dark:border-green-800">
                     {[
                       { key: 'light', Icon: Sun, label: 'Claro' },
                       { key: 'dark', Icon: Moon, label: 'Oscuro' },
@@ -301,7 +375,7 @@ export default function Navbar() {
                         className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 text-xs transition-colors ${
                           theme === key
                             ? 'bg-green-700 text-white'
-                            : 'hover:bg-green-50 text-green-700'
+                            : 'hover:bg-green-50 dark:hover:bg-green-900/30 text-green-700 dark:text-green-400'
                         }`}
                       >
                         <Ic size={14} />
@@ -313,7 +387,7 @@ export default function Navbar() {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-100 text-red-600"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
                 >
                   <LogOut size={16} />
                   Cerrar Sesión
@@ -335,15 +409,14 @@ export default function Navbar() {
       {/* Mobile menu */}
       {isOpen && (
         <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-green-800">
-          {/* Búsqueda mobile — siempre visible en el menú abierto */}
-          <div className="relative mt-2">
+          <div ref={searchRef} className="relative mt-2">
             <div className="flex items-center bg-white/15 rounded-lg px-3 py-2 gap-2">
               <Search size={16} className="text-white/70 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar..."
+                placeholder="Buscar sección o cliente..."
                 className="bg-transparent text-white placeholder-white/50 text-sm outline-none flex-1"
               />
               {searchQuery && (
@@ -352,9 +425,9 @@ export default function Navbar() {
                 </button>
               )}
             </div>
-            {searchResults.length > 0 && (
-              <div className="absolute top-full mt-1 left-0 right-0 bg-white text-green-800 rounded-xl shadow-xl py-2 z-50">
-                {searchResults.map((link) => {
+            {(hasResults || searchLoading) && searchQuery.trim() && (
+              <div className="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 z-50 border border-gray-100 dark:border-gray-700">
+                {linkResults.map((link) => {
                   const Icon = link.icon;
                   return (
                     <button
@@ -363,13 +436,33 @@ export default function Navbar() {
                         handleSearchSelect(link.to);
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-800 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30"
                     >
                       <Icon size={15} />
                       {link.label}
                     </button>
                   );
                 })}
+                {searchLoading ? (
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-gray-400">Buscando clientes...</span>
+                  </div>
+                ) : (
+                  clientResults.map((client) => (
+                    <button
+                      key={client.id_client}
+                      onClick={() => {
+                        handleSearchSelect(`/customers/${client.id_client}`);
+                        setIsOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30"
+                    >
+                      <Users size={15} className="text-gray-400 shrink-0" />
+                      <span className="truncate">{client.name}</span>
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -425,7 +518,7 @@ export default function Navbar() {
   );
 }
 
-/* ── Dropdown ─────────────────────────────────────────────────────────────── */
+/* ── Dropdown ───────────────────────────────────────────────────────────────── */
 
 function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
   return (
@@ -436,7 +529,7 @@ function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
       </button>
 
       {openMenu === menuKey && (
-        <div className="absolute mt-2 w-56 bg-white text-green-800 rounded-xl shadow-xl py-2">
+        <div className="absolute mt-2 w-56 bg-white dark:bg-gray-800 text-green-800 dark:text-green-300 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-gray-700">
           {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -444,7 +537,7 @@ function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
                 key={link.to}
                 to={link.to}
                 onClick={() => toggleMenu(menuKey)}
-                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-100"
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
               >
                 <Icon size={16} />
                 {link.label}
