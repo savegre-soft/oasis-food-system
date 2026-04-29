@@ -27,7 +27,6 @@ const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
   { to: '/entregas', label: 'Entregas', icon: RouteIcon },
   { to: '/orders', label: 'Órdenes', icon: Handbag },
-  { to: '/settings', label: 'Configuracion', icon: Settings },
 ];
 
 const gestionLinks = [
@@ -361,6 +360,17 @@ export default function Navbar() {
                   Perfil
                 </button>
 
+                <button
+                  onClick={() => {
+                    setOpenMenu(null);
+                    nav('/settings');
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
+                >
+                  <Settings size={16} />
+                  Configuración
+                </button>
+
                 <div className="px-4 py-2 border-t border-b border-gray-100 dark:border-gray-700">
                   <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Apariencia</p>
                   <div className="flex rounded-lg overflow-hidden border border-green-200 dark:border-green-800">
@@ -504,6 +514,17 @@ export default function Navbar() {
               </button>
             ))}
           </div>
+
+          <NavLink
+            to="/settings"
+            onClick={() => setIsOpen(false)}
+            className={({ isActive }) =>
+              `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
+            }
+          >
+            <Settings size={18} />
+            Configuración
+          </NavLink>
 
           <button
             onClick={handleLogout}

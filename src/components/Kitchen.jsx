@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Clock, Truck, CheckCircle } from 'lucide-react';
 import RecipeProductionCard from './RecipeProductionCard';
+import { MACRO_UNIT } from './orderUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,8 @@ export const groupByRecipe = (orderDays) => {
           isOverridden,
           effectiveIngredients: ingredients,
           totalUnits: 0,
+          totalProteinUnit: MACRO_UNIT,
+          totalCarbUnit: MACRO_UNIT,
           clients: {},
         };
       }
@@ -70,7 +73,9 @@ export const groupByRecipe = (orderDays) => {
           quantity: 0,
           orderDayIds: new Set(),
           protein: detail.protein_value_applied,
+          proteinUnit: MACRO_UNIT,
           carb: detail.carb_value_applied,
+          carbUnit: MACRO_UNIT,
         };
       }
 
@@ -106,12 +111,10 @@ export const groupByRecipe = (orderDays) => {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
 
-  const grouped = groupByRecipe(orderDays);
+  const grouped = useMemo(() => groupByRecipe(orderDays), [orderDays]);
   const totalPending = orderDays.length;
   const totalUnitsAll = Object.values(grouped).reduce((s, r) => s + r.totalUnits, 0);
 
@@ -154,7 +157,6 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
               isExpanded={expandedRecipes[variantKey] ?? false}
               onToggle={toggle}
               onPack={onPack}
-              // Asegúrate de que RecipeProductionCard también reciba clases dark: internamente
             />
           ))}
         </div>

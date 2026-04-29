@@ -2,9 +2,9 @@ import { ChevronDown, ChevronUp, Archive } from 'lucide-react';
 import { MACRO_UNIT } from './orderUtils';
 
 const CATEGORY_STYLE = {
-  protein: { badge: 'bg-red-100 text-red-700' },
-  carb: { badge: 'bg-amber-100 text-amber-700' },
-  extra: { badge: 'bg-green-100 text-green-700' },
+  protein: { badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
+  carb: { badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  extra: { badge: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
 };
 
 const IngredientBadges = ({ ingredients }) => {
@@ -31,13 +31,13 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${recipe.isOverridden ? 'border-blue-200' : 'border-slate-100'}`}
+      className={`bg-white dark:bg-slate-900 rounded-2xl shadow-sm border overflow-hidden ${recipe.isOverridden ? 'border-blue-200 dark:border-blue-800' : 'border-slate-100 dark:border-slate-800'}`}
     >
       {/* Header */}
       <button
         type="button"
         onClick={() => onToggle(variantKey)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition"
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
       >
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <div
@@ -47,9 +47,9 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
           </div>
           <div className="text-left min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="font-semibold text-slate-800">{recipe.recipe_name}</p>
+              <p className="font-semibold text-slate-800 dark:text-slate-100">{recipe.recipe_name}</p>
               {recipe.isOverridden && (
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium shrink-0">
+                <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium shrink-0">
                   Variante modificada
                 </span>
               )}
@@ -60,18 +60,18 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
               </div>
             )}
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 {(recipe.clients ?? []).length} cliente
                 {(recipe.clients ?? []).length !== 1 ? 's' : ''}
               </p>
               {recipe.totalProtein != null && (
-                <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
                   {Math.round(recipe.totalProtein)}
                   {recipe.totalProteinUnit ?? MACRO_UNIT} prot
                 </span>
               )}
               {recipe.totalCarb != null && (
-                <span className="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
                   {Math.round(recipe.totalCarb)}
                   {recipe.totalCarbUnit ?? MACRO_UNIT} carb
                 </span>
@@ -80,15 +80,15 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
           </div>
         </div>
         {isExpanded ? (
-          <ChevronUp size={16} className="text-slate-400 shrink-0 ml-2" />
+          <ChevronUp size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-2" />
         ) : (
-          <ChevronDown size={16} className="text-slate-400 shrink-0 ml-2" />
+          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-2" />
         )}
       </button>
 
       {/* Clientes */}
       {isExpanded && (
-        <div className="border-t border-slate-100 divide-y divide-slate-50">
+        <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-50 dark:divide-slate-800">
           {(recipe.clients ?? []).map((client, index) => (
             <div key={index} className="px-5 py-3">
               {/* Nombre + total */}
@@ -99,7 +99,7 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                   >
                     ×{client.totalQuantity}
                   </span>
-                  <p className="text-sm font-semibold text-slate-800">{client.clientName}</p>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{client.clientName}</p>
                 </div>
 
                 {/* Empacar todo — solo cuando el cliente tiene más de 1 meal */}
@@ -111,7 +111,7 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                         .flatMap((m) => m.orderDayIds ?? [])
                         .forEach((id) => onPack(id))
                     }
-                    className="flex items-center gap-1.5 text-xs text-orange-600 border border-orange-200 bg-orange-50 px-3 py-1.5 rounded-xl hover:bg-orange-100 transition shrink-0 ml-4"
+                    className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition shrink-0 ml-4"
                   >
                     <Archive size={13} />
                     Empacar todo
@@ -124,31 +124,31 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                 {(client.meals ?? []).map((meal, mIndex) => (
                   <div
                     key={mIndex}
-                    className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2"
+                    className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-slate-500 font-medium">×{meal.quantity}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">×{meal.quantity}</span>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           meal.classification === 'Lunch'
-                            ? 'bg-amber-50 text-amber-700'
-                            : 'bg-indigo-50 text-indigo-700'
+                            ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                            : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
                         }`}
                       >
                         {meal.classification === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
                       </span>
                       {meal.protein && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
                           {meal.protein}
-                          {meal.proteinUnit} prot · {meal.carb}
-                          {meal.carbUnit} carbos
+                          {meal.proteinUnit ?? MACRO_UNIT} prot · {meal.carb}
+                          {meal.carbUnit ?? MACRO_UNIT} carbos
                         </span>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => (meal.orderDayIds ?? []).forEach((id) => onPack(id))}
-                      className="flex items-center gap-1.5 text-xs text-orange-600 border border-orange-200 bg-orange-50 px-3 py-1.5 rounded-xl hover:bg-orange-100 transition shrink-0 ml-3"
+                      className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition shrink-0 ml-3"
                     >
                       <Archive size={13} />
                       Empacar
