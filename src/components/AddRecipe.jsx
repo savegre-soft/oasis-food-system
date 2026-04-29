@@ -110,7 +110,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
         .update({ name, description })
         .eq('id_recipe', initialData.id_recipe);
       if (error) {
-        sileo.error('Error al actualizar la receta');
+        sileo.error('Error al actualizar el plato');
         console.error(error);
         setLoading(false);
         return;
@@ -130,7 +130,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
         .select('id_recipe')
         .single();
       if (error) {
-        sileo.error('Error al guardar la receta');
+        sileo.error('Error al guardar el plato');
         console.error(error);
         setLoading(false);
         return;
@@ -153,7 +153,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
       }
     }
 
-    sileo.success(isEdit ? 'Receta actualizada correctamente' : 'Receta guardada correctamente');
+    sileo.success(isEdit ? 'Plato actualizado correctamente' : 'Plato guardado correctamente');
     if (!isEdit) resetForm();
     setLoading(false);
   };
@@ -162,7 +162,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
     <div className="bg-slate-50 p-8 flex justify-center">
       <div className="w-full max-w-xl bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
         <h1 className="text-2xl font-bold text-slate-800 mb-6">
-          {isEdit ? 'Editar Receta' : 'Agregar Nueva Receta'}
+          {isEdit ? 'Editar Plato' : 'Agregar Nuevo Plato'}
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -298,7 +298,7 @@ const AddRecipe = ({ onSuccess, initialData }) => {
             className="w-full bg-slate-800 text-white py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
           >
             <Plus size={18} />
-            {loading ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Receta'}
+            {loading ? 'Guardando...' : isEdit ? 'Guardar Cambios' : 'Guardar Plato'}
           </button>
         </form>
       </div>
