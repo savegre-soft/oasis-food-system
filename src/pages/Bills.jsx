@@ -11,6 +11,7 @@ import AddExpensive from '../components/AddExpensive';
 import AddExpenseEmployee from '../components/AddExpenseEmployee';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AuthRoles from '../components/auth/AuthRoles';
 
 const container = {
   hidden: { opacity: 0 },
@@ -42,19 +43,26 @@ const GastosTab = () => {
         .select('id_expense_category, name')
         .eq('is_active', true),
     ]);
-    if (error) { console.error(error); return; }
+    if (error) {
+      console.error(error);
+      return;
+    }
     const catMap = Object.fromEntries((catData || []).map((c) => [c.id_expense_category, c.name]));
-    setGastos(data.map((item) => ({
-      id: item.id_expense,
-      descripcion: item.description,
-      categoria: catMap[item.category_id] ?? `Categoría ${item.category_id}`,
-      category_id: item.category_id,
-      fecha: item.expense_date,
-      monto: item.amount,
-    })));
+    setGastos(
+      data.map((item) => ({
+        id: item.id_expense,
+        descripcion: item.description,
+        categoria: catMap[item.category_id] ?? `Categoría ${item.category_id}`,
+        category_id: item.category_id,
+        fecha: item.expense_date,
+        monto: item.amount,
+      }))
+    );
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filtered = gastos
     .filter((g) => g.descripcion.toLowerCase().includes(search.toLowerCase()))
@@ -72,7 +80,10 @@ const GastosTab = () => {
       .from('expenses')
       .delete()
       .eq('id_expense', toDelete);
-    if (error) { sileo.error('No se pudo eliminar el gasto'); return; }
+    if (error) {
+      sileo.error('No se pudo eliminar el gasto');
+      return;
+    }
     sileo.success('Gasto eliminado');
     setToDelete(null);
     fetchData();
@@ -83,14 +94,25 @@ const GastosTab = () => {
       <AnimatePresence>
         {showModal && (
           <Modal isOpen onClose={() => setShowModal(false)}>
-            <AddExpensive onAdded={() => { setShowModal(false); fetchData(); }} />
+            <AddExpensive
+              onAdded={() => {
+                setShowModal(false);
+                fetchData();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>
       <AnimatePresence>
         {editingExpense && (
           <Modal isOpen onClose={() => setEditingExpense(null)}>
-            <AddExpensive expense={editingExpense} onAdded={() => { setEditingExpense(null); fetchData(); }} />
+            <AddExpensive
+              expense={editingExpense}
+              onAdded={() => {
+                setEditingExpense(null);
+                fetchData();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>
@@ -158,18 +180,34 @@ const GastosTab = () => {
 
       <AnimatePresence mode="wait">
         {view === 'cards' ? (
-          <motion.div key="cards" variants={container} initial="hidden" animate="show" exit={{ opacity: 0 }} className="space-y-4">
+          <motion.div
+            key="cards"
+            variants={container}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
             {filtered.map((g) => (
               <ExpenseCard key={g.id} {...g} onEdit={setEditingExpense} onDelete={setToDelete} />
             ))}
             {filtered.length === 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-slate-500 mt-12">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-slate-500 mt-12"
+              >
                 No se encontraron gastos.
               </motion.div>
             )}
           </motion.div>
         ) : (
-          <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            key="table"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <ExpenseTable gastos={filtered} onEdit={setEditingExpense} onDelete={setToDelete} />
           </motion.div>
         )}
@@ -200,15 +238,20 @@ const PersonalTab = () => {
         .from('empCost')
         .select('*')
         .order('WorkDate', { ascending: false });
-      if (error) { console.error(error); return; }
-      setRecords(data.map((item) => ({
-        id: item.id,
-        descripcion: item.Name,
-        hours: item.Hours,
-        categoria: `${item.Hours} horas`,
-        fecha: item.WorkDate,
-        monto: item.Amount,
-      })));
+      if (error) {
+        console.error(error);
+        return;
+      }
+      setRecords(
+        data.map((item) => ({
+          id: item.id,
+          descripcion: item.Name,
+          hours: item.Hours,
+          categoria: `${item.Hours} horas`,
+          fecha: item.WorkDate,
+          monto: item.Amount,
+        }))
+      );
     })();
   }, [supabase, refreshKey]);
 
@@ -228,7 +271,10 @@ const PersonalTab = () => {
       .from('empCost')
       .delete()
       .eq('id', toDelete);
-    if (error) { sileo.error('No se pudo eliminar el registro'); return; }
+    if (error) {
+      sileo.error('No se pudo eliminar el registro');
+      return;
+    }
     sileo.success('Registro eliminado');
     setToDelete(null);
     refresh();
@@ -239,14 +285,25 @@ const PersonalTab = () => {
       <AnimatePresence>
         {showModal && (
           <Modal isOpen onClose={() => setShowModal(false)}>
-            <AddExpenseEmployee onAdded={() => { setShowModal(false); refresh(); }} />
+            <AddExpenseEmployee
+              onAdded={() => {
+                setShowModal(false);
+                refresh();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>
       <AnimatePresence>
         {editingExpense && (
           <Modal isOpen onClose={() => setEditingExpense(null)}>
-            <AddExpenseEmployee expense={editingExpense} onAdded={() => { setEditingExpense(null); refresh(); }} />
+            <AddExpenseEmployee
+              expense={editingExpense}
+              onAdded={() => {
+                setEditingExpense(null);
+                refresh();
+              }}
+            />
           </Modal>
         )}
       </AnimatePresence>
@@ -314,18 +371,34 @@ const PersonalTab = () => {
 
       <AnimatePresence mode="wait">
         {view === 'cards' ? (
-          <motion.div key="cards" variants={container} initial="hidden" animate="show" exit={{ opacity: 0 }} className="space-y-4">
+          <motion.div
+            key="cards"
+            variants={container}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
             {filtered.map((e) => (
               <ExpenseCard key={e.id} {...e} onEdit={setEditingExpense} onDelete={setToDelete} />
             ))}
             {filtered.length === 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-slate-500 mt-12">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-slate-500 mt-12"
+              >
                 No se encontraron registros.
               </motion.div>
             )}
           </motion.div>
         ) : (
-          <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div
+            key="table"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <ExpenseTable
               gastos={filtered}
               onEdit={setEditingExpense}
@@ -345,43 +418,45 @@ const Bills = () => {
   const [tab, setTab] = useState('operativos');
 
   return (
-    <motion.div
-      className="min-h-screen bg-slate-50 rounded p-8"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      {/* Header */}
+    <AuthRoles rolesNames={['Finanzas', 'Administrador']}>
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-sm p-6 mb-6"
+        className="min-h-screen bg-slate-50 rounded p-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       >
-        <h1 className="text-3xl font-bold text-slate-800">Control de Gastos</h1>
-        <p className="text-slate-500 mt-1">Administra los gastos operativos y de personal</p>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-sm p-6 mb-6"
+        >
+          <h1 className="text-3xl font-bold text-slate-800">Control de Gastos</h1>
+          <p className="text-slate-500 mt-1">Administra los gastos operativos y de personal</p>
+        </motion.div>
+
+        {/* Tab selector */}
+        <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden w-fit mb-6">
+          <button
+            onClick={() => setTab('operativos')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'operativos' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <DollarSign size={15} />
+            Gastos Operativos
+          </button>
+          <button
+            onClick={() => setTab('personal')}
+            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'personal' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Users size={15} />
+            Personal
+          </button>
+        </div>
+
+        {/* Tab content */}
+        {tab === 'operativos' && <GastosTab />}
+        {tab === 'personal' && <PersonalTab />}
       </motion.div>
-
-      {/* Tab selector */}
-      <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden w-fit mb-6">
-        <button
-          onClick={() => setTab('operativos')}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'operativos' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-        >
-          <DollarSign size={15} />
-          Gastos Operativos
-        </button>
-        <button
-          onClick={() => setTab('personal')}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition ${tab === 'personal' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-        >
-          <Users size={15} />
-          Personal
-        </button>
-      </div>
-
-      {/* Tab content */}
-      {tab === 'operativos' && <GastosTab />}
-      {tab === 'personal' && <PersonalTab />}
-    </motion.div>
+    </AuthRoles>
   );
 };
 

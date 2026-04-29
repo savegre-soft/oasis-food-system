@@ -25,45 +25,48 @@ const groupByClient = (orderDays) => {
 const ClassificationBadge = ({ classification }) => {
   if (classification === 'Lunch')
     return (
-      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
         ☀️ Almuerzo
       </span>
     );
   if (classification === 'Dinner')
     return (
-      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 text-indigo-700">
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
         🌙 Cena
       </span>
     );
   return (
-    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700">
+    <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
       👨‍👩‍👧 Familiar
     </span>
   );
 };
 
 const ClientDeliveredCard = ({ client }) => (
-  <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-    <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-50">
-      <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-sm font-bold text-green-700 shrink-0">
+  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-50 dark:border-slate-800/50">
+      <div className="w-9 h-9 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-sm font-bold text-green-700 dark:text-green-400 shrink-0">
         {client.name.charAt(0).toUpperCase()}
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-800">{client.name}</p>
-        <p className="text-xs text-slate-400 flex items-center gap-1">
-          <CheckCircle size={11} className="text-green-500" />
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{client.name}</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+          <CheckCircle size={11} className="text-green-500 dark:text-green-400" />
           {client.orderDays.length} entregado{client.orderDays.length !== 1 ? 's' : ''}
         </p>
       </div>
     </div>
 
-    <div className="divide-y divide-slate-50">
+    <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
       {client.orderDays.map((od) => (
         <div key={od.id_order_day} className="flex items-center gap-2 px-5 py-3 flex-wrap">
-          <CheckCircle size={13} className="text-green-400 shrink-0" />
+          <CheckCircle size={13} className="text-green-400 dark:text-green-500 shrink-0" />
           <ClassificationBadge classification={od.classification} />
           {(od.recipes ?? []).map((r, i) => (
-            <span key={i} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+            <span
+              key={i}
+              className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full"
+            >
               {r.name}
               {r.quantity > 1 ? ` ×${r.quantity}` : ''}
             </span>
@@ -73,7 +76,6 @@ const ClientDeliveredCard = ({ client }) => (
     </div>
   </div>
 );
-
 // ── EntregaView ───────────────────────────────────────────────────────────────
 
 const EntregaView = ({ orderDays }) => {
@@ -81,7 +83,7 @@ const EntregaView = ({ orderDays }) => {
 
   if (clients.length === 0) {
     return (
-      <div className="text-center py-16 text-slate-400">
+      <div className="text-center py-16 text-slate-400 dark:text-slate-600">
         <Truck size={36} className="mx-auto mb-3 opacity-30" />
         <p>Aún no hay entregas registradas hoy</p>
       </div>
@@ -90,8 +92,8 @@ const EntregaView = ({ orderDays }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-        <CheckCircle size={14} className="text-green-500" />
+      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+        <CheckCircle size={14} className="text-green-500 dark:text-green-400" />
         <span>
           {clients.length} cliente{clients.length !== 1 ? 's' : ''} entregado
           {clients.length !== 1 ? 's' : ''} hoy

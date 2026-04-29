@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Clock, Truck, CheckCircle } from 'lucide-react';
 import RecipeProductionCard from './RecipeProductionCard';
+import { MACRO_UNIT } from './orderUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,8 @@ export const groupByRecipe = (orderDays) => {
           isOverridden,
           effectiveIngredients: ingredients,
           totalUnits: 0,
+          totalProteinUnit: MACRO_UNIT,
+          totalCarbUnit: MACRO_UNIT,
           clients: {},
         };
       }
@@ -70,7 +73,9 @@ export const groupByRecipe = (orderDays) => {
           quantity: 0,
           orderDayIds: new Set(),
           protein: detail.protein_value_applied,
+          proteinUnit: MACRO_UNIT,
           carb: detail.carb_value_applied,
+          carbUnit: MACRO_UNIT,
         };
       }
 
@@ -109,7 +114,7 @@ export const groupByRecipe = (orderDays) => {
 const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
 
-  const grouped = groupByRecipe(orderDays);
+  const grouped = useMemo(() => groupByRecipe(orderDays), [orderDays]);
   const totalPending = orderDays.length;
   const totalUnitsAll = Object.values(grouped).reduce((s, r) => s + r.totalUnits, 0);
 
@@ -118,19 +123,19 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          icon={<Clock className="text-amber-500" size={20} />}
+          icon={<Clock className="text-amber-500 dark:text-amber-400" size={20} />}
           label="Pedidos pendientes"
           value={totalPending}
         />
         <StatCard
-          icon={<Truck className="text-blue-500" size={20} />}
+          icon={<Truck className="text-blue-500 dark:text-blue-400" size={20} />}
           label="Total unidades"
           value={totalUnitsAll}
         />
         <StatCard
-          icon={<CheckCircle className="text-green-500" size={20} />}
+          icon={<CheckCircle className="text-green-500 dark:text-green-400" size={20} />}
           label="Recetas distintas"
           value={Object.keys(grouped).length}
         />
@@ -138,7 +143,7 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
 
       {/* Cards */}
       {Object.keys(grouped).length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-slate-400 dark:text-slate-600">
           <CheckCircle size={36} className="mx-auto mb-3 opacity-30" />
           <p>Todo empacado para este día</p>
         </div>
@@ -161,11 +166,11 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
 };
 
 const StatCard = ({ icon, label, value }) => (
-  <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex items-center gap-4">
+  <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-5 border border-slate-100 dark:border-slate-800 flex items-center gap-4 transition-colors">
     <div className="shrink-0">{icon}</div>
     <div>
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-2xl font-semibold text-slate-800">{value}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   </div>
 );

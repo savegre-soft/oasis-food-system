@@ -25,8 +25,8 @@ import StepConfirm from './orders/steps/StepConfirm';
 const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
 
 const PERSONAL_STEPS = ['Cliente', 'Menú', 'Ajustes', 'Pago', 'Confirmar'];
-const FAMILY_STEPS   = ['Cliente', 'Ajustes', 'Pago', 'Confirmar'];
-const EXPRESS_STEPS  = ['Cliente', 'Menú', 'Pago', 'Confirmar'];
+const FAMILY_STEPS = ['Cliente', 'Ajustes', 'Pago', 'Confirmar'];
+const EXPRESS_STEPS = ['Cliente', 'Menú', 'Pago', 'Confirmar'];
 
 // ── AddOrder ──────────────────────────────────────────────────────────────────
 const AddOrder = ({ onSuccess }) => {
@@ -37,58 +37,76 @@ const AddOrder = ({ onSuccess }) => {
   const [step, setStep] = useState(1);
 
   // Step 1 — Client
-  const [clients, setClients]           = useState([]);
+  const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [clientSearch, setClientSearch] = useState('');
 
   // Step 2 — Menu
-  const [menuType, setMenuType]                         = useState(null);
-  const [lunchTemplates, setLunchTemplates]             = useState([]);
-  const [dinnerTemplates, setDinnerTemplates]           = useState([]);
-  const [selectedLunchTemplate, setSelectedLunchTemplate]   = useState(null);
+  const [menuType, setMenuType] = useState(null);
+  const [lunchTemplates, setLunchTemplates] = useState([]);
+  const [dinnerTemplates, setDinnerTemplates] = useState([]);
+  const [selectedLunchTemplate, setSelectedLunchTemplate] = useState(null);
   const [selectedDinnerTemplate, setSelectedDinnerTemplate] = useState(null);
   const [selectedFamilyTemplate, setSelectedFamilyTemplate] = useState(null);
 
   // Step 3 — Route / adjustments
-  const [resolvedRoute, setResolvedRoute]           = useState(null);
-  const [allRoutes, setAllRoutes]                   = useState([]);
+  const [resolvedRoute, setResolvedRoute] = useState(null);
+  const [allRoutes, setAllRoutes] = useState([]);
   const [routeManuallyChanged, setRouteManuallyChanged] = useState(false);
-  const [allRecipes, setAllRecipes]                 = useState([]);
-  const [extraMealTypes, setExtraMealTypes]         = useState({});
+  const [allRecipes, setAllRecipes] = useState([]);
+  const [extraMealTypes, setExtraMealTypes] = useState({});
 
   const [loading, setLoading] = useState(false);
 
   // Step 4 — Payment
-  const [paymentType, setPaymentType]       = useState('weekly');
-  const [paymentAmount, setPaymentAmount]   = useState('');
-  const [paymentDate, setPaymentDate]       = useState(() => new Date().toISOString().split('T')[0]);
-  const [paymentStatus, setPaymentStatus]   = useState('pending');
-  const [paymentNotes, setPaymentNotes]     = useState('');
+  const [paymentType, setPaymentType] = useState('weekly');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [paymentNotes, setPaymentNotes] = useState('');
   const [availableMonthly, setAvailableMonthly] = useState([]);
   const [associatePaymentId, setAssociatePaymentId] = useState(null);
 
   // Express
-  const [isExpress, setIsExpress]                         = useState(false);
-  const [expressRecipes, setExpressRecipes]               = useState([]);
-  const [expressType, setExpressType]                     = useState('Lunch');
+  const [isExpress, setIsExpress] = useState(false);
+  const [expressRecipes, setExpressRecipes] = useState([]);
+  const [expressType, setExpressType] = useState('Lunch');
   const [expressIngredientOverrides, setExpressIngredientOverrides] = useState({});
   const [expressMacros, setExpressMacros] = useState({
-    protein_value: '', carb_value: '',
+    protein_value: '',
+    carb_value: '',
   });
 
   const familyClient = selectedClient ? isFamily(selectedClient) : false;
 
   // ── Hooks ─────────────────────────────────────────────────────────────────────
   const {
-    dayRecipes, recipeIngredients, ingredientOverrides, setIngredientOverrides,
-    expandedDays, addRecipeToDay, updateRecipeInDay, removeRecipeFromDay,
-    setOverride, toggleDay, setDayRecipes, fetchRecipeIngredients,
+    dayRecipes,
+    recipeIngredients,
+    ingredientOverrides,
+    setIngredientOverrides,
+    expandedDays,
+    addRecipeToDay,
+    updateRecipeInDay,
+    removeRecipeFromDay,
+    setOverride,
+    toggleDay,
+    setDayRecipes,
+    fetchRecipeIngredients,
   } = useDayRecipes();
 
   const {
-    lunchMacros, setLunchMacros, dinnerMacros, setDinnerMacros,
-    updateLunchMacro, updateDinnerMacro, updateDayMacro, resetDayMacro,
-    resetAllDayMacros, getEffectiveMacros, isDayOverridden,
+    lunchMacros,
+    setLunchMacros,
+    dinnerMacros,
+    setDinnerMacros,
+    updateLunchMacro,
+    updateDinnerMacro,
+    updateDayMacro,
+    resetDayMacro,
+    resetAllDayMacros,
+    getEffectiveMacros,
+    isDayOverridden,
   } = useMacros();
 
   const extraCount = Object.values(dayRecipes)
@@ -145,7 +163,9 @@ const AddOrder = ({ onSuccess }) => {
     setExpressRecipes([]);
     setExpressIngredientOverrides({});
     const emptyDays = {};
-    DAYS_ORDER.forEach((d) => { emptyDays[d] = []; });
+    DAYS_ORDER.forEach((d) => {
+      emptyDays[d] = [];
+    });
     setDayRecipes(emptyDays);
     setIngredientOverrides({});
   }, [selectedClient]);
@@ -162,7 +182,9 @@ const AddOrder = ({ onSuccess }) => {
   // Reset dayRecipes when switching express/normal
   useEffect(() => {
     const emptyDays = {};
-    DAYS_ORDER.forEach((d) => { emptyDays[d] = []; });
+    DAYS_ORDER.forEach((d) => {
+      emptyDays[d] = [];
+    });
     setDayRecipes(emptyDays);
     setIngredientOverrides({});
     setStep((prev) => (prev > 2 ? 2 : prev));
@@ -171,7 +193,8 @@ const AddOrder = ({ onSuccess }) => {
   // Auto-load expressMacros from client profile
   useEffect(() => {
     if (!selectedClient || !isExpress) return;
-    const macro = expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
+    const macro =
+      expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
     setExpressMacros(
       macro
         ? { protein_value: macro.protein_value, carb_value: macro.carb_value }
@@ -187,14 +210,16 @@ const AddOrder = ({ onSuccess }) => {
       const { data } = await supabase
         .schema('operations')
         .from('order_templates')
-        .select('id_template, name, meal_type, order_template_days(day_of_week, order_template_details(recipe_id, quantity, recipes(id_recipe, name)))')
+        .select(
+          'id_template, name, meal_type, order_template_days(day_of_week, order_template_details(recipe_id, quantity, recipes(id_recipe, name)))'
+        )
         .in('meal_type', types)
         .eq('is_active', true);
-      const lunch  = data?.filter((t) => t.meal_type === 'Lunch')  ?? [];
+      const lunch = data?.filter((t) => t.meal_type === 'Lunch') ?? [];
       const dinner = data?.filter((t) => t.meal_type === 'Dinner') ?? [];
       setLunchTemplates(lunch);
       setDinnerTemplates(dinner);
-      if (menuType === 'Lunch'  && lunch.length  === 1) setSelectedLunchTemplate(lunch[0]);
+      if (menuType === 'Lunch' && lunch.length === 1) setSelectedLunchTemplate(lunch[0]);
       if (menuType === 'Dinner' && dinner.length === 1) setSelectedDinnerTemplate(dinner[0]);
     })();
   }, [menuType, selectedClient]);
@@ -202,7 +227,7 @@ const AddOrder = ({ onSuccess }) => {
   // Auto-resolve route
   useEffect(() => {
     if (step !== 3 || !menuType || familyClient || routeManuallyChanged) return;
-    const preferredType = (menuType === 'both' || extraCount >= 3) ? 'complete' : 'individual';
+    const preferredType = menuType === 'both' || extraCount >= 3 ? 'complete' : 'individual';
     (async () => {
       let { data } = await supabase
         .schema('operations')
@@ -230,7 +255,9 @@ const AddOrder = ({ onSuccess }) => {
     if (familyClient) return;
     if (!selectedLunchTemplate && !selectedDinnerTemplate) return;
     const recipes = {};
-    DAYS_ORDER.forEach((d) => { recipes[d] = []; });
+    DAYS_ORDER.forEach((d) => {
+      recipes[d] = [];
+    });
     const templates = [];
     if ((menuType === 'Lunch' || menuType === 'both') && selectedLunchTemplate)
       templates.push({ tmpl: selectedLunchTemplate, type: 'Lunch' });
@@ -241,12 +268,20 @@ const AddOrder = ({ onSuccess }) => {
         const day = tday.day_of_week;
         if (!recipes[day]) recipes[day] = [];
         (tday.order_template_details ?? []).forEach((det) => {
-          recipes[day].push({ recipe_id: det.recipe_id, recipe_name: det.recipes?.name ?? '', quantity: det.quantity, isExtra: false });
+          recipes[day].push({
+            recipe_id: det.recipe_id,
+            recipe_name: det.recipes?.name ?? '',
+            quantity: det.quantity,
+            isExtra: false,
+          });
         });
       });
     });
     setDayRecipes(recipes);
-    const ids = Object.values(recipes).flat().map((r) => r.recipe_id).filter(Boolean);
+    const ids = Object.values(recipes)
+      .flat()
+      .map((r) => r.recipe_id)
+      .filter(Boolean);
     if (ids.length) fetchRecipeIngredients(ids);
   }, [selectedLunchTemplate, selectedDinnerTemplate]);
 
@@ -254,22 +289,36 @@ const AddOrder = ({ onSuccess }) => {
   useEffect(() => {
     if (!familyClient) return;
     const recipes = {};
-    DAYS_ORDER.forEach((d) => { recipes[d] = []; });
+    DAYS_ORDER.forEach((d) => {
+      recipes[d] = [];
+    });
     if (selectedFamilyTemplate) {
       (selectedFamilyTemplate.order_template_details ?? []).forEach((det) => {
         if (!recipes['Friday']) recipes['Friday'] = [];
-        recipes['Friday'].push({ recipe_id: det.recipe_id, recipe_name: det.recipes?.name ?? '', quantity: det.quantity, isExtra: false });
+        recipes['Friday'].push({
+          recipe_id: det.recipe_id,
+          recipe_name: det.recipes?.name ?? '',
+          quantity: det.quantity,
+          isExtra: false,
+        });
       });
     }
     setDayRecipes(recipes);
-    const ids = Object.values(recipes).flat().map((r) => r.recipe_id).filter(Boolean);
+    const ids = Object.values(recipes)
+      .flat()
+      .map((r) => r.recipe_id)
+      .filter(Boolean);
     if (ids.length) fetchRecipeIngredients(ids);
   }, [selectedFamilyTemplate, familyClient]);
 
   // Auto-suggest payment type + fetch available monthly payments
   useEffect(() => {
     if (step !== 4) return;
-    const suggested = isExpress ? 'express' : familyClient || menuType === 'both' ? 'monthly' : 'weekly';
+    const suggested = isExpress
+      ? 'express'
+      : familyClient || menuType === 'both'
+        ? 'monthly'
+        : 'weekly';
     setPaymentType(suggested);
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setAssociatePaymentId(null);
@@ -285,7 +334,8 @@ const AddOrder = ({ onSuccess }) => {
       if (error || !data) return;
       const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
       setAvailableMonthly(available);
-      if (available.length > 0 && suggested === 'monthly') setAssociatePaymentId(available[0].id_payment);
+      if (available.length > 0 && suggested === 'monthly')
+        setAssociatePaymentId(available[0].id_payment);
     })();
   }, [step]);
 
@@ -317,23 +367,37 @@ const AddOrder = ({ onSuccess }) => {
     if (step === 2) {
       if (isExpress) return expressRecipes.some((r) => r.recipe_id);
       if (!menuType) return false;
-      if (menuType === 'Lunch')  return !!selectedLunchTemplate;
+      if (menuType === 'Lunch') return !!selectedLunchTemplate;
       if (menuType === 'Dinner') return !!selectedDinnerTemplate;
       return !!selectedLunchTemplate && !!selectedDinnerTemplate;
     }
-    if (step === 4) return associatePaymentId !== null || (!!paymentAmount && Number(paymentAmount) >= 0);
+    if (step === 4)
+      return associatePaymentId !== null || (!!paymentAmount && Number(paymentAmount) >= 0);
     return true;
   };
 
   const goNext = async () => {
-    if (step === 1 && familyClient) { await resolveFamilyRoute(); setStep(3); return; }
-    if (step === 2 && isExpress)    { setStep(4); return; }
+    if (step === 1 && familyClient) {
+      await resolveFamilyRoute();
+      setStep(3);
+      return;
+    }
+    if (step === 2 && isExpress) {
+      setStep(4);
+      return;
+    }
     setStep((s) => s + 1);
   };
 
   const goBack = () => {
-    if (step === 3 && familyClient) { setStep(1); return; }
-    if (step === 4 && isExpress)    { setStep(2); return; }
+    if (step === 3 && familyClient) {
+      setStep(1);
+      return;
+    }
+    if (step === 4 && isExpress) {
+      setStep(2);
+      return;
+    }
     setStep((s) => s - 1);
   };
 
@@ -362,7 +426,9 @@ const AddOrder = ({ onSuccess }) => {
     setAvailableMonthly([]);
     setAssociatePaymentId(null);
     const emptyDays = {};
-    DAYS_ORDER.forEach((d) => { emptyDays[d] = []; });
+    DAYS_ORDER.forEach((d) => {
+      emptyDays[d] = [];
+    });
     setDayRecipes(emptyDays);
     setIngredientOverrides({});
   };
@@ -372,39 +438,70 @@ const AddOrder = ({ onSuccess }) => {
     setLoading(true);
     const createdOrderIds = [];
     const weekStartStr = toDateString(weekStart);
-    const weekEndStr   = toDateString(weekEnd);
-    const todayDayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
-    const activeDays   = isExpress ? [todayDayName] : DAYS_ORDER.filter((d) => (dayRecipes[d] ?? []).some((r) => r.recipe_id));
-    const menuTypes    = isExpress ? [expressType] : familyClient ? ['Family'] : menuType === 'both' ? ['Lunch', 'Dinner'] : [menuType];
+    const weekEndStr = toDateString(weekEnd);
+    const todayDayName = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ][new Date().getDay()];
+    const activeDays = isExpress
+      ? [todayDayName]
+      : DAYS_ORDER.filter((d) => (dayRecipes[d] ?? []).some((r) => r.recipe_id));
+    const menuTypes = isExpress
+      ? [expressType]
+      : familyClient
+        ? ['Family']
+        : menuType === 'both'
+          ? ['Lunch', 'Dinner']
+          : [menuType];
     const routeDelDays = (resolvedRoute?.route_delivery_days ?? []).map((d) => d.day_of_week);
-    const todayStr     = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
 
     for (const type of menuTypes) {
       const templateId =
-        type === 'Lunch'   ? selectedLunchTemplate?.id_template :
-        type === 'Dinner'  ? selectedDinnerTemplate?.id_template :
-        selectedFamilyTemplate?.id_template;
+        type === 'Lunch'
+          ? selectedLunchTemplate?.id_template
+          : type === 'Dinner'
+            ? selectedDinnerTemplate?.id_template
+            : selectedFamilyTemplate?.id_template;
 
       const { data: orderData, error: orderError } = await supabase
         .schema('operations')
         .from('orders')
-        .insert([{
-          client_id: selectedClient.id_client,
-          template_id: templateId ?? null,
-          week_start_date: weekStartStr,
-          week_end_date: weekEndStr,
-          route_id: isExpress ? null : (resolvedRoute?.id_route ?? null),
-          classification: type,
-          status: 'PENDING',
-          macro_profile_snapshot_id:
-            (type === 'Dinner' ? selectedClient?.dinner_macro_profile_id : selectedClient?.lunch_macro_profile_id) ?? null,
-          protein_snapshot: isExpress ? expressMacros.protein_value : ((type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null),
-          carb_snapshot: isExpress ? expressMacros.carb_value : ((type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null),
-        }])
+        .insert([
+          {
+            client_id: selectedClient.id_client,
+            template_id: templateId ?? null,
+            week_start_date: weekStartStr,
+            week_end_date: weekEndStr,
+            route_id: isExpress ? null : (resolvedRoute?.id_route ?? null),
+            classification: type,
+            status: 'PENDING',
+            macro_profile_snapshot_id:
+              (type === 'Dinner'
+                ? selectedClient?.dinner_macro_profile_id
+                : selectedClient?.lunch_macro_profile_id) ?? null,
+            protein_snapshot: isExpress
+              ? expressMacros.protein_value
+              : ((type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ??
+                null),
+            carb_snapshot: isExpress
+              ? expressMacros.carb_value
+              : ((type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null),
+          },
+        ])
         .select('id_order')
         .single();
 
-      if (orderError) { sileo.error('Error al crear el pedido'); setLoading(false); return; }
+      if (orderError) {
+        sileo.error('Error al crear el pedido');
+        setLoading(false);
+        return;
+      }
 
       const orderId = orderData.id_order;
       createdOrderIds.push(orderId);
@@ -413,22 +510,30 @@ const AddOrder = ({ onSuccess }) => {
         const { data: dayData, error: dayErr } = await supabase
           .schema('operations')
           .from('order_days')
-          .insert([{
-            order_id: orderId,
-            day_of_week: day,
-            delivery_date: isExpress
-              ? todayStr
-              : tuesdayDelivery
-                ? toDateString(tuesdayDelivery)
-                : getDateForDay(day, weekStart, routeDelDays),
-            status: 'PENDING',
-          }])
+          .insert([
+            {
+              order_id: orderId,
+              day_of_week: day,
+              delivery_date: isExpress
+                ? todayStr
+                : tuesdayDelivery
+                  ? toDateString(tuesdayDelivery)
+                  : getDateForDay(day, weekStart, routeDelDays),
+              status: 'PENDING',
+            },
+          ])
           .select('id_order_day')
           .single();
-        if (dayErr) { sileo.error(`Error al crear el día ${DAY_LABELS[day]}`); setLoading(false); return; }
+        if (dayErr) {
+          sileo.error(`Error al crear el día ${DAY_LABELS[day]}`);
+          setLoading(false);
+          return;
+        }
 
-        const sourceRecipes  = isExpress ? expressRecipes : (dayRecipes[day] ?? []);
-        const detailsWithIdx = sourceRecipes.map((r, origIdx) => ({ r, origIdx })).filter(({ r }) => r.recipe_id);
+        const sourceRecipes = isExpress ? expressRecipes : (dayRecipes[day] ?? []);
+        const detailsWithIdx = sourceRecipes
+          .map((r, origIdx) => ({ r, origIdx }))
+          .filter(({ r }) => r.recipe_id);
         if (!detailsWithIdx.length) continue;
 
         const { data: detData, error: detErr } = await supabase
@@ -436,31 +541,46 @@ const AddOrder = ({ onSuccess }) => {
           .from('order_day_details')
           .insert(
             detailsWithIdx.map(({ r, origIdx }) => {
-              const effectiveType = r.isExtra ? (extraMealTypes[`${day}-${origIdx}`] ?? type) : type;
+              const effectiveType = r.isExtra
+                ? (extraMealTypes[`${day}-${origIdx}`] ?? type)
+                : type;
               const eff = isExpress ? expressMacros : getEffectiveMacros(day, effectiveType);
               return {
                 order_day_id: dayData.id_order_day,
                 recipe_id: r.recipe_id,
                 quantity: Number(r.quantity) || 1,
                 protein_value_applied: eff?.protein_value ?? null,
-                carb_value_applied:    eff?.carb_value    ?? null,
+                carb_value_applied: eff?.carb_value ?? null,
               };
             })
           )
           .select('id_order_day_detail');
-        if (detErr) { sileo.error(`Error guardando recetas de ${DAY_LABELS[day]}`); setLoading(false); return; }
+        if (detErr) {
+          sileo.error(`Error guardando recetas de ${DAY_LABELS[day]}`);
+          setLoading(false);
+          return;
+        }
 
         const overrideRows = [];
         (detData ?? []).forEach((det, i) => {
           const origIdx = detailsWithIdx[i]?.origIdx;
-          const ov = isExpress ? expressIngredientOverrides[origIdx] : ingredientOverrides[`${day}-${origIdx}`];
+          const ov = isExpress
+            ? expressIngredientOverrides[origIdx]
+            : ingredientOverrides[`${day}-${origIdx}`];
           if (!ov) return;
           for (const cat of ['protein', 'carb', 'extra'])
             for (const name of ov[cat] ?? [])
-              overrideRows.push({ order_day_detail_id: det.id_order_day_detail, name, category: cat });
+              overrideRows.push({
+                order_day_detail_id: det.id_order_day_detail,
+                name,
+                category: cat,
+              });
         });
         if (overrideRows.length) {
-          const { error: ovErr } = await supabase.schema('operations').from('order_day_recipe_overrides').insert(overrideRows);
+          const { error: ovErr } = await supabase
+            .schema('operations')
+            .from('order_day_recipe_overrides')
+            .insert(overrideRows);
           if (ovErr) console.error('Error guardando overrides:', ovErr);
         }
       }
@@ -472,21 +592,25 @@ const AddOrder = ({ onSuccess }) => {
         const { error: lke } = await supabase
           .schema('operations')
           .from('payment_orders')
-          .insert(createdOrderIds.map((oid) => ({ payment_id: associatePaymentId, order_id: oid })));
+          .insert(
+            createdOrderIds.map((oid) => ({ payment_id: associatePaymentId, order_id: oid }))
+          );
         if (lke) console.error('Error vinculando pago con órdenes:', lke);
       } else if (paymentAmount !== '') {
         const { data: pd, error: pe } = await supabase
           .schema('operations')
           .from('payments')
-          .insert([{
-            client_id: selectedClient.id_client,
-            payment_type: paymentType,
-            amount: Number(paymentAmount),
-            currency: 'CRC',
-            payment_date: paymentDate,
-            status: paymentStatus,
-            notes: paymentNotes || null,
-          }])
+          .insert([
+            {
+              client_id: selectedClient.id_client,
+              payment_type: paymentType,
+              amount: Number(paymentAmount),
+              currency: 'CRC',
+              payment_date: paymentDate,
+              status: paymentStatus,
+              notes: paymentNotes || null,
+            },
+          ])
           .select('id_payment')
           .single();
         if (pe) {
@@ -510,181 +634,222 @@ const AddOrder = ({ onSuccess }) => {
   // ── Step label helpers ────────────────────────────────────────────────────────
   const stepLabels = familyClient ? FAMILY_STEPS : isExpress ? EXPRESS_STEPS : PERSONAL_STEPS;
   const displayStep = familyClient
-    ? step === 1 ? 1 : step === 3 ? 2 : step === 4 ? 3 : 4
+    ? step === 1
+      ? 1
+      : step === 3
+        ? 2
+        : step === 4
+          ? 3
+          : 4
     : isExpress
-      ? step === 1 ? 1 : step === 2 ? 2 : step === 4 ? 3 : 4
+      ? step === 1
+        ? 1
+        : step === 2
+          ? 2
+          : step === 4
+            ? 3
+            : 4
       : step;
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 max-w-2xl mx-auto" data-gramm="false">
-      <h2 className="text-xl font-bold text-slate-800 mb-6">Nuevo Pedido</h2>
+    <div className="p-6 max-w-2xl mx-auto dark:bg-slate-950 transition-colors" data-gramm="false">
+      <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Nuevo Pedido</h2>
 
       {/* Stepper */}
       <div className="flex items-center gap-2 mb-8">
         {stepLabels.map((label, i) => {
-          const pos    = i + 1;
+          const pos = i + 1;
           const active = pos === displayStep;
-          const done   = pos < displayStep;
+          const done = pos < displayStep;
           return (
             <div key={label} className="flex items-center gap-2 flex-1 last:flex-none">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition ${active ? 'bg-slate-800 text-white' : done ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                  active
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white ring-4 ring-slate-100 dark:ring-indigo-900/30'
+                    : done
+                      ? 'bg-green-500 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                }`}
+              >
                 {done ? '✓' : pos}
               </div>
-              <span className={`text-xs font-medium hidden sm:block ${active ? 'text-slate-800' : 'text-slate-400'}`}>
+              <span
+                className={`text-xs font-medium hidden sm:block ${
+                  active
+                    ? 'text-slate-800 dark:text-slate-200'
+                    : 'text-slate-400 dark:text-slate-500'
+                }`}
+              >
                 {label}
               </span>
-              {i < stepLabels.length - 1 && <div className="flex-1 h-px bg-slate-200 mx-1" />}
+              {i < stepLabels.length - 1 && (
+                <div
+                  className={`flex-1 h-px mx-1 transition-colors ${
+                    done ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-800'
+                  }`}
+                />
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Step 1: Client */}
-      {step === 1 && (
-        <StepClient
-          clients={clients}
-          clientSearch={clientSearch}
-          setClientSearch={setClientSearch}
-          selectedClient={selectedClient}
-          setSelectedClient={setSelectedClient}
-          familyClient={familyClient}
-          isExpress={isExpress}
-          setIsExpress={setIsExpress}
-        />
-      )}
+      {/* Contenido de los Pasos (Asegúrate de que estos componentes manejen dark: internamente) */}
+      <div className="min-h-[300px]">
+        {step === 1 && (
+          <StepClient
+            clients={clients}
+            clientSearch={clientSearch}
+            setClientSearch={setClientSearch}
+            selectedClient={selectedClient}
+            setSelectedClient={setSelectedClient}
+            familyClient={familyClient}
+            isExpress={isExpress}
+            setIsExpress={setIsExpress}
+          />
+        )}
 
-      {/* Step 2: Menu (personal) */}
-      {step === 2 && !familyClient && !isExpress && (
-        <StepMenu
-          menuType={menuType}
-          setMenuType={setMenuType}
-          lunchTemplates={lunchTemplates}
-          dinnerTemplates={dinnerTemplates}
-          selectedLunchTemplate={selectedLunchTemplate}
-          setSelectedLunchTemplate={setSelectedLunchTemplate}
-          selectedDinnerTemplate={selectedDinnerTemplate}
-          setSelectedDinnerTemplate={setSelectedDinnerTemplate}
-        />
-      )}
+        {step === 2 && !familyClient && !isExpress && (
+          <StepMenu
+            menuType={menuType}
+            setMenuType={setMenuType}
+            lunchTemplates={lunchTemplates}
+            dinnerTemplates={dinnerTemplates}
+            selectedLunchTemplate={selectedLunchTemplate}
+            setSelectedLunchTemplate={setSelectedLunchTemplate}
+            selectedDinnerTemplate={selectedDinnerTemplate}
+            setSelectedDinnerTemplate={setSelectedDinnerTemplate}
+          />
+        )}
 
-      {/* Step 2: Express recipe picker */}
-      {step === 2 && isExpress && (
-        <StepExpressRecipes
-          expressType={expressType}
-          setExpressType={setExpressType}
-          expressMacros={expressMacros}
-          setExpressMacros={setExpressMacros}
-          expressRecipes={expressRecipes}
-          setExpressRecipes={setExpressRecipes}
-          expressIngredientOverrides={expressIngredientOverrides}
-          setExpressIngredientOverrides={setExpressIngredientOverrides}
-          allRecipes={allRecipes}
-          recipeIngredients={recipeIngredients}
-          fetchRecipeIngredients={fetchRecipeIngredients}
-          selectedClient={selectedClient}
-        />
-      )}
+        {step === 2 && isExpress && (
+          <StepExpressRecipes
+            expressType={expressType}
+            setExpressType={setExpressType}
+            expressMacros={expressMacros}
+            setExpressMacros={setExpressMacros}
+            expressRecipes={expressRecipes}
+            setExpressRecipes={setExpressRecipes}
+            expressIngredientOverrides={expressIngredientOverrides}
+            setExpressIngredientOverrides={setExpressIngredientOverrides}
+            allRecipes={allRecipes}
+            recipeIngredients={recipeIngredients}
+            fetchRecipeIngredients={fetchRecipeIngredients}
+            selectedClient={selectedClient}
+          />
+        )}
 
-      {/* Step 3: Adjustments */}
-      {step === 3 && (
-        <OrderAdjustments
-          isFamilyClient={familyClient}
-          menuType={menuType ?? 'Family'}
-          resolvedRoute={resolvedRoute}
-          allRoutes={allRoutes}
-          onRouteChange={(r) => { setResolvedRoute(r); setRouteManuallyChanged(true); }}
-          showRouteChange={!familyClient}
-          lunchMacros={lunchMacros}
-          dinnerMacros={dinnerMacros}
-          onUpdateLunchMacro={updateLunchMacro}
-          onUpdateDinnerMacro={updateDinnerMacro}
-          onResetAllDayMacros={resetAllDayMacros}
-          getEffectiveMacros={getEffectiveMacros}
-          isDayOverridden={isDayOverridden}
-          onUpdateDayMacro={updateDayMacro}
-          onResetDayMacro={resetDayMacro}
-          dayRecipes={dayRecipes}
-          allRecipes={allRecipes}
-          recipeIngredients={recipeIngredients}
-          ingredientOverrides={ingredientOverrides}
-          expandedDays={expandedDays}
-          onAddRecipe={addRecipeToDay}
-          onUpdateRecipe={(day, idx, field, val) => updateRecipeInDay(day, idx, field, val, allRecipes)}
-          onRemoveRecipe={removeRecipeFromDay}
-          onOverrideChange={setOverride}
-          onToggleDay={toggleDay}
-          extraMealTypes={extraMealTypes}
-          onExtraMealTypeChange={(key, cls) => setExtraMealTypes((p) => ({ ...p, [key]: cls }))}
-          clientLunchMacro={selectedClient?.lunch_macro}
-          clientDinnerMacro={selectedClient?.dinner_macro}
-          onApplyStandardLunch={() => setLunchMacros({ ...STANDARD_MACRO })}
-          onApplyStandardDinner={() => setDinnerMacros({ ...STANDARD_MACRO })}
-          onApplyClientLunch={() => { const m = selectedClient?.lunch_macro; if (m) setLunchMacros({ protein_value: m.protein_value, carb_value: m.carb_value }); }}
-          onApplyClientDinner={() => { const m = selectedClient?.dinner_macro; if (m) setDinnerMacros({ protein_value: m.protein_value, carb_value: m.carb_value }); }}
-        />
-      )}
+        {step === 3 && (
+          <OrderAdjustments
+            isFamilyClient={familyClient}
+            menuType={menuType ?? 'Family'}
+            resolvedRoute={resolvedRoute}
+            allRoutes={allRoutes}
+            onRouteChange={(r) => {
+              setResolvedRoute(r);
+              setRouteManuallyChanged(true);
+            }}
+            showRouteChange={!familyClient}
+            lunchMacros={lunchMacros}
+            dinnerMacros={dinnerMacros}
+            onUpdateLunchMacro={updateLunchMacro}
+            onUpdateDinnerMacro={updateDinnerMacro}
+            onResetAllDayMacros={resetAllDayMacros}
+            getEffectiveMacros={getEffectiveMacros}
+            isDayOverridden={isDayOverridden}
+            onUpdateDayMacro={updateDayMacro}
+            onResetDayMacro={resetDayMacro}
+            dayRecipes={dayRecipes}
+            allRecipes={allRecipes}
+            recipeIngredients={recipeIngredients}
+            ingredientOverrides={ingredientOverrides}
+            expandedDays={expandedDays}
+            onAddRecipe={addRecipeToDay}
+            onUpdateRecipe={(day, idx, field, val) =>
+              updateRecipeInDay(day, idx, field, val, allRecipes)
+            }
+            onRemoveRecipe={removeRecipeFromDay}
+            onOverrideChange={setOverride}
+            onToggleDay={toggleDay}
+            extraMealTypes={extraMealTypes}
+            onExtraMealTypeChange={(key, cls) => setExtraMealTypes((p) => ({ ...p, [key]: cls }))}
+            clientLunchMacro={selectedClient?.lunch_macro}
+            clientDinnerMacro={selectedClient?.dinner_macro}
+            onApplyStandardLunch={() => setLunchMacros({ ...STANDARD_MACRO })}
+            onApplyStandardDinner={() => setDinnerMacros({ ...STANDARD_MACRO })}
+            onApplyClientLunch={() => {
+              const m = selectedClient?.lunch_macro;
+              if (m) setLunchMacros({ protein_value: m.protein_value, carb_value: m.carb_value });
+            }}
+            onApplyClientDinner={() => {
+              const m = selectedClient?.dinner_macro;
+              if (m) setDinnerMacros({ protein_value: m.protein_value, carb_value: m.carb_value });
+            }}
+          />
+        )}
 
-      {/* Step 4: Payment */}
-      {step === 4 && (
-        <StepPayment
-          paymentType={paymentType}
-          setPaymentType={setPaymentType}
-          paymentAmount={paymentAmount}
-          setPaymentAmount={setPaymentAmount}
-          paymentDate={paymentDate}
-          setPaymentDate={setPaymentDate}
-          paymentStatus={paymentStatus}
-          setPaymentStatus={setPaymentStatus}
-          paymentNotes={paymentNotes}
-          setPaymentNotes={setPaymentNotes}
-          availableMonthly={availableMonthly}
-          associatePaymentId={associatePaymentId}
-          setAssociatePaymentId={setAssociatePaymentId}
-        />
-      )}
+        {step === 4 && (
+          <StepPayment
+            paymentType={paymentType}
+            setPaymentType={setPaymentType}
+            paymentAmount={paymentAmount}
+            setPaymentAmount={setPaymentAmount}
+            paymentDate={paymentDate}
+            setPaymentDate={setPaymentDate}
+            paymentStatus={paymentStatus}
+            setPaymentStatus={setPaymentStatus}
+            paymentNotes={paymentNotes}
+            setPaymentNotes={setPaymentNotes}
+            availableMonthly={availableMonthly}
+            associatePaymentId={associatePaymentId}
+            setAssociatePaymentId={setAssociatePaymentId}
+          />
+        )}
 
-      {/* Step 5: Confirm */}
-      {step === 5 && (
-        <StepConfirm
-          selectedClient={selectedClient}
-          familyClient={familyClient}
-          isExpress={isExpress}
-          weekStart={weekStart}
-          weekEnd={weekEnd}
-          menuType={menuType}
-          expressType={expressType}
-          selectedFamilyTemplate={selectedFamilyTemplate}
-          resolvedRoute={resolvedRoute}
-          expressMacros={expressMacros}
-          lunchMacros={lunchMacros}
-          dinnerMacros={dinnerMacros}
-          expressRecipes={expressRecipes}
-          dayRecipes={dayRecipes}
-          ingredientOverrides={ingredientOverrides}
-          recipeIngredients={recipeIngredients}
-        />
-      )}
+        {step === 5 && (
+          <StepConfirm
+            selectedClient={selectedClient}
+            familyClient={familyClient}
+            isExpress={isExpress}
+            weekStart={weekStart}
+            weekEnd={weekEnd}
+            menuType={menuType}
+            expressType={expressType}
+            selectedFamilyTemplate={selectedFamilyTemplate}
+            resolvedRoute={resolvedRoute}
+            expressMacros={expressMacros}
+            lunchMacros={lunchMacros}
+            dinnerMacros={dinnerMacros}
+            expressRecipes={expressRecipes}
+            dayRecipes={dayRecipes}
+            ingredientOverrides={ingredientOverrides}
+            recipeIngredients={recipeIngredients}
+          />
+        )}
+      </div>
 
       {/* Navigation */}
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-between mt-10 pt-6 border-t border-slate-100 dark:border-slate-800">
         {step > 1 ? (
           <button
             type="button"
             onClick={goBack}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:border-slate-400 transition text-sm font-medium"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 transition text-sm font-medium"
           >
             <ChevronLeft size={16} /> Atrás
           </button>
         ) : (
           <div />
         )}
+
         {step < 5 ? (
           <button
             type="button"
             onClick={goNext}
             disabled={!canGoNext()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition text-sm font-medium disabled:opacity-40"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-800 dark:bg-indigo-600 text-white hover:bg-slate-700 dark:hover:bg-indigo-500 transition text-sm font-semibold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Siguiente <ChevronRight size={16} />
           </button>
@@ -693,7 +858,7 @@ const AddOrder = ({ onSuccess }) => {
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition text-sm font-medium disabled:opacity-40"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-800 dark:bg-green-600 text-white hover:bg-slate-700 dark:hover:bg-green-500 transition text-sm font-semibold shadow-md disabled:opacity-40"
           >
             <Check size={16} /> {loading ? 'Guardando…' : 'Confirmar Pedido'}
           </button>
