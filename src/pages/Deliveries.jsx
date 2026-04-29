@@ -2,26 +2,15 @@ import { useState, useEffect } from 'react';
 import { Truck, ChefHat, Package, Zap, Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
+import { Sun, Moon } from 'lucide-react';
 
 import CocinaView from '../components/Kitchen';
 import ProductionPrintReport from '../components/ProductionPrintReport';
 import EmpaqueView from '../components/Package';
 import EntregaView from '../components/Delivered';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const DAY_LABELS = {
-  Monday: 'Lunes',
-  Tuesday: 'Martes',
-  Wednesday: 'Miércoles',
-  Thursday: 'Jueves',
-  Friday: 'Viernes',
-  Saturday: 'Sábado',
-  Sunday: 'Domingo',
-};
-
-const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
+import { DAY_LABELS } from '../utils/DAY_LABELS';
+import { DAY_ORDER } from '../utils/DAY_ORDER';
 const TABS = [
   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
   { id: 'empaque', label: 'Empaque', Icon: Package },
@@ -114,9 +103,13 @@ const SlotButton = ({ slot, isActive, onSelect }) => {
     day: '2-digit',
     month: 'short',
   });
+
   const cls =
     'flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition ' +
-    (isActive ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800');
+    (isActive
+      ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white'
+      : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200');
+
   return (
     <button onClick={() => onSelect(slot)} className={cls}>
       <span>{slot.label}</span>
@@ -129,11 +122,15 @@ const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
   const cls =
     'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border ' +
     (isActive
-      ? 'bg-slate-800 border-slate-800 text-white shadow-sm'
-      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
+      ? 'bg-slate-800 dark:bg-indigo-600 border-slate-800 dark:border-indigo-600 text-white shadow-sm'
+      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600');
+
   const badgeCls =
     'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ' +
-    (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
+    (isActive
+      ? 'bg-white dark:bg-slate-100 text-slate-800'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400');
+
   return (
     <button key={id} onClick={() => onSelect(id)} className={cls}>
       <Icon size={15} />
@@ -147,8 +144,9 @@ const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
   const cls =
     'px-4 py-1.5 rounded-xl text-xs font-medium transition border ' +
     (isActive
-      ? 'bg-slate-800 text-white border-slate-800'
-      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-400');
+      ? 'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100'
+      : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600');
+
   return (
     <button onClick={() => onSelect(id)} className={cls}>
       {label}
@@ -189,14 +187,19 @@ const ExpressView = ({
 
   return (
     <div className="space-y-5">
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-center gap-3">
-        <Zap size={18} className="text-amber-500 shrink-0" />
+      {/* Alerta Express con soporte Dark Mode */}
+      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl px-5 py-4 flex items-center gap-3">
+        <Zap size={18} className="text-amber-500 dark:text-amber-400 shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">Pedidos Express</p>
-          <p className="text-xs text-amber-600">Entrega hoy · {todayLabel}</p>
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+            Pedidos Express
+          </p>
+          <p className="text-xs text-amber-600 dark:text-amber-400/80">
+            Entrega hoy · {todayLabel}
+          </p>
         </div>
         <div className="ml-auto">
-          <span className="bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full text-xs font-semibold">
+          <span className="bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-100 px-2 py-0.5 rounded-full text-xs font-semibold">
             {pendingDays.length + packedDays.length} activos
           </span>
         </div>
@@ -216,24 +219,27 @@ const ExpressView = ({
         ))}
       </div>
 
-      {expressTab === 'cocina' &&
-        (pendingDays.length === 0 ? (
-          <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
-        ) : (
-          <CocinaView orderDays={pendingDays} onPack={onPack} DAY_LABELS={DAY_LABELS} />
-        ))}
-      {expressTab === 'empaque' &&
-        (pendingDays.length === 0 && packedDays.length === 0 ? (
-          <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
-        ) : (
-          <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onDeliver={onDeliver} />
-        ))}
-      {expressTab === 'entrega' &&
-        (deliveredDays.length === 0 ? (
-          <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
-        ) : (
-          <EntregaView orderDays={deliveredDays} />
-        ))}
+      {/* El contenido de las vistas debe ir envuelto o manejar su propio dark mode */}
+      <div className="dark:text-slate-300">
+        {expressTab === 'cocina' &&
+          (pendingDays.length === 0 ? (
+            <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
+          ) : (
+            <CocinaView orderDays={pendingDays} onPack={onPack} DAY_LABELS={DAY_LABELS} />
+          ))}
+        {expressTab === 'empaque' &&
+          (pendingDays.length === 0 && packedDays.length === 0 ? (
+            <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
+          ) : (
+            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onDeliver={onDeliver} />
+          ))}
+        {expressTab === 'entrega' &&
+          (deliveredDays.length === 0 ? (
+            <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
+          ) : (
+            <EntregaView orderDays={deliveredDays} />
+          ))}
+      </div>
     </div>
   );
 };
@@ -241,7 +247,7 @@ const ExpressView = ({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const Production = () => {
-  const { supabase } = useApp();
+  const { supabase, isDark } = useApp();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [weekOffset, setWeekOffset] = useState(0);
@@ -454,7 +460,7 @@ const Production = () => {
   // ── Render ─────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
       {/* Print report */}
       {showPrint && activeTab !== 'express' && (
         <ProductionPrintReport
@@ -490,8 +496,8 @@ const Production = () => {
 
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Producción</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Producción</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             {'Semana del '}
             {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', {
               day: '2-digit',
@@ -505,24 +511,26 @@ const Production = () => {
             })}
           </p>
         </div>
-        <button
-          onClick={() => setShowPrint(true)}
-          className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
-        >
-          <Printer size={15} /> Imprimir resumen
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowPrint(true)}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+          >
+            <Printer size={15} /> Imprimir resumen
+          </button>
+        </div>
       </div>
 
       {/* Week segmenter */}
-      <div className="flex gap-1 bg-slate-200 p-1 rounded-xl w-fit mb-8">
+      <div className="flex gap-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-8">
         {WEEK_SEGMENTS.map(({ offset, label }) => (
           <button
             key={offset}
             onClick={() => setWeekOffset(offset)}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
               weekOffset === offset
-                ? 'bg-white shadow text-slate-800'
-                : 'text-slate-600 hover:text-slate-800'
+                ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
             {label}
@@ -531,19 +539,18 @@ const Production = () => {
       </div>
 
       {loadingDays ? (
-        <p className="text-slate-400 text-sm">Cargando días...</p>
+        <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando días...</p>
       ) : (
         <>
-          {/* Slot selector + client filter — hidden in express tab */}
           {activeTab !== 'express' && (
             <>
               {slots.length === 0 ? (
-                <div className="text-center py-10 text-slate-400">
+                <div className="text-center py-10 text-slate-400 dark:text-slate-600">
                   <Truck size={40} className="mx-auto mb-3 opacity-30" />
                   <p>No hay pedidos activos esta semana</p>
                 </div>
               ) : (
-                <div className="flex gap-2 bg-slate-200 p-1 rounded-xl w-fit mb-6">
+                <div className="flex gap-2 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-6">
                   {slots.map((slot) => (
                     <SlotButton
                       key={slot.name}
@@ -573,7 +580,7 @@ const Production = () => {
           )}
 
           {/* Tab bar */}
-          <div className="flex gap-2 mb-8">
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
             {TABS.map(({ id, label, Icon }) => (
               <TabButton
                 key={id}
@@ -589,9 +596,9 @@ const Production = () => {
 
           {/* Views */}
           {loading && activeTab !== 'express' ? (
-            <p className="text-slate-500 text-sm">Cargando...</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
           ) : (
-            <>
+            <div className="transition-opacity duration-300">
               {activeTab === 'cocina' && (
                 <CocinaView orderDays={normalPending} onPack={markPacked} DAY_LABELS={DAY_LABELS} />
               )}
@@ -615,7 +622,7 @@ const Production = () => {
                   todayStr={todayStr}
                 />
               )}
-            </>
+            </div>
           )}
         </>
       )}

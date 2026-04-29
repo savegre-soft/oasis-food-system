@@ -106,6 +106,8 @@ export const groupByRecipe = (orderDays) => {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
 
@@ -118,19 +120,19 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          icon={<Clock className="text-amber-500" size={20} />}
+          icon={<Clock className="text-amber-500 dark:text-amber-400" size={20} />}
           label="Pedidos pendientes"
           value={totalPending}
         />
         <StatCard
-          icon={<Truck className="text-blue-500" size={20} />}
+          icon={<Truck className="text-blue-500 dark:text-blue-400" size={20} />}
           label="Total unidades"
           value={totalUnitsAll}
         />
         <StatCard
-          icon={<CheckCircle className="text-green-500" size={20} />}
+          icon={<CheckCircle className="text-green-500 dark:text-green-400" size={20} />}
           label="Recetas distintas"
           value={Object.keys(grouped).length}
         />
@@ -138,7 +140,7 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
 
       {/* Cards */}
       {Object.keys(grouped).length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
+        <div className="text-center py-16 text-slate-400 dark:text-slate-600">
           <CheckCircle size={36} className="mx-auto mb-3 opacity-30" />
           <p>Todo empacado para este día</p>
         </div>
@@ -152,6 +154,7 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
               isExpanded={expandedRecipes[variantKey] ?? false}
               onToggle={toggle}
               onPack={onPack}
+              // Asegúrate de que RecipeProductionCard también reciba clases dark: internamente
             />
           ))}
         </div>
@@ -161,11 +164,11 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
 };
 
 const StatCard = ({ icon, label, value }) => (
-  <div className="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex items-center gap-4">
+  <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-5 border border-slate-100 dark:border-slate-800 flex items-center gap-4 transition-colors">
     <div className="shrink-0">{icon}</div>
     <div>
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-2xl font-semibold text-slate-800">{value}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   </div>
 );

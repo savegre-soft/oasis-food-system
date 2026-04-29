@@ -18,13 +18,6 @@ const Register = () => {
     setLoading(true);
     setError(null);
 
-    if (password.length < 8) {
-      sileo.error({ title: 'La contraseña debe tener al menos 8 caracteres' });
-      setError('La contraseña debe tener al menos 8 caracteres.');
-      setLoading(false);
-      return;
-    }
-
     try {
       // 1️⃣ Crear usuario en Auth
       const { data, error } = await supabase.auth.signUp({
@@ -47,9 +40,9 @@ const Register = () => {
         if (profileError) throw profileError;
       }
       sileo.success('Cuenta creada correctamente 🎉');
-    } catch {
-      sileo.error({ title: 'Error al crear la cuenta', description: 'Verifica los datos e intenta de nuevo' });
-      setError('No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.');
+    } catch (err) {
+      sileo.error('Error al crear la cuenta');
+      setError(err.message);
     } finally {
       setLoading(false);
     }

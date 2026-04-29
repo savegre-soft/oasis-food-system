@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'luc
 import OrdersSection from '../components/orders/OrdersSection';
 import MacroPanel from '../components/macro/MacroPanel';
 import PaymentSection from '../components/PaymentsSection';
+import AuthRoles from '../components/auth/AuthRoles';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -67,91 +68,93 @@ const Customer = () => {
   const hasMacros = customer.lunch_macro || customer.dinner_macro;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">{customer.name}</h1>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <span
-                className={
-                  'text-xs px-2.5 py-0.5 rounded-full ' +
-                  (customer.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')
-                }
-              >
-                {customer.is_active ? 'Activo' : 'Inactivo'}
-              </span>
-              <span className={'text-xs px-2.5 py-0.5 rounded-full ' + typeStyle.className}>
-                {typeStyle.label}
-              </span>
-              {planStyle && customer.client_type === 'personal' && (
-                <span className={'text-xs px-2.5 py-0.5 rounded-full ' + planStyle.className}>
-                  {planStyle.label}
+    <AuthRoles rolesNames={['Administrador', 'Clientes']}>
+      <div className="p-8 max-w-5xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">{customer.name}</h1>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <span
+                  className={
+                    'text-xs px-2.5 py-0.5 rounded-full ' +
+                    (customer.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600')
+                  }
+                >
+                  {customer.is_active ? 'Activo' : 'Inactivo'}
                 </span>
-              )}
+                <span className={'text-xs px-2.5 py-0.5 rounded-full ' + typeStyle.className}>
+                  {typeStyle.label}
+                </span>
+                {planStyle && customer.client_type === 'personal' && (
+                  <span className={'text-xs px-2.5 py-0.5 rounded-full ' + planStyle.className}>
+                    {planStyle.label}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1 text-sm text-slate-700 md:text-right">
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Contacto</p>
+              {customer.phone && <p>📞 {customer.phone}</p>}
+              {customer.address_detail && <p>📍 {customer.address_detail}</p>}
             </div>
           </div>
-          <div className="space-y-1 text-sm text-slate-700 md:text-right">
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Contacto</p>
-            {customer.phone && <p>📞 {customer.phone}</p>}
-            {customer.address_detail && <p>📍 {customer.address_detail}</p>}
-          </div>
-        </div>
-        {customer.created_at && (
-          <p className="text-xs text-slate-400 mt-4">
-            Cliente desde{' '}
-            {new Date(customer.created_at).toLocaleDateString('es-CR', {
-              day: '2-digit',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
-        )}
-      </div>
-
-      {/* Macros */}
-      {customer.client_type === 'personal' && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-3">
-          <p className="text-xs font-semibold text-slate-500 uppercase">Perfiles Nutricionales</p>
-          {hasMacros ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MacroPanel label="☀️ Almuerzo" accent="amber" macro={customer.lunch_macro} />
-              <MacroPanel label="🌙 Cena" accent="indigo" macro={customer.dinner_macro} />
-            </div>
-          ) : (
-            <p className="text-sm text-slate-400 italic">Sin perfil nutricional registrado</p>
+          {customer.created_at && (
+            <p className="text-xs text-slate-400 mt-4">
+              Cliente desde{' '}
+              {new Date(customer.created_at).toLocaleDateString('es-CR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
           )}
         </div>
-      )}
 
-      {/* Pagos */}
-      <PaymentSection clientId={Number(id)} />
-
-      {/* Orders */}
-      <OrdersSection clientId={Number(id)} />
-
-      {/* Map */}
-      {hasMap && (
-        <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-3">
-          <p className="text-xs font-semibold text-slate-500 uppercase">Ubicación</p>
-          <div className="rounded-xl overflow-hidden border">
-            <MapContainer
-              center={[customer.latitude, customer.longitude]}
-              zoom={15}
-              style={{ height: '260px', width: '100%' }}
-              scrollWheelZoom={false}
-            >
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[customer.latitude, customer.longitude]} />
-            </MapContainer>
+        {/* Macros */}
+        {customer.client_type === 'personal' && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase">Perfiles Nutricionales</p>
+            {hasMacros ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MacroPanel label="☀️ Almuerzo" accent="amber" macro={customer.lunch_macro} />
+                <MacroPanel label="🌙 Cena" accent="indigo" macro={customer.dinner_macro} />
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400 italic">Sin perfil nutricional registrado</p>
+            )}
           </div>
-          <p className="text-xs text-slate-400 text-center">
-            {customer.latitude.toFixed(6)}, {customer.longitude.toFixed(6)}
-          </p>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* Pagos */}
+        <PaymentSection clientId={Number(id)} />
+
+        {/* Orders */}
+        <OrdersSection clientId={Number(id)} />
+
+        {/* Map */}
+        {hasMap && (
+          <div className="bg-white border rounded-2xl p-6 shadow-sm space-y-3">
+            <p className="text-xs font-semibold text-slate-500 uppercase">Ubicación</p>
+            <div className="rounded-xl overflow-hidden border">
+              <MapContainer
+                center={[customer.latitude, customer.longitude]}
+                zoom={15}
+                style={{ height: '260px', width: '100%' }}
+                scrollWheelZoom={false}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker position={[customer.latitude, customer.longitude]} />
+              </MapContainer>
+            </div>
+            <p className="text-xs text-slate-400 text-center">
+              {customer.latitude.toFixed(6)}, {customer.longitude.toFixed(6)}
+            </p>
+          </div>
+        )}
+      </div>
+    </AuthRoles>
   );
 };
 

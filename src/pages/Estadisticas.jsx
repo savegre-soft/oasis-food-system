@@ -7,6 +7,7 @@ import DateRangeFilter from '../components/DateRangeFilter';
 import GastosPanel from '../components/stats/GastosPanel';
 import IngresosPanel from '../components/stats/IngresosPanel';
 import ComparativaPanel from '../components/stats/ComparativaPanel';
+import AuthRoles from '../components/auth/AuthRoles';
 
 const TABS = [
   { key: 'gastos',      label: 'Gastos',            accent: 'orange'  },
@@ -28,6 +29,8 @@ const Estadisticas = () => {
   if (error) return <p className="p-8 text-red-500 text-sm">Error: {error}</p>;
 
   return (
+
+    <AuthRoles rolesNames={['Finanzas', 'Administrador']}>
     <div className="p-8 bg-slate-50 min-h-screen space-y-5">
       <h1 className="text-3xl font-bold text-slate-800">Estadísticas Financieras</h1>
 
@@ -51,6 +54,7 @@ const Estadisticas = () => {
       {tab === 'ingresos'    && <IngresosPanel    payments={payments} dateRange={dateRange} loading={loading} />}
       {tab === 'comparativa' && <ComparativaPanel expenses={expenses} empCosts={empCosts} payments={payments} dateRange={dateRange} loading={loading} />}
     </div>
+    </AuthRoles>
   );
 };
 
