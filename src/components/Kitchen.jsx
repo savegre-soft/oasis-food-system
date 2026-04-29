@@ -144,7 +144,7 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
         </div>
       ) : (
         <div className="space-y-4">
-          {Object.entries(grouped).map(([variantKey, recipe]) => (
+          {Object.entries(grouped).sort(([, a], [, b]) => a.recipe_name.localeCompare(b.recipe_name)).map(([variantKey, recipe]) => (
             <RecipeProductionCard
               key={variantKey}
               variantKey={variantKey}

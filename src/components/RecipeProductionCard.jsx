@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, Archive } from 'lucide-react';
+import { MACRO_UNIT } from './orderUtils';
 
 const CATEGORY_STYLE = {
   protein: { badge: 'bg-red-100 text-red-700' },
@@ -66,13 +67,13 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
               {recipe.totalProtein != null && (
                 <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
                   {Math.round(recipe.totalProtein)}
-                  {recipe.totalProteinUnit ?? 'g'} prot
+                  {recipe.totalProteinUnit ?? MACRO_UNIT} prot
                 </span>
               )}
               {recipe.totalCarb != null && (
                 <span className="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">
                   {Math.round(recipe.totalCarb)}
-                  {recipe.totalCarbUnit ?? 'g'} carb
+                  {recipe.totalCarbUnit ?? MACRO_UNIT} carb
                 </span>
               )}
             </div>
