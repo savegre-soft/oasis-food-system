@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { MACRO_UNIT } from './orderUtils';
 
 const CLIENT_TYPE = {
   personal: 'bg-blue-100 text-blue-700',
@@ -48,9 +49,14 @@ export default function CustomerTable({ customers, onSelected }) {
                 {/* Macro Lunch */}
                 <td className="px-6 py-4">
                   {c.lunch_macro ? (
-                    <span className="px-3 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-medium">
-                      {c.lunch_macro.name}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full font-medium">
+                        {c.lunch_macro.protein_value} {MACRO_UNIT} prot
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full font-medium">
+                        {c.lunch_macro.carb_value} {MACRO_UNIT} carb
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-slate-400">—</span>
                   )}
@@ -59,9 +65,14 @@ export default function CustomerTable({ customers, onSelected }) {
                 {/* Macro Dinner */}
                 <td className="px-6 py-4">
                   {c.dinner_macro ? (
-                    <span className="px-3 py-1 bg-orange-50 text-orange-700 text-xs rounded-lg font-medium">
-                      {c.dinner_macro.name}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full font-medium">
+                        {c.dinner_macro.protein_value} {MACRO_UNIT} prot
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full font-medium">
+                        {c.dinner_macro.carb_value} {MACRO_UNIT} carb
+                      </span>
+                    </div>
                   ) : (
                     <span className="text-slate-400">—</span>
                   )}
