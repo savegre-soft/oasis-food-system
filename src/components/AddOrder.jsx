@@ -456,7 +456,7 @@ const AddOrder = ({ onSuccess }) => {
       : familyClient
         ? ['Family']
         : menuType === 'both'
-          ? ['Lunch', 'Dinner']
+          ? ['both']
           : [menuType];
     const routeDelDays = (resolvedRoute?.route_delivery_days ?? []).map((d) => d.day_of_week);
     const todayStr = new Date().toISOString().split('T')[0];
@@ -467,7 +467,9 @@ const AddOrder = ({ onSuccess }) => {
           ? selectedLunchTemplate?.id_template
           : type === 'Dinner'
             ? selectedDinnerTemplate?.id_template
-            : selectedFamilyTemplate?.id_template;
+            : type === 'both'
+              ? (selectedLunchTemplate?.id_template ?? selectedDinnerTemplate?.id_template)
+              : selectedFamilyTemplate?.id_template;
 
       const { data: orderData, error: orderError } = await supabase
         .schema('operations')

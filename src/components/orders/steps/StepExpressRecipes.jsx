@@ -43,7 +43,9 @@ const StepExpressRecipes = ({
     <div className="space-y-5">
       {/* Lunch / Dinner toggle */}
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Tipo de comida</label>
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+          Tipo de comida
+        </label>
         <div className="flex gap-2">
           {[
             ['Lunch', '☀️ Almuerzo'],
@@ -56,9 +58,9 @@ const StepExpressRecipes = ({
               className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                 expressType === val
                   ? val === 'Lunch'
-                    ? 'bg-amber-50 border-amber-400 text-amber-900'
-                    : 'bg-indigo-50 border-indigo-400 text-indigo-900'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-700 text-amber-900 dark:text-amber-400'
+                    : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-700 text-indigo-900 dark:text-indigo-400'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
               }`}
             >
               {lbl}
@@ -68,9 +70,11 @@ const StepExpressRecipes = ({
       </div>
 
       {/* Macros */}
-      <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+      <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-700">Macros del pedido</p>
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Macros del pedido
+          </p>
           <div className="flex gap-2">
             {clientMacro && (
               <button
@@ -78,8 +82,8 @@ const StepExpressRecipes = ({
                 onClick={applyClientMacro}
                 className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                   isClientActive
-                    ? 'bg-slate-800 text-white border-slate-800'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >
                 👤 Del cliente
@@ -91,7 +95,7 @@ const StepExpressRecipes = ({
               className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                 isStdActive
                   ? 'bg-amber-500 text-white border-amber-500'
-                  : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  : 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
               }`}
             >
               ⭐ Estándar (1 {MACRO_UNIT})
@@ -108,11 +112,13 @@ const StepExpressRecipes = ({
 
       {/* Recipe list */}
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-2">Recetas para hoy</label>
+        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
+          Recetas para hoy
+        </label>
         <div className="space-y-3">
           {expressRecipes.map((item, idx) => (
             <div key={idx} className="space-y-1">
-              <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
                 <select
                   value={item.recipe_id || ''}
                   onChange={(e) => {
@@ -130,7 +136,7 @@ const StepExpressRecipes = ({
                     });
                     if (e.target.value) fetchRecipeIngredients([String(e.target.value)]);
                   }}
-                  className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
                 >
                   <option value="">Seleccionar receta</option>
                   {allRecipes.map((r) => (
@@ -150,7 +156,7 @@ const StepExpressRecipes = ({
                       return updated;
                     })
                   }
-                  className="w-16 px-2 py-2 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
+                  className="w-16 px-2 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
                 />
                 <button
                   type="button"
@@ -162,7 +168,7 @@ const StepExpressRecipes = ({
                       return next;
                     });
                   }}
-                  className="text-red-400 hover:text-red-600 transition p-1"
+                  className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition p-1"
                 >
                   ✕
                 </button>
@@ -189,7 +195,7 @@ const StepExpressRecipes = ({
                 { recipe_id: '', recipe_name: '', quantity: 1 },
               ])
             }
-            className="flex items-center gap-1.5 text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition"
+            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition"
           >
             + Agregar receta
           </button>

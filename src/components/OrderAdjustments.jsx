@@ -74,16 +74,16 @@ const OrderAdjustments = ({
 
       {/* Resolved route info (read-only banner, shown when not editable) */}
       {!showRouteChange && resolvedRoute && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">
+        <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide mb-1">
             Ruta asignada
           </p>
-          <p className="text-sm font-semibold text-slate-800">{resolvedRoute.name}</p>
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{resolvedRoute.name}</p>
           <div className="flex gap-1 mt-1 flex-wrap">
             {(resolvedRoute.route_delivery_days ?? []).map((d, i) => (
               <span
                 key={i}
-                className="bg-slate-200 text-slate-600 text-xs px-2 py-0.5 rounded-full"
+                className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs px-2 py-0.5 rounded-full"
               >
                 {d.day_of_week}
               </span>
@@ -94,18 +94,18 @@ const OrderAdjustments = ({
 
       {/* Base macros */}
       {!isFamilyClient && (lunchMacros || dinnerMacros) && (
-        <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <p className="text-sm font-semibold text-slate-700">Macros del pedido</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Macros del pedido</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 Base por tipo de comida. Puedes sobreescribir por día.
               </p>
             </div>
             <button
               type="button"
               onClick={onResetAllDayMacros}
-              className="text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition flex items-center gap-1"
+              className="text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition flex items-center gap-1"
             >
               <RefreshCw size={12} /> Resetear días
             </button>
@@ -125,8 +125,8 @@ const OrderAdjustments = ({
                         !isStandard(lunchMacros) &&
                         String(lunchMacros?.protein_value) === String(clientLunchMacro.protein_value) &&
                         String(lunchMacros?.carb_value) === String(clientLunchMacro.carb_value)
-                          ? 'bg-slate-800 text-white border-slate-800'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                          ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                       }`}
                     >
                       👤 Del cliente
@@ -139,7 +139,7 @@ const OrderAdjustments = ({
                       className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                         isStandard(lunchMacros)
                           ? 'bg-amber-500 text-white border-amber-500'
-                          : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                          : 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
                       }`}
                     >
                       ⭐ Estándar (1 {MACRO_UNIT})
@@ -166,8 +166,8 @@ const OrderAdjustments = ({
                         !isStandard(dinnerMacros) &&
                         String(dinnerMacros?.protein_value) === String(clientDinnerMacro.protein_value) &&
                         String(dinnerMacros?.carb_value) === String(clientDinnerMacro.carb_value)
-                          ? 'bg-slate-800 text-white border-slate-800'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
+                          ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                       }`}
                     >
                       👤 Del cliente
@@ -180,7 +180,7 @@ const OrderAdjustments = ({
                       className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                         isStandard(dinnerMacros)
                           ? 'bg-indigo-500 text-white border-indigo-500'
-                          : 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                          : 'border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
                       }`}
                     >
                       ⭐ Estándar (1 {MACRO_UNIT})

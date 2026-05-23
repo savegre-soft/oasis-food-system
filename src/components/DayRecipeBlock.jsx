@@ -34,53 +34,55 @@ const DayRecipeBlock = ({
     menuType === 'both' ? ['Lunch', 'Dinner'] : menuType === 'Family' ? [] : [menuType];
 
   return (
-    <div className="border border-slate-100 rounded-2xl overflow-hidden">
+    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
       {/* Header */}
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition"
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
       >
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-700 text-sm">{DAY_LABELS[day]}</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">
+            {DAY_LABELS[day]}
+          </span>
           {day === 'Friday' && isFamilyClient && (
-            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full font-medium">
               Día de entrega
             </span>
           )}
           {hasRecipes && (
-            <span className="text-xs bg-slate-800 text-white px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-slate-800 dark:bg-slate-700 text-white px-2 py-0.5 rounded-full font-medium">
               {recipes.filter((r) => r.recipe_id).length} receta
               {recipes.filter((r) => r.recipe_id).length !== 1 ? 's' : ''}
             </span>
           )}
           {!isFamilyClient && macroClasses.some((cls) => isDayOverridden?.(day, cls)) && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
               Macros modificados
             </span>
           )}
         </div>
         {isExpanded ? (
-          <ChevronUp size={16} className="text-slate-400" />
+          <ChevronUp size={16} className="text-slate-400 dark:text-slate-500" />
         ) : (
-          <ChevronDown size={16} className="text-slate-400" />
+          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500" />
         )}
       </button>
 
       {/* Body */}
       {isExpanded && (
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 bg-white dark:bg-slate-900">
           {/* Recipe list */}
           <div className="space-y-2">
             {recipes.map((item, index) => (
               <div key={`${day}-${index}`} className="space-y-1">
-                <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
                   {/* Recipe selector or static label */}
                   {isFamilyClient || item.isExtra || !item.recipe_name ? (
                     <select
                       value={item.recipe_id || ''}
                       onChange={(e) => onUpdateRecipe(day, index, 'recipe_id', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                      className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
                     >
                       <option value="">Seleccionar receta</option>
                       {allRecipes.map((r) => (
@@ -90,7 +92,7 @@ const DayRecipeBlock = ({
                       ))}
                     </select>
                   ) : (
-                    <span className="flex-1 text-sm text-slate-700 px-3 py-2">
+                    <span className="flex-1 text-sm text-slate-700 dark:text-slate-300 px-3 py-2">
                       {item.recipe_name}
                     </span>
                   )}
@@ -100,7 +102,7 @@ const DayRecipeBlock = ({
                     item.isExtra &&
                     menuType === 'both' &&
                     onExtraMealTypeChange && (
-                      <div className="flex rounded-xl overflow-hidden border border-slate-200 shrink-0 text-xs font-medium">
+                      <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 text-xs font-medium">
                         {['Lunch', 'Dinner'].map((cls) => {
                           const current = extraMealTypes[`${day}-${index}`] ?? 'Lunch';
                           return (
@@ -113,7 +115,7 @@ const DayRecipeBlock = ({
                                   ? cls === 'Lunch'
                                     ? 'bg-amber-400 text-white'
                                     : 'bg-indigo-500 text-white'
-                                  : 'bg-white text-slate-400 hover:bg-slate-50'
+                                  : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                               }`}
                             >
                               {cls === 'Lunch' ? '☀️' : '🌙'}
@@ -129,14 +131,14 @@ const DayRecipeBlock = ({
                     min="1"
                     value={item.quantity}
                     onChange={(e) => onUpdateRecipe(day, index, 'quantity', e.target.value)}
-                    className="w-16 px-2 py-1.5 border border-slate-200 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-slate-800"
+                    className="w-16 px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
                   />
 
                   {/* Remove */}
                   <button
                     type="button"
                     onClick={() => onRemoveRecipe(day, index)}
-                    className="text-red-400 hover:text-red-600 transition p-1"
+                    className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition p-1"
                   >
                     ✕
                   </button>
@@ -159,7 +161,7 @@ const DayRecipeBlock = ({
             <button
               type="button"
               onClick={() => onAddRecipe(day)}
-              className="flex items-center gap-1.5 text-xs text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-xl hover:border-slate-400 transition mt-1"
+              className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition mt-1"
             >
               + {isFamilyClient ? 'Agregar receta' : 'Agregar receta extra'}
             </button>
@@ -167,7 +169,7 @@ const DayRecipeBlock = ({
 
           {/* Per-day macro overrides (personal only) */}
           {!isFamilyClient && macroClasses.length > 0 && (
-            <div className="border-t border-slate-100 pt-3">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
               <div
                 className={`grid gap-3 ${macroClasses.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}
               >
