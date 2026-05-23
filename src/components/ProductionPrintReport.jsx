@@ -78,11 +78,9 @@ const buildSummary = (grouped) => {
 
 const PRINT_STYLES = `
 @media print {
-  body * { visibility: hidden !important; }
-  #oasis-print-report, #oasis-print-report * { visibility: visible !important; }
+  body > *:not(#oasis-print-report) { display: none !important; }
   #oasis-print-report {
-    position: absolute !important;
-    top: 0; left: 0;
+    display: block !important;
     width: 100%;
     background: white;
   }
