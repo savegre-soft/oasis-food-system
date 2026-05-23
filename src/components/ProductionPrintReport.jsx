@@ -81,11 +81,10 @@ const PRINT_STYLES = `
   body * { visibility: hidden !important; }
   #oasis-print-report, #oasis-print-report * { visibility: visible !important; }
   #oasis-print-report {
-    position: fixed !important;
+    position: absolute !important;
     top: 0; left: 0;
     width: 100%;
     background: white;
-    z-index: 99999;
   }
   @page { margin: 1.5cm; size: A4; }
 }
@@ -521,24 +520,24 @@ function buildPrintHTML({
       ].join('');
 
       const rowBg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
-      return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;">
+      return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;page-break-inside:avoid;">
       <td style="padding:9px 10px;color:#94a3b8;font-size:11px;font-family:monospace;width:28px;">${i + 1}</td>
-      <td style="padding:9px 10px;vertical-align:top;">
+      <td style="padding:9px 10px;vertical-align:top;white-space:nowrap;">
         <span style="display:inline-block;background:#0f172a;color:#fff;border-radius:5px;padding:2px 7px;font-weight:700;font-size:12px;min-width:24px;text-align:center;margin-right:6px;">${Number(r.totalUnits)}</span>
         <strong style="font-size:13px;">${escapeHtml(r.recipe_name)}</strong>
         ${r.isOverridden ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;">variante</span>' : ''}
       </td>
-      <td style="padding:9px 10px;vertical-align:top;">${allIngs || '<em style="color:#cbd5e1;font-size:11px;">Sin ingredientes</em>'}</td>
-      <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:13px;vertical-align:top;">${Number(r.totalUnits)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalProtein)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;">${fmtS(r.totalCarb)}</td>
+      <td style="padding:9px 10px;vertical-align:top;word-break:break-word;overflow-wrap:break-word;max-width:240px;">${allIngs || '<em style="color:#cbd5e1;font-size:11px;">Sin ingredientes</em>'}</td>
+      <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:13px;vertical-align:top;white-space:nowrap;">${Number(r.totalUnits)}</td>
+      <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;white-space:nowrap;">${fmtS(r.totalProtein)}</td>
+      <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;white-space:nowrap;">${fmtS(r.totalCarb)}</td>
     </tr>`;
     })
     .join('');
 
   // ── Columna de desglose ─────────────────────────────────────────────────────
   const mkBreakdownTable = (title, color, rows, totalLabel, totalVal) =>
-    `<div style="flex:1;min-width:0;">
+    `<div style="flex:1;min-width:0;page-break-inside:avoid;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <span style="font-size:11px;font-weight:700;color:${color};">${title}</span>
         ${totalVal ? `<span style="font-size:10px;font-weight:700;color:${color};">${totalLabel}: ${totalVal}</span>` : ''}
