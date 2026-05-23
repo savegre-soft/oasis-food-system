@@ -231,7 +231,7 @@ const ExpressView = ({
           (pendingDays.length === 0 && packedDays.length === 0 ? (
             <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
           ) : (
-            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onDeliver={onDeliver} />
+            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onPack={onPack} onDeliver={onDeliver} />
           ))}
         {expressTab === 'entrega' &&
           (deliveredDays.length === 0 ? (
@@ -606,6 +606,7 @@ const Production = () => {
                 <EmpaqueView
                   pendingDays={normalPending}
                   packedDays={normalPacked}
+                  onPack={markPacked}
                   onDeliver={markDelivered}
                 />
               )}

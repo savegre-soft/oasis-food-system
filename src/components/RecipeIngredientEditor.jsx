@@ -5,19 +5,19 @@ const CATEGORIES = [
   {
     key: 'protein',
     label: 'Proteínas',
-    badge: 'bg-red-100 text-red-700',
+    badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
     input: 'Ej: Pechuga de pollo',
   },
   {
     key: 'carb',
     label: 'Carbohidratos',
-    badge: 'bg-amber-100 text-amber-700',
+    badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
     input: 'Ej: Arroz blanco',
   },
   {
     key: 'extra',
     label: 'Extras',
-    badge: 'bg-green-100 text-green-700',
+    badge: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
     input: 'Ej: Ensalada verde',
   },
 ];
@@ -59,14 +59,18 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
 
   return (
     <div
-      className={`rounded-xl border p-3 ${isOverridden ? 'border-blue-200 bg-blue-50' : 'border-slate-100 bg-slate-50'}`}
+      className={`rounded-xl border p-3 ${
+        isOverridden
+          ? 'border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-900/20'
+          : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50'
+      }`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <p className="text-xs font-semibold text-slate-700">{recipeName}</p>
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{recipeName}</p>
           {isOverridden && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
               Composición modificada
             </span>
           )}
@@ -75,7 +79,7 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
           <button
             type="button"
             onClick={resetToBase}
-            className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition"
+            className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
           >
             <RotateCcw size={11} /> Usar base
           </button>
@@ -88,7 +92,9 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
           const items = current?.[cat.key] ?? [];
           return (
             <div key={cat.key}>
-              <p className="text-xs font-medium text-slate-500 mb-1.5">{cat.label}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
+                {cat.label}
+              </p>
 
               <div className="flex flex-wrap gap-1.5 mb-1.5">
                 {items.map((item, i) => (
@@ -107,7 +113,7 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
                   </span>
                 ))}
                 {items.length === 0 && (
-                  <span className="text-xs text-slate-400 italic">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 italic">
                     Sin {cat.label.toLowerCase()}
                   </span>
                 )}
@@ -120,12 +126,12 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
                   onChange={(e) => setNewItem((prev) => ({ ...prev, [cat.key]: e.target.value }))}
                   onKeyDown={(e) => handleKeyDown(e, cat.key)}
                   placeholder={cat.input}
-                  className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-800 bg-white"
+                  className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
                 />
                 <button
                   type="button"
                   onClick={() => addIngredient(cat.key)}
-                  className="bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl hover:border-slate-400 transition text-slate-600"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition text-slate-600 dark:text-slate-400"
                 >
                   <Plus size={13} />
                 </button>

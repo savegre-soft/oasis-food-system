@@ -10,13 +10,16 @@ import {
   Users,
   Pencil,
   Search,
+  Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { sileo } from 'sileo';
 
 import Modal from '../components/Modal';
 import AddOrder from '../components/AddOrder';
 import EditOrder from '../components/EditOrder';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { MACRO_UNIT } from '../components/orderUtils';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -78,7 +81,7 @@ const fmtDate = (str, opts) => new Date(str + 'T00:00:00').toLocaleDateString('e
 
 // ── OrderDetailModal ──────────────────────────────────────────────────────────
 
-const OrderDetailModal = ({ order, onClose, onEdit }) => {
+const OrderDetailModal = ({ order, onClose, onEdit, onDelete }) => {
   useEffect(() => {
     const handler = (e) => {
       if (e.key === 'Escape') onClose();
@@ -149,6 +152,14 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
                 className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition shadow-sm"
               >
                 <Pencil size={12} /> Editar
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(order)}
+                className="flex items-center gap-1.5 text-xs font-medium bg-red-600 text-white px-3 py-1.5 rounded-xl hover:bg-red-700 transition shadow-sm"
+              >
+                <Trash2 size={12} /> Eliminar
               </button>
             )}
             <button
@@ -587,7 +598,70 @@ const Orders = () => {
   const [calendarView, setCalendarView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [deletingOrder, setDeletingOrder] = useState(null);
   const [search, setSearch] = useState('');
+
+  const handleDeleteOrder = async () => {
+    if (!deletingOrder) return;
+    const orderId = deletingOrder.id_order;
+
+    const { data: orderDays } = await supabase
+      .schema('operations')
+      .from('order_days')
+      .select('id_order_day')
+      .eq('order_id', orderId);
+
+    if (orderDays?.length) {
+      const dayIds = orderDays.map((d) => d.id_order_day);
+
+      const { data: details } = await supabase
+        .schema('operations')
+        .from('order_day_details')
+        .select('id_order_day_detail')
+        .in('order_day_id', dayIds);
+
+      if (details?.length) {
+        const detailIds = details.map((d) => d.id_order_day_detail);
+        await supabase
+          .schema('operations')
+          .from('order_day_recipe_overrides')
+          .delete()
+          .in('order_day_detail_id', detailIds);
+        await supabase
+          .schema('operations')
+          .from('order_day_details')
+          .delete()
+          .in('id_order_day_detail', detailIds);
+      }
+
+      await supabase
+        .schema('operations')
+        .from('order_days')
+        .delete()
+        .in('id_order_day', dayIds);
+    }
+
+    await supabase
+      .schema('operations')
+      .from('payment_orders')
+      .delete()
+      .eq('order_id', orderId);
+
+    const { error } = await supabase
+      .schema('operations')
+      .from('orders')
+      .delete()
+      .eq('id_order', orderId);
+
+    if (error) {
+      sileo.error('Error al eliminar el pedido');
+    } else {
+      sileo.success('Pedido eliminado');
+      setDeletingOrder(null);
+      setSelectedOrder(null);
+      getData();
+    }
+  };
 
   const getData = async () => {
     setLoading(true);
@@ -711,9 +785,18 @@ const Orders = () => {
               setSelectedOrder(null);
               setEditingOrder(o);
             }}
+            onDelete={(o) => setDeletingOrder(o)}
           />
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!deletingOrder}
+        title="¿Eliminar pedido?"
+        message={`Se eliminará el pedido de ${deletingOrder?.clients?.name ?? 'este cliente'} de forma permanente.`}
+        onConfirm={handleDeleteOrder}
+        onCancel={() => setDeletingOrder(null)}
+      />
 
       <AnimatePresence>
         {editingOrder && (
