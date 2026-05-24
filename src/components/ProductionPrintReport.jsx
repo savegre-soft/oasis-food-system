@@ -316,12 +316,10 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                   <table className="w-full text-sm">
                     <thead className="bg-slate-800 text-white text-xs uppercase tracking-wide">
                       <tr>
-                        <th className="text-left px-4 py-3 font-semibold">#</th>
+                        <th className="text-left px-4 py-3 font-semibold w-8">#</th>
+                        <th className="text-center px-4 py-3 font-semibold w-20">Cantidad</th>
                         <th className="text-left px-4 py-3 font-semibold">Receta</th>
                         <th className="text-left px-4 py-3 font-semibold">Ingredientes</th>
-                        <th className="text-center px-4 py-3 font-semibold w-16">Cant.</th>
-                        <th className="text-center px-4 py-3 font-semibold w-24">Proteína</th>
-                        <th className="text-center px-4 py-3 font-semibold w-24">Carbos</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -338,11 +336,11 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                             <td className="px-4 py-3 text-slate-400 font-mono text-xs">
                               {idx + 1}
                             </td>
+                            <td className="px-4 py-3 text-center font-bold text-slate-800 text-sm">
+                              {r.totalUnits}
+                            </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="bg-slate-800 text-white text-xs font-bold px-2 py-0.5 rounded-lg min-w-[26px] text-center">
-                                  {r.totalUnits}
-                                </span>
                                 <span className="font-semibold text-slate-800">
                                   {r.recipe_name}
                                 </span>
@@ -386,39 +384,21 @@ const ProductionPrintReport = ({ orderDays, slotLabel, weekLabel, onClose }) => 
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center font-bold text-slate-800">
-                              {r.totalUnits}
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold text-red-600">
-                              {fmt(r.totalProtein) ?? (
-                                <span className="text-slate-300">—</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-center font-semibold text-amber-600">
-                              {fmt(r.totalCarb) ?? (
-                                <span className="text-slate-300">—</span>
-                              )}
-                            </td>
                           </tr>
                         );
                       })}
                     </tbody>
                     <tfoot className="bg-slate-50 border-t-2 border-slate-200 text-sm">
                       <tr>
-                        <td
-                          colSpan={3}
-                          className="px-4 py-3 font-bold text-slate-600 text-xs uppercase tracking-wide"
-                        >
-                          Totales · {recipes.length} receta{recipes.length !== 1 ? 's' : ''}
-                        </td>
+                        <td className="px-4 py-3" />
                         <td className="px-4 py-3 text-center font-bold text-slate-800">
                           {totalUnits}
                         </td>
-                        <td className="px-4 py-3 text-center font-bold text-red-600">
-                          {fmt(totalProtein) ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 text-center font-bold text-amber-600">
-                          {fmt(totalCarb) ?? '—'}
+                        <td
+                          colSpan={2}
+                          className="px-4 py-3 font-bold text-slate-600 text-xs uppercase tracking-wide"
+                        >
+                          Totales · {recipes.length} receta{recipes.length !== 1 ? 's' : ''}
                         </td>
                       </tr>
                     </tfoot>
@@ -520,15 +500,12 @@ function buildPrintHTML({
       const rowBg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
       return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9;page-break-inside:avoid;">
       <td style="padding:9px 10px;color:#94a3b8;font-size:11px;font-family:monospace;width:28px;">${i + 1}</td>
-      <td style="padding:9px 10px;vertical-align:top;white-space:nowrap;">
-        <span style="display:inline-block;background:#0f172a;color:#fff;border-radius:5px;padding:2px 7px;font-weight:700;font-size:12px;min-width:24px;text-align:center;margin-right:6px;">${Number(r.totalUnits)}</span>
+      <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:14px;vertical-align:top;white-space:nowrap;width:60px;">${Number(r.totalUnits)}</td>
+      <td style="padding:9px 10px;vertical-align:top;">
         <strong style="font-size:13px;">${escapeHtml(r.recipe_name)}</strong>
         ${r.isOverridden ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;">variante</span>' : ''}
       </td>
-      <td style="padding:9px 10px;vertical-align:top;word-break:break-word;overflow-wrap:break-word;max-width:240px;">${allIngs || '<em style="color:#cbd5e1;font-size:11px;">Sin ingredientes</em>'}</td>
-      <td style="padding:9px 10px;text-align:center;font-weight:700;font-size:13px;vertical-align:top;white-space:nowrap;">${Number(r.totalUnits)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#b91c1c;font-weight:600;font-size:13px;vertical-align:top;white-space:nowrap;">${fmtS(r.totalProtein)}</td>
-      <td style="padding:9px 10px;text-align:center;color:#b45309;font-weight:600;font-size:13px;vertical-align:top;white-space:nowrap;">${fmtS(r.totalCarb)}</td>
+      <td style="padding:9px 10px;vertical-align:top;word-break:break-word;overflow-wrap:break-word;">${allIngs || '<em style="color:#cbd5e1;font-size:11px;">Sin ingredientes</em>'}</td>
     </tr>`;
     })
     .join('');
@@ -634,22 +611,19 @@ function buildPrintHTML({
       <thead>
         <tr style="background:#0f172a;color:#fff;">
           <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;width:24px;">#</th>
+          <th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;width:60px;">Cantidad</th>
           <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Receta</th>
           <th style="padding:8px 10px;text-align:left;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Ingredientes</th>
-          <th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;width:40px;">Cant.</th>
-          <th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;width:70px;">Proteína</th>
-          <th style="padding:8px 10px;text-align:center;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;width:70px;">Carbos</th>
         </tr>
       </thead>
       <tbody>${recipeRows}</tbody>
       <tfoot>
         <tr style="background:#f1f5f9;border-top:2px solid #cbd5e1;">
-          <td colspan="3" style="padding:9px 10px;font-weight:700;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.03em;">
+          <td style="padding:9px 10px;"></td>
+          <td style="padding:9px 10px;text-align:center;font-weight:800;font-size:14px;color:#0f172a;">${totalUnits}</td>
+          <td colspan="2" style="padding:9px 10px;font-weight:700;font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.03em;">
             Totales · ${recipes.length} receta${recipes.length !== 1 ? 's' : ''}
           </td>
-          <td style="padding:9px 10px;text-align:center;font-weight:800;font-size:14px;color:#0f172a;">${totalUnits}</td>
-          <td style="padding:9px 10px;text-align:center;font-weight:800;color:#b91c1c;">${fmtS(totalProtein)}</td>
-          <td style="padding:9px 10px;text-align:center;font-weight:800;color:#b45309;">${fmtS(totalCarb)}</td>
         </tr>
       </tfoot>
     </table>
