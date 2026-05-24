@@ -146,9 +146,6 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
   const hasPending = recipe.pendingUnits > 0;
   const hasPacked = recipe.packedUnits > 0;
 
-  const allPendingIds = (recipe.clients ?? []).flatMap((c) =>
-    c.entries.filter((e) => e.status === 'PENDING').map((e) => e.id_order_day)
-  );
   const allPackedIds = (recipe.clients ?? []).flatMap((c) =>
     c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day)
   );
@@ -207,16 +204,6 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          {hasPending && (
-            <button
-              type="button"
-              onClick={() => allPendingIds.forEach((id) => onPack(id))}
-              className="flex items-center gap-1.5 text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-xl transition"
-            >
-              <Archive size={12} />
-              Empacar
-            </button>
-          )}
           {hasPacked && (
             <button
               type="button"
@@ -331,6 +318,7 @@ const StatCard = ({ icon, label, value }) => (
 
 const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const allDays = useMemo(
     () => [...(pendingDays ?? []), ...(packedDays ?? [])],
@@ -343,7 +331,22 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
   const totalPacked = Object.values(grouped).reduce((s, r) => s + r.packedUnits, 0);
   const totalPending = Object.values(grouped).reduce((s, r) => s + r.pendingUnits, 0);
 
+  const allPackedIds = useMemo(
+    () =>
+      Object.values(grouped).flatMap((r) =>
+        r.clients.flatMap((c) =>
+          c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day)
+        )
+      ),
+    [grouped]
+  );
+
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
+
+  const handleDeliverAll = () => {
+    allPackedIds.forEach((id) => onDeliver(id));
+    setShowConfirm(false);
+  };
 
   if (totalRecipes === 0) {
     return (
@@ -375,6 +378,18 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
         />
       </div>
 
+      {/* Global deliver all button */}
+      {totalPacked > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowConfirm(true)}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-semibold text-sm hover:bg-green-100 dark:hover:bg-green-900/30 transition"
+        >
+          <Truck size={15} />
+          Entregar todo ({totalPacked} pedido{totalPacked !== 1 ? 's' : ''})
+        </button>
+      )}
+
       {/* Recipe cards */}
       <div className="space-y-4">
         {Object.entries(grouped)
@@ -391,6 +406,45 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
             />
           ))}
       </div>
+
+      {/* Confirmation modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 mx-auto">
+              <Truck size={22} className="text-green-600 dark:text-green-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                ¿Entregar todos los pedidos?
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Se marcarán como entregados{' '}
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {totalPacked} pedido{totalPacked !== 1 ? 's' : ''}
+                </span>{' '}
+                empacados. Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:border-slate-400 dark:hover:border-slate-500 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeliverAll}
+                className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition"
+              >
+                Sí, entregar todo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
