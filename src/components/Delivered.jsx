@@ -10,6 +10,7 @@ const groupByClient = (orderDays) => {
     if (!clients[clientId]) clients[clientId] = { id: clientId, name: clientName, orderDays: [] };
     clients[clientId].orderDays.push({
       id_order_day: od.id_order_day,
+      id_order: od.orders?.id_order,
       classification: od.orders?.classification,
       recipes: (od.order_day_details ?? []).map((d) => ({
         name: d.recipes?.name ?? '(sin nombre)',
@@ -62,6 +63,11 @@ const ClientDeliveredCard = ({ client }) => (
         <div key={od.id_order_day} className="flex items-center gap-2 px-5 py-3 flex-wrap">
           <CheckCircle size={13} className="text-green-400 dark:text-green-500 shrink-0" />
           <ClassificationBadge classification={od.classification} />
+          {od.id_order && (
+            <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+              #{od.id_order}
+            </span>
+          )}
           {(od.recipes ?? []).map((r, i) => (
             <span
               key={i}

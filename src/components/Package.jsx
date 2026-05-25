@@ -95,6 +95,7 @@ const groupByRecipeForPackage = (allDays) => {
 
       g.clients[clientName].entries.push({
         id_order_day: orderDay.id_order_day,
+        id_order: orderDay.orders?.id_order,
         status,
         classification,
         quantity: qty,
@@ -109,6 +110,61 @@ const groupByRecipeForPackage = (allDays) => {
   }
 
   return grouped;
+};
+
+// ── Group by order ────────────────────────────────────────────────────────────
+
+const groupByOrder = (allDays) => {
+  const grouped = {};
+
+  for (const orderDay of allDays) {
+    if (!orderDay.orders?.clients) continue;
+
+    const id_order = orderDay.orders.id_order;
+    const clientName = orderDay.orders.clients.name;
+    const classification = orderDay.orders.classification;
+    const status = orderDay.status;
+
+    if (!grouped[id_order]) {
+      grouped[id_order] = {
+        id_order,
+        clientName,
+        totalUnits: 0,
+        packedUnits: 0,
+        pendingUnits: 0,
+        dishes: [],
+      };
+    }
+
+    const g = grouped[id_order];
+
+    for (const detail of orderDay.order_day_details ?? []) {
+      const recipe = detail.recipes;
+      const recipeName = recipe?.name ?? '(sin nombre)';
+      const qty = detail.quantity ?? 1;
+
+      const { ingredients, isOverridden } = buildEffectiveIngredients(
+        detail.order_day_recipe_overrides,
+        recipe?.recipe_ingredients
+      );
+
+      g.totalUnits += qty;
+      if (status === 'PACKED') g.packedUnits += qty;
+      else g.pendingUnits += qty;
+
+      g.dishes.push({
+        id_order_day: orderDay.id_order_day,
+        status,
+        recipe_name: recipeName,
+        quantity: qty,
+        classification,
+        isOverridden,
+        ingredients,
+      });
+    }
+  }
+
+  return Object.values(grouped).sort((a, b) => a.clientName.localeCompare(b.clientName));
 };
 
 // ── Classification badge ──────────────────────────────────────────────────────
@@ -273,6 +329,11 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                           </span>
                         )}
                         <ClassificationBadge classification={entry.classification} />
+                        {entry.id_order && (
+                          <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+                            #{entry.id_order}
+                          </span>
+                        )}
                         {entry.status === 'PENDING' && (
                           <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
                             <Archive size={11} />
@@ -302,6 +363,125 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
   );
 };
 
+// ── OrderPackageCard ──────────────────────────────────────────────────────────
+
+const OrderPackageCard = ({ order, onDeliver }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const packedOrderDayIds = useMemo(
+    () => [...new Set(order.dishes.filter((d) => d.status === 'PACKED').map((d) => d.id_order_day))],
+    [order.dishes]
+  );
+  const hasPacked = packedOrderDayIds.length > 0;
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-5 py-4">
+        <button
+          type="button"
+          onClick={() => setIsExpanded((p) => !p)}
+          className="flex items-center gap-4 flex-1 min-w-0 text-left"
+        >
+          <div className="text-white rounded-xl px-3 py-1.5 text-sm font-bold min-w-[48px] text-center shrink-0 bg-slate-800 dark:bg-indigo-600">
+            {order.totalUnits}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-slate-800 dark:text-slate-100">{order.clientName}</p>
+              <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-2 py-0.5 rounded-full">
+                #{order.id_order}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {order.dishes.length} plato{order.dishes.length !== 1 ? 's' : ''}
+              </p>
+              {order.pendingUnits > 0 && (
+                <span className="text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+                  {order.pendingUnits} por empacar
+                </span>
+              )}
+              {order.packedUnits > 0 && (
+                <span className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
+                  {order.packedUnits} empacado{order.packedUnits !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {hasPacked && (
+            <button
+              type="button"
+              onClick={() => packedOrderDayIds.forEach((id) => onDeliver(id))}
+              className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-xl transition"
+            >
+              <Truck size={12} />
+              Entregar orden
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsExpanded((p) => !p)}
+            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition p-1"
+          >
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Dishes */}
+      {isExpanded && (
+        <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-50 dark:divide-slate-800">
+          {order.dishes.map((dish, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center justify-between px-5 py-3 ${
+                dish.status === 'PENDING' ? 'opacity-60' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                {dish.quantity > 1 && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    ×{dish.quantity}
+                  </span>
+                )}
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                  {dish.recipe_name}
+                </p>
+                {dish.isOverridden && (
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-medium">
+                    variante
+                  </span>
+                )}
+                <ClassificationBadge classification={dish.classification} />
+                {dish.status === 'PENDING' && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                    <Archive size={11} />
+                    Por empacar
+                  </span>
+                )}
+              </div>
+              {dish.status === 'PACKED' && (
+                <button
+                  type="button"
+                  onClick={() => onDeliver(dish.id_order_day)}
+                  className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 px-3 py-1.5 rounded-xl transition shrink-0 ml-3"
+                >
+                  <Truck size={12} />
+                  Entregar
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── StatCard ──────────────────────────────────────────────────────────────────
 
 const StatCard = ({ icon, label, value }) => (
@@ -319,26 +499,28 @@ const StatCard = ({ icon, label, value }) => (
 const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
+  const [viewMode, setViewMode] = useState('recipe'); // 'recipe' | 'order'
 
   const allDays = useMemo(
     () => [...(pendingDays ?? []), ...(packedDays ?? [])],
     [pendingDays, packedDays]
   );
 
-  const grouped = useMemo(() => groupByRecipeForPackage(allDays), [allDays]);
+  const groupedByRecipe = useMemo(() => groupByRecipeForPackage(allDays), [allDays]);
+  const groupedByOrder = useMemo(() => groupByOrder(allDays), [allDays]);
 
-  const totalRecipes = Object.keys(grouped).length;
-  const totalPacked = Object.values(grouped).reduce((s, r) => s + r.packedUnits, 0);
-  const totalPending = Object.values(grouped).reduce((s, r) => s + r.pendingUnits, 0);
+  const totalRecipes = Object.keys(groupedByRecipe).length;
+  const totalPacked = Object.values(groupedByRecipe).reduce((s, r) => s + r.packedUnits, 0);
+  const totalPending = Object.values(groupedByRecipe).reduce((s, r) => s + r.pendingUnits, 0);
 
   const allPackedIds = useMemo(
     () =>
-      Object.values(grouped).flatMap((r) =>
+      Object.values(groupedByRecipe).flatMap((r) =>
         r.clients.flatMap((c) =>
           c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day)
         )
       ),
-    [grouped]
+    [groupedByRecipe]
   );
 
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
@@ -378,6 +560,32 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
         />
       </div>
 
+      {/* View toggle */}
+      <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+        <button
+          type="button"
+          onClick={() => setViewMode('recipe')}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+            viewMode === 'recipe'
+              ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          Por receta
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('order')}
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+            viewMode === 'order'
+              ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          Por orden
+        </button>
+      </div>
+
       {/* Global deliver all button */}
       {totalPacked > 0 && (
         <button
@@ -390,22 +598,30 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
         </button>
       )}
 
-      {/* Recipe cards */}
-      <div className="space-y-4">
-        {Object.entries(grouped)
-          .sort(([, a], [, b]) => a.recipe_name.localeCompare(b.recipe_name))
-          .map(([variantKey, recipe]) => (
-            <RecipePackageCard
-              key={variantKey}
-              variantKey={variantKey}
-              recipe={recipe}
-              isExpanded={expandedRecipes[variantKey] ?? false}
-              onToggle={toggle}
-              onPack={onPack}
-              onDeliver={onDeliver}
-            />
+      {/* Cards */}
+      {viewMode === 'recipe' ? (
+        <div className="space-y-4">
+          {Object.entries(groupedByRecipe)
+            .sort(([, a], [, b]) => a.recipe_name.localeCompare(b.recipe_name))
+            .map(([variantKey, recipe]) => (
+              <RecipePackageCard
+                key={variantKey}
+                variantKey={variantKey}
+                recipe={recipe}
+                isExpanded={expandedRecipes[variantKey] ?? false}
+                onToggle={toggle}
+                onPack={onPack}
+                onDeliver={onDeliver}
+              />
+            ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {groupedByOrder.map((order) => (
+            <OrderPackageCard key={order.id_order} order={order} onDeliver={onDeliver} />
           ))}
-      </div>
+        </div>
+      )}
 
       {/* Confirmation modal */}
       {showConfirm && (
