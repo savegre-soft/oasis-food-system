@@ -137,6 +137,11 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                       >
                         {meal.classification === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
                       </span>
+                      {meal.id_order && (
+                        <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
+                          #{meal.id_order}
+                        </span>
+                      )}
                       {meal.protein && (
                         <span className="text-xs text-slate-400 dark:text-slate-500">
                           {meal.protein}

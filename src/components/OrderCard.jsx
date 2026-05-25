@@ -29,6 +29,11 @@ const OrderCard = ({ order }) => {
           {/* Cliente + badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-slate-800">{order.clients?.name}</p>
+            {order.id_order && (
+              <span className="text-xs font-mono text-slate-400 px-2 py-0.5 rounded-full bg-slate-100">
+                #{order.id_order}
+              </span>
+            )}
             <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${st.className}`}>
               {st.label}
             </span>

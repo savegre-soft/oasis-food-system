@@ -72,6 +72,7 @@ export const groupByRecipe = (orderDays) => {
           classification,
           quantity: 0,
           orderDayIds: new Set(),
+          id_order: orderDay.orders?.id_order,
           protein: detail.protein_value_applied,
           proteinUnit: MACRO_UNIT,
           carb: detail.carb_value_applied,
