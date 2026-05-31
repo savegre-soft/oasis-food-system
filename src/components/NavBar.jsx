@@ -39,6 +39,7 @@ const gestionLinks = [
 const financialLinks = [
   { to: '/pagos', label: 'Pagos', icon: DollarSign },
   { to: '/Gastos', label: 'Gastos', icon: DollarSign },
+  { to: '/planilla', label: 'Planilla', icon: Users },
   { to: '/estadisticas', label: 'Estadísticas', icon: ChartScatterIcon },
 ];
 

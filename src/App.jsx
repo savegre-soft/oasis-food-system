@@ -30,6 +30,7 @@ import Estadisticas from './pages/Estadisticas';
 import ChangePassword from './pages/ChangePassword';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
+import Planilla from './pages/Planilla';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="/empleados" element={<ExpenseEmployees />} />
             <Route path="/estadisticas" element={<Estadisticas />} />
             <Route path="/perfil" element={<Profile />} />
+            <Route path="/planilla" element={<Planilla />} />
           </Route>
           <Route element={<PublicLayout />}>
             <Route path="/menu" element={<Menu />} />

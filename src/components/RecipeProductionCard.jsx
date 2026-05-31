@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Archive } from 'lucide-react';
-import { MACRO_UNIT } from './orderUtils';
+import { MACRO_UNIT, DAY_LABELS } from './orderUtils';
 
 const CATEGORY_STYLE = {
   protein: { badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
@@ -128,6 +128,9 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                   >
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">×{meal.quantity}</span>
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                        {DAY_LABELS[meal.day_of_week] ?? meal.day_of_week}
+                      </span>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                           meal.classification === 'Lunch'

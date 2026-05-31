@@ -169,6 +169,7 @@ const ExpressView = ({
   deliveredDays,
   onPack,
   onDeliver,
+  onUnpack,
   expressTab,
   setExpressTab,
   todayStr,
@@ -231,7 +232,7 @@ const ExpressView = ({
           (pendingDays.length === 0 && packedDays.length === 0 ? (
             <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
           ) : (
-            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onPack={onPack} onDeliver={onDeliver} />
+            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onPack={onPack} onDeliver={onDeliver} onUnpack={onUnpack} />
           ))}
         {expressTab === 'entrega' &&
           (deliveredDays.length === 0 ? (
@@ -436,6 +437,7 @@ const Production = () => {
 
   const markPacked = (id) => updateStatus(id, 'PACKED', '📦 Marcado como empacado');
   const markDelivered = (id) => updateStatus(id, 'DELIVERED', '🚚 Entrega registrada');
+  const markPending = (id) => updateStatus(id, 'PENDING', 'Devuelto a pendiente');
 
   // ── Filters ────────────────────────────────────────────────────────────────────
 
@@ -608,6 +610,7 @@ const Production = () => {
                   packedDays={normalPacked}
                   onPack={markPacked}
                   onDeliver={markDelivered}
+                  onUnpack={markPending}
                 />
               )}
               {activeTab === 'entrega' && <EntregaView orderDays={normalDelivered} />}
@@ -618,6 +621,7 @@ const Production = () => {
                   deliveredDays={expressDeliveredAll}
                   onPack={markPacked}
                   onDeliver={markDelivered}
+                  onUnpack={markPending}
                   expressTab={expressTab}
                   setExpressTab={setExpressTab}
                   todayStr={todayStr}
