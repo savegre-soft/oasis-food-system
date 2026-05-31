@@ -81,7 +81,7 @@ export const useExpenseStatistics = ({ from, to }) => {
           supabase
             .schema('operations')
             .from('empCost')
-            .select('WorkDate, Amount, Name, Hours')
+            .select('WorkDate, Amount, Name, Hours, payment_type, emp_cost_deductions(id, amount, description)')
             .gte('WorkDate', from)
             .lte('WorkDate', to)
             .order('WorkDate'),

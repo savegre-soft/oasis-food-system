@@ -52,30 +52,30 @@ const STATUS_STYLES = {
 };
 
 const TABS = [
-  { id: 'week', label: 'Esta semana', Icon: Calendar },
+  { id: 'week', label: 'Semana', Icon: Calendar },
   { id: 'history', label: 'Historico', Icon: History },
 ];
 
 const HISTORY_PAGE_SIZE = 8;
 
-const getNextWeekRange = () => {
+const WEEK_OPTIONS = [
+  { offset: -1, label: 'Semana anterior' },
+  { offset: 0,  label: 'Esta semana' },
+  { offset: 1,  label: 'Próxima semana' },
+];
+
+const getWeekBounds = (offsetWeeks = 0) => {
   const today = new Date();
   const day = today.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(today);
-  monday.setDate(today.getDate() + diff + 7);
+  monday.setDate(today.getDate() + diff + offsetWeeks * 7);
   monday.setHours(0, 0, 0, 0);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
   const fmt = (d) => d.toISOString().split('T')[0];
   return { weekStart: fmt(monday), weekEnd: fmt(sunday), monday };
 };
-
-const {
-  weekStart: NEXT_WEEK_START,
-  weekEnd: NEXT_WEEK_END,
-  monday: NEXT_MONDAY,
-} = getNextWeekRange();
 
 const fmtDate = (str, opts) => new Date(str + 'T00:00:00').toLocaleDateString('es-CR', opts);
 
@@ -123,6 +123,9 @@ const OrderDetailModal = ({ order, onClose, onEdit, onDelete }) => {
             <p className="font-bold text-slate-800 dark:text-slate-100 text-lg truncate">
               {order.clients?.name}
             </p>
+            <span className="text-xs font-mono text-slate-400 dark:text-slate-600">
+              #{order.id_order}
+            </span>
             <span className={'text-xs font-medium px-2.5 py-0.5 rounded-full border ' + st.cls}>
               {st.label}
             </span>
@@ -331,6 +334,9 @@ const OrderCard = ({ order, onClick, onEdit }) => {
               <p className="font-semibold text-slate-800 dark:text-slate-100">
                 {order.clients?.name}
               </p>
+              <span className="text-xs font-mono text-slate-400 dark:text-slate-600">
+                #{order.id_order}
+              </span>
 
               {/* Badge de Estado Principal (asumiendo que st.cls viene del backend/helper) */}
               <span className={'text-xs font-medium px-2.5 py-0.5 rounded-full border ' + st.cls}>
@@ -441,7 +447,7 @@ const MiniOrderCard = ({ order, dayOfWeek, onClick }) => {
 
 // ── CalendarView ──────────────────────────────────────────────────────────────
 
-const CalendarView = ({ orders, onOrderClick }) => {
+const CalendarView = ({ orders, onOrderClick, monday }) => {
   const cells = useMemo(() => {
     const map = {};
     DAY_ORDER.forEach((d) => {
@@ -460,8 +466,8 @@ const CalendarView = ({ orders, onOrderClick }) => {
     <div className="overflow-x-auto pb-2">
       <div className="grid grid-cols-7 gap-2 min-w-[700px]">
         {DAY_ORDER.map((day, i) => {
-          const date = new Date(NEXT_MONDAY);
-          date.setDate(NEXT_MONDAY.getDate() + i);
+          const date = new Date(monday);
+          date.setDate(monday.getDate() + i);
           const dateLabel = date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short' });
           const dayOrders = cells[day] ?? [];
 
@@ -600,6 +606,7 @@ const Orders = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [search, setSearch] = useState('');
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const handleDeleteOrder = async () => {
     if (!deletingOrder) return;
@@ -709,40 +716,20 @@ const Orders = () => {
     getData();
   }, []);
 
-  const currentWeekOrders = useMemo(
-    () =>
-      allOrders.filter(
-        (o) => o.week_start_date === NEXT_WEEK_START && o.week_end_date === NEXT_WEEK_END
-      ),
-    [allOrders]
-  );
-
-  const latestWeekStart = useMemo(() => {
-    if (currentWeekOrders.length > 0) return NEXT_WEEK_START;
-    const dates = allOrders.map((o) => o.week_start_date).filter(Boolean);
-    return dates.length > 0 ? [...dates].sort().reverse()[0] : null;
-  }, [allOrders, currentWeekOrders]);
+  const selectedWeek = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
 
   const weekOrders = useMemo(
-    () => allOrders.filter((o) => o.week_start_date === latestWeekStart),
-    [allOrders, latestWeekStart]
+    () => allOrders.filter((o) => o.week_start_date === selectedWeek.weekStart),
+    [allOrders, selectedWeek]
   );
 
-  const historyOrders = useMemo(
-    () => allOrders.filter((o) => o.week_start_date !== latestWeekStart),
-    [allOrders, latestWeekStart]
+  const weekLabel = useMemo(
+    () =>
+      fmtDate(selectedWeek.weekStart, { day: '2-digit', month: 'long' }) +
+      ' – ' +
+      fmtDate(selectedWeek.weekEnd, { day: '2-digit', month: 'long', year: 'numeric' }),
+    [selectedWeek]
   );
-
-  const weekLabel = useMemo(() => {
-    if (!latestWeekStart) return '';
-    const ws = weekOrders[0]?.week_start_date ?? latestWeekStart;
-    const we = weekOrders[0]?.week_end_date ?? NEXT_WEEK_END;
-    return (
-      fmtDate(ws, { day: '2-digit', month: 'long' }) +
-      ' - ' +
-      fmtDate(we, { day: '2-digit', month: 'long', year: 'numeric' })
-    );
-  }, [weekOrders, latestWeekStart]);
 
   const applySearch = (list) => {
     if (!search.trim()) return list;
@@ -753,7 +740,7 @@ const Orders = () => {
   };
 
   const filteredWeek = applySearch(weekOrders);
-  const filteredHistory = applySearch(historyOrders);
+  const filteredHistory = applySearch(allOrders);
 
   return (
     <>
@@ -879,10 +866,23 @@ const Orders = () => {
               >
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-medium">
-                      Semana de entrega
-                    </p>
-                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-0.5">
+                    {/* Week selector */}
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-1 shadow-sm mb-2">
+                      {WEEK_OPTIONS.map(({ offset, label }) => (
+                        <button
+                          key={offset}
+                          onClick={() => setWeekOffset(offset)}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-medium transition ${
+                            weekOffset === offset
+                              ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                       {weekLabel}
                     </p>
                   </div>
@@ -920,12 +920,10 @@ const Orders = () => {
                   <div className="text-center py-20 text-slate-400 dark:text-slate-600">
                     <Calendar size={40} className="mx-auto mb-3 opacity-30" />
                     <p>{search ? 'Sin resultados' : 'No hay pedidos para esta semana'}</p>
-                    {!search && (
-                      <p className="text-xs mt-1 text-slate-300 dark:text-slate-700">{weekLabel}</p>
-                    )}
+                    <p className="text-xs mt-1 text-slate-300 dark:text-slate-700">{weekLabel}</p>
                   </div>
                 ) : calendarView ? (
-                  <CalendarView orders={filteredWeek} onOrderClick={setSelectedOrder} />
+                  <CalendarView orders={filteredWeek} onOrderClick={setSelectedOrder} monday={selectedWeek.monday} />
                 ) : (
                   <div className="space-y-3">
                     {filteredWeek.map((order) => (

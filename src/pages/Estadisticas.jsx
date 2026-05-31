@@ -7,12 +7,14 @@ import DateRangeFilter from '../components/DateRangeFilter';
 import GastosPanel from '../components/stats/GastosPanel';
 import IngresosPanel from '../components/stats/IngresosPanel';
 import ComparativaPanel from '../components/stats/ComparativaPanel';
+import PlanillaPanel from '../components/stats/PlanillaPanel';
 import AuthRoles from '../components/auth/AuthRoles';
 
 const TABS = [
   { key: 'gastos',      label: 'Gastos',            accent: 'orange'  },
   { key: 'ingresos',    label: 'Ingresos',           accent: 'emerald' },
   { key: 'comparativa', label: 'Gastos vs Ingresos', accent: 'blue'    },
+  { key: 'planilla',    label: 'Planilla',            accent: 'blue'    },
 ];
 
 const Estadisticas = () => {
@@ -53,6 +55,7 @@ const Estadisticas = () => {
       {tab === 'gastos'      && <GastosPanel     expenses={expenses} empCosts={empCosts} dateRange={dateRange} loading={loading} />}
       {tab === 'ingresos'    && <IngresosPanel    payments={payments} dateRange={dateRange} loading={loading} />}
       {tab === 'comparativa' && <ComparativaPanel expenses={expenses} empCosts={empCosts} payments={payments} dateRange={dateRange} loading={loading} />}
+      {tab === 'planilla'    && <PlanillaPanel    empCosts={empCosts} dateRange={dateRange} loading={loading} />}
     </div>
     </AuthRoles>
   );
