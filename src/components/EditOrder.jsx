@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Pencil } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
@@ -8,8 +8,6 @@ import { useDayRecipes } from './useDayRecipes';
 import { useMacros } from './useMacros';
 import { DAYS_ORDER, DAY_LABELS, isFamily, getDateForDay } from './orderUtils';
 
-// Route type thresholds mirror AddOrder logic
-const ROUTE_THRESHOLD = 3; // >= 3 extras → complete route
 
 const EditOrder = ({ order, onSuccess }) => {
   const { supabase } = useApp();
@@ -19,8 +17,6 @@ const EditOrder = ({ order, onSuccess }) => {
   const [allRecipes, setAllRecipes] = useState([]);
   const [allRoutes, setAllRoutes] = useState([]);
   const [resolvedRoute, setResolvedRoute] = useState(order.routes ?? null);
-  const [routeManuallyChanged, setRouteManuallyChanged] = useState(false);
-  const recipesLoaded = useRef(false); // don't auto-resolve route until recipes are loaded
 
   // ── Hooks ─────────────────────────────────────────────────────────────────
   const {
@@ -50,11 +46,6 @@ const EditOrder = ({ order, onSuccess }) => {
     isDayOverridden,
   } = useMacros();
 
-  // Derived: count of extra (user-added) recipes — drives auto route resolution
-  const extraCount = Object.values(dayRecipes)
-    .flat()
-    .filter((r) => r.isExtra && r.recipe_id).length;
-
   // ── Load data ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchRecipes = async () => {
@@ -71,41 +62,40 @@ const EditOrder = ({ order, onSuccess }) => {
         .schema('operations')
         .from('routes')
         .select('id_route, name, route_type, route_delivery_days(day_of_week)')
-        .eq('is_active', true);
-      setAllRoutes(data ?? []);
-    };
-    fetchRecipes();
-    fetchRoutes();
-  }, []);
-
-  // ── Auto-resolve route when extraCount crosses threshold ────────────────────
-  useEffect(() => {
-    if (!recipesLoaded.current || routeManuallyChanged || isFamilyClient) return;
-    const isComplete = menuType === 'both' || extraCount >= ROUTE_THRESHOLD;
-    const preferredType = isComplete ? 'complete' : 'individual';
-
-    const doResolve = async () => {
-      let { data } = await supabase
-        .schema('operations')
-        .from('routes')
-        .select('id_route, name, route_type, route_delivery_days(day_of_week)')
-        .eq('route_type', preferredType)
         .eq('is_active', true)
-        .limit(1)
-        .maybeSingle();
-      if (!data) {
-        ({ data } = await supabase
+        .order('name');
+      
+      // Validar que todas las rutas tengan route_delivery_days
+      const routesWithDays = (data ?? []).map(route => ({
+        ...route,
+        route_delivery_days: Array.isArray(route.route_delivery_days) 
+          ? route.route_delivery_days 
+          : []
+      }));
+      
+      setAllRoutes(routesWithDays);
+    };
+    
+    const loadCurrentRoute = async () => {
+      // Si el pedido tiene una ruta asignada, cargar la información completa de esa ruta
+      // incluyendo sus route_delivery_days para calcular correctamente las fechas de entrega
+      if (order.route_id) {
+        const { data } = await supabase
           .schema('operations')
           .from('routes')
           .select('id_route, name, route_type, route_delivery_days(day_of_week)')
-          .eq('is_active', true)
-          .limit(1)
-          .maybeSingle());
+          .eq('id_route', order.route_id)
+          .maybeSingle();
+        if (data) {
+          setResolvedRoute(data);
+        }
       }
-      if (data) setResolvedRoute(data);
     };
-    doResolve();
-  }, [extraCount, menuType, routeManuallyChanged, isFamilyClient]);
+    
+    fetchRecipes();
+    fetchRoutes();
+    loadCurrentRoute();
+  }, [order.route_id]);
 
   // ── Pre-fill from order ───────────────────────────────────────────────────
   useEffect(() => {
@@ -124,7 +114,6 @@ const EditOrder = ({ order, onSuccess }) => {
 
     // Recipes
     loadFromOrderDays(order.order_days ?? []);
-    recipesLoaded.current = true;
   }, [order]);
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -154,7 +143,34 @@ const EditOrder = ({ order, onSuccess }) => {
       return;
     }
 
-    // Delete existing order_days (cascades to details + overrides)
+    // Explicit deletion in dependency order to avoid FK constraint failures
+    const existingOrderDayIds = (order.order_days ?? []).map((d) => d.id_order_day);
+    const existingDetailIds = (order.order_days ?? [])
+      .flatMap((d) => (d.order_day_details ?? []).map((det) => det.id_order_day_detail));
+
+    if (existingDetailIds.length > 0) {
+      const { error: ovDelErr } = await supabase
+        .schema('operations')
+        .from('order_day_recipe_overrides')
+        .delete()
+        .in('order_day_detail_id', existingDetailIds);
+      if (ovDelErr) console.error('Error eliminando overrides:', ovDelErr);
+    }
+
+    if (existingOrderDayIds.length > 0) {
+      const { error: detDelErr } = await supabase
+        .schema('operations')
+        .from('order_day_details')
+        .delete()
+        .in('order_day_id', existingOrderDayIds);
+      if (detDelErr) {
+        sileo.error('Error al limpiar detalles del pedido');
+        console.error(detDelErr);
+        setLoading(false);
+        return;
+      }
+    }
+
     const { error: delErr } = await supabase
       .schema('operations')
       .from('order_days')
@@ -169,6 +185,8 @@ const EditOrder = ({ order, onSuccess }) => {
 
     // Re-insert order_days + details
     for (const day of activeDays) {
+      const calculatedDeliveryDate = getDateForDay(day, weekStart, routeDays);
+
       const { data: dayData, error: dayErr } = await supabase
         .schema('operations')
         .from('order_days')
@@ -176,7 +194,7 @@ const EditOrder = ({ order, onSuccess }) => {
           {
             order_id: order.id_order,
             day_of_week: day,
-            delivery_date: getDateForDay(day, weekStart, routeDays),
+            delivery_date: calculatedDeliveryDate,
             status: 'PENDING',
           },
         ])
@@ -274,7 +292,6 @@ const EditOrder = ({ order, onSuccess }) => {
         allRoutes={allRoutes}
         onRouteChange={(r) => {
           setResolvedRoute(r);
-          setRouteManuallyChanged(true);
         }}
         showRouteChange={true}
         lunchMacros={lunchMacros}

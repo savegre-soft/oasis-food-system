@@ -133,7 +133,16 @@ const AddOrder = ({ onSuccess }) => {
         .from('routes')
         .select('id_route, name, route_type, route_delivery_days(day_of_week)')
         .eq('is_active', true);
-      setAllRoutes(data ?? []);
+      
+      // Validar que todas las rutas tengan route_delivery_days
+      const routesWithDays = (data ?? []).map(route => ({
+        ...route,
+        route_delivery_days: Array.isArray(route.route_delivery_days) 
+          ? route.route_delivery_days 
+          : []
+      }));
+      
+      setAllRoutes(routesWithDays);
     };
     const fetchAllRecipes = async () => {
       const { data } = await supabase

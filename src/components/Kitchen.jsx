@@ -66,9 +66,11 @@ export const groupByRecipe = (orderDays) => {
         g.clients[clientName] = { clientName, totalQuantity: 0, meals: {} };
       }
 
-      const mealKey = classification;
+      const mealKey = orderDay.id_order_day;
       if (!g.clients[clientName].meals[mealKey]) {
         g.clients[clientName].meals[mealKey] = {
+          id_order_day: orderDay.id_order_day,
+          day_of_week: orderDay.day_of_week,
           classification,
           quantity: 0,
           orderDayIds: new Set(),

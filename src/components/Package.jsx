@@ -197,7 +197,7 @@ const ClassificationBadge = ({ classification }) => {
 
 // ── RecipePackageCard ─────────────────────────────────────────────────────────
 
-const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver }) => {
+const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver, onUnpack }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
   const hasPending = recipe.pendingUnits > 0;
   const hasPacked = recipe.packedUnits > 0;
@@ -342,14 +342,26 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                         )}
                       </div>
                       {entry.status === 'PACKED' && (
-                        <button
-                          type="button"
-                          onClick={() => onDeliver(entry.id_order_day)}
-                          className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 px-3 py-1.5 rounded-xl transition shrink-0 ml-3"
-                        >
-                          <Truck size={12} />
-                          Entregar
-                        </button>
+                        <div className="flex items-center gap-1.5 ml-3 shrink-0">
+                          {onUnpack && (
+                            <button
+                              type="button"
+                              onClick={() => onUnpack(entry.id_order_day)}
+                              className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl transition"
+                            >
+                              <Archive size={12} />
+                              Desempacar
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onDeliver(entry.id_order_day)}
+                            className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 px-3 py-1.5 rounded-xl transition"
+                          >
+                            <Truck size={12} />
+                            Entregar
+                          </button>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -496,7 +508,7 @@ const StatCard = ({ icon, label, value }) => (
 
 // ── EmpaqueView ───────────────────────────────────────────────────────────────
 
-const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
+const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewMode, setViewMode] = useState('recipe'); // 'recipe' | 'order'
@@ -612,6 +624,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver }) => {
                 onToggle={toggle}
                 onPack={onPack}
                 onDeliver={onDeliver}
+                onUnpack={onUnpack}
               />
             ))}
         </div>
