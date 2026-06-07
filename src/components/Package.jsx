@@ -197,7 +197,7 @@ const ClassificationBadge = ({ classification }) => {
 
 // ── RecipePackageCard ─────────────────────────────────────────────────────────
 
-const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver, onUnpack, selectedIds, onToggleId }) => {
+const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver, onUnpack, selectedIds, onToggleId, onToggleIds }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
   const hasPending = recipe.pendingUnits > 0;
   const hasPacked = recipe.packedUnits > 0;
@@ -205,6 +205,14 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
   const allPackedIds = (recipe.clients ?? []).flatMap((c) =>
     c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day)
   );
+
+  const recipeAllIds = (recipe.clients ?? []).flatMap((c) =>
+    c.entries.map((e) => e.id_order_day)
+  );
+  const recipeAllSelected =
+    onToggleIds && recipeAllIds.length > 0 && recipeAllIds.every((id) => selectedIds?.has(id));
+  const recipeSomeSelected =
+    onToggleIds && !recipeAllSelected && recipeAllIds.some((id) => selectedIds?.has(id));
 
   return (
     <div
@@ -216,6 +224,16 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4">
+        {/* Casilla a nivel de receta */}
+        {onToggleIds && (
+          <input
+            type="checkbox"
+            checked={recipeAllSelected}
+            ref={(el) => { if (el) el.indeterminate = recipeSomeSelected; }}
+            onChange={() => onToggleIds(recipeAllIds)}
+            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
+          />
+        )}
         <button
           type="button"
           onClick={() => onToggle(variantKey)}
@@ -385,7 +403,7 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
 
 // ── OrderPackageCard ──────────────────────────────────────────────────────────
 
-const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId }) => {
+const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId, onToggleIds }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const packedOrderDayIds = useMemo(
@@ -394,10 +412,29 @@ const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId }) => {
   );
   const hasPacked = packedOrderDayIds.length > 0;
 
+  const orderAllIds = useMemo(
+    () => [...new Set(order.dishes.map((d) => d.id_order_day))],
+    [order.dishes]
+  );
+  const orderAllSelected =
+    onToggleIds && orderAllIds.length > 0 && orderAllIds.every((id) => selectedIds?.has(id));
+  const orderSomeSelected =
+    onToggleIds && !orderAllSelected && orderAllIds.some((id) => selectedIds?.has(id));
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4">
+        {/* Casilla a nivel de orden */}
+        {onToggleIds && (
+          <input
+            type="checkbox"
+            checked={orderAllSelected}
+            ref={(el) => { if (el) el.indeterminate = orderSomeSelected; }}
+            onChange={() => onToggleIds(orderAllIds)}
+            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
+          />
+        )}
         <button
           type="button"
           onClick={() => setIsExpanded((p) => !p)}
@@ -575,6 +612,15 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
       return next;
     });
 
+  // Para casillas a nivel de tarjeta (selecciona/deselecciona un grupo de IDs)
+  const toggleIds = (ids) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allIn = ids.every((id) => next.has(id));
+      ids.forEach((id) => (allIn ? next.delete(id) : next.add(id)));
+      return next;
+    });
+
   const toggleAll = () => setSelectedIds(allSelected ? new Set() : new Set(allItemIds));
   const clearSelection = () => setSelectedIds(new Set());
 
@@ -653,64 +699,71 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
         </button>
       )}
 
-      {/* Bulk action bar */}
-      {selectedIds.size > 0 && (
-        <div className="bg-slate-800 dark:bg-slate-700 text-white rounded-2xl px-5 py-3 flex items-center gap-3 flex-wrap">
-          <span className="text-sm font-medium flex-1 min-w-max">
-            {selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}
+      {/* Barra combinada: seleccionar todos / acciones masivas */}
+      <div
+        className={`rounded-2xl px-5 py-3 flex items-center gap-3 flex-wrap transition-colors ${
+          selectedIds.size > 0
+            ? 'bg-slate-800 dark:bg-slate-700 text-white'
+            : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400'
+        }`}
+      >
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            ref={(el) => { if (el) el.indeterminate = someSelected; }}
+            onChange={toggleAll}
+            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer"
+          />
+          <span className="text-sm font-medium">
+            {selectedIds.size > 0
+              ? `${selectedIds.size} seleccionado${selectedIds.size !== 1 ? 's' : ''}`
+              : 'Seleccionar todos'}
           </span>
-          {selectedPendingIds.length > 0 && (
-            <button
-              type="button"
-              onClick={() => { selectedPendingIds.forEach((id) => onPack(id)); clearSelection(); }}
-              className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
-            >
-              <Archive size={13} />
-              Empacar ({selectedPendingIds.length})
-            </button>
-          )}
-          {selectedPackedIds.length > 0 && (
-            <>
+        </label>
+        {selectedIds.size > 0 && (
+          <>
+            {selectedPendingIds.length > 0 && (
               <button
                 type="button"
-                onClick={() => { selectedPackedIds.forEach((id) => onDeliver(id)); clearSelection(); }}
-                className="flex items-center gap-1.5 text-xs font-medium bg-green-500/80 hover:bg-green-500 px-3 py-1.5 rounded-xl transition"
+                onClick={() => { selectedPendingIds.forEach((id) => onPack(id)); clearSelection(); }}
+                className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition ml-auto"
               >
-                <Truck size={13} />
-                Entregar ({selectedPackedIds.length})
+                <Archive size={13} />
+                Empacar ({selectedPendingIds.length})
               </button>
-              {onUnpack && (
+            )}
+            {selectedPackedIds.length > 0 && (
+              <>
                 <button
                   type="button"
-                  onClick={() => { selectedPackedIds.forEach((id) => onUnpack(id)); clearSelection(); }}
-                  className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
+                  onClick={() => { selectedPackedIds.forEach((id) => onDeliver(id)); clearSelection(); }}
+                  className={`flex items-center gap-1.5 text-xs font-medium bg-green-500/80 hover:bg-green-500 px-3 py-1.5 rounded-xl transition ${selectedPendingIds.length === 0 ? 'ml-auto' : ''}`}
                 >
-                  <Archive size={13} />
-                  Desempacar ({selectedPackedIds.length})
+                  <Truck size={13} />
+                  Entregar ({selectedPackedIds.length})
                 </button>
-              )}
-            </>
-          )}
-          <button
-            type="button"
-            onClick={clearSelection}
-            className="text-white/60 hover:text-white transition text-lg leading-none px-1"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Select all row */}
-      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 -mb-2">
-        <input
-          type="checkbox"
-          checked={allSelected}
-          ref={(el) => { if (el) el.indeterminate = someSelected; }}
-          onChange={toggleAll}
-          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer"
-        />
-        <span>Seleccionar todos</span>
+                {onUnpack && (
+                  <button
+                    type="button"
+                    onClick={() => { selectedPackedIds.forEach((id) => onUnpack(id)); clearSelection(); }}
+                    className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
+                  >
+                    <Archive size={13} />
+                    Desempacar ({selectedPackedIds.length})
+                  </button>
+                )}
+              </>
+            )}
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="text-white/60 hover:text-white transition text-lg leading-none px-1"
+            >
+              ✕
+            </button>
+          </>
+        )}
       </div>
 
       {/* Cards */}
@@ -730,6 +783,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
                 onUnpack={onUnpack}
                 selectedIds={selectedIds}
                 onToggleId={toggleId}
+                onToggleIds={toggleIds}
               />
             ))}
         </div>
@@ -742,6 +796,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
               onDeliver={onDeliver}
               selectedIds={selectedIds}
               onToggleId={toggleId}
+              onToggleIds={toggleIds}
             />
           ))}
         </div>
