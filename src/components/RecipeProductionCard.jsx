@@ -26,7 +26,7 @@ const IngredientBadges = ({ ingredients }) => {
   );
 };
 
-const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack }) => {
+const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, selectedIds, onToggleMeal }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
 
   return (
@@ -127,6 +127,17 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                     className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
+                      {onToggleMeal && (
+                        <input
+                          type="checkbox"
+                          checked={
+                            (meal.orderDayIds ?? []).length > 0 &&
+                            (meal.orderDayIds ?? []).every((id) => selectedIds?.has(id))
+                          }
+                          onChange={() => onToggleMeal(meal.orderDayIds ?? [])}
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
+                        />
+                      )}
                       <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">×{meal.quantity}</span>
                       <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                         {DAY_LABELS[meal.day_of_week] ?? meal.day_of_week}

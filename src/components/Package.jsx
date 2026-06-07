@@ -197,7 +197,7 @@ const ClassificationBadge = ({ classification }) => {
 
 // ── RecipePackageCard ─────────────────────────────────────────────────────────
 
-const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver, onUnpack }) => {
+const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver, onUnpack, selectedIds, onToggleId }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
   const hasPending = recipe.pendingUnits > 0;
   const hasPacked = recipe.packedUnits > 0;
@@ -323,6 +323,14 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                       }`}
                     >
                       <div className="flex items-center gap-2 flex-wrap">
+                        {onToggleId && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds?.has(entry.id_order_day) ?? false}
+                            onChange={() => onToggleId(entry.id_order_day)}
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
+                          />
+                        )}
                         {entry.quantity > 1 && (
                           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                             ×{entry.quantity}
@@ -377,7 +385,7 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
 
 // ── OrderPackageCard ──────────────────────────────────────────────────────────
 
-const OrderPackageCard = ({ order, onDeliver }) => {
+const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const packedOrderDayIds = useMemo(
@@ -455,6 +463,14 @@ const OrderPackageCard = ({ order, onDeliver }) => {
               }`}
             >
               <div className="flex items-center gap-2 flex-wrap">
+                {onToggleId && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds?.has(dish.id_order_day) ?? false}
+                    onChange={() => onToggleId(dish.id_order_day)}
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
+                  />
+                )}
                 {dish.quantity > 1 && (
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                     ×{dish.quantity}
@@ -512,6 +528,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
   const [expandedRecipes, setExpandedRecipes] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewMode, setViewMode] = useState('recipe'); // 'recipe' | 'order'
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const allDays = useMemo(
     () => [...(pendingDays ?? []), ...(packedDays ?? [])],
@@ -534,6 +551,32 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
       ),
     [groupedByRecipe]
   );
+
+  const pendingIdSet = useMemo(() => new Set((pendingDays ?? []).map((d) => d.id_order_day)), [pendingDays]);
+  const packedIdSet = useMemo(() => new Set((packedDays ?? []).map((d) => d.id_order_day)), [packedDays]);
+
+  const selectedPendingIds = useMemo(
+    () => [...selectedIds].filter((id) => pendingIdSet.has(id)),
+    [selectedIds, pendingIdSet]
+  );
+  const selectedPackedIds = useMemo(
+    () => [...selectedIds].filter((id) => packedIdSet.has(id)),
+    [selectedIds, packedIdSet]
+  );
+
+  const allItemIds = useMemo(() => allDays.map((d) => d.id_order_day), [allDays]);
+  const allSelected = allItemIds.length > 0 && allItemIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && allItemIds.some((id) => selectedIds.has(id));
+
+  const toggleId = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleAll = () => setSelectedIds(allSelected ? new Set() : new Set(allItemIds));
+  const clearSelection = () => setSelectedIds(new Set());
 
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
 
@@ -610,6 +653,66 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
         </button>
       )}
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-slate-800 dark:bg-slate-700 text-white rounded-2xl px-5 py-3 flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium flex-1 min-w-max">
+            {selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}
+          </span>
+          {selectedPendingIds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => { selectedPendingIds.forEach((id) => onPack(id)); clearSelection(); }}
+              className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
+            >
+              <Archive size={13} />
+              Empacar ({selectedPendingIds.length})
+            </button>
+          )}
+          {selectedPackedIds.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={() => { selectedPackedIds.forEach((id) => onDeliver(id)); clearSelection(); }}
+                className="flex items-center gap-1.5 text-xs font-medium bg-green-500/80 hover:bg-green-500 px-3 py-1.5 rounded-xl transition"
+              >
+                <Truck size={13} />
+                Entregar ({selectedPackedIds.length})
+              </button>
+              {onUnpack && (
+                <button
+                  type="button"
+                  onClick={() => { selectedPackedIds.forEach((id) => onUnpack(id)); clearSelection(); }}
+                  className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
+                >
+                  <Archive size={13} />
+                  Desempacar ({selectedPackedIds.length})
+                </button>
+              )}
+            </>
+          )}
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="text-white/60 hover:text-white transition text-lg leading-none px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Select all row */}
+      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 -mb-2">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(el) => { if (el) el.indeterminate = someSelected; }}
+          onChange={toggleAll}
+          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer"
+        />
+        <span>Seleccionar todos</span>
+      </div>
+
       {/* Cards */}
       {viewMode === 'recipe' ? (
         <div className="space-y-4">
@@ -625,13 +728,21 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
                 onPack={onPack}
                 onDeliver={onDeliver}
                 onUnpack={onUnpack}
+                selectedIds={selectedIds}
+                onToggleId={toggleId}
               />
             ))}
         </div>
       ) : (
         <div className="space-y-4">
           {groupedByOrder.map((order) => (
-            <OrderPackageCard key={order.id_order} order={order} onDeliver={onDeliver} />
+            <OrderPackageCard
+              key={order.id_order}
+              order={order}
+              onDeliver={onDeliver}
+              selectedIds={selectedIds}
+              onToggleId={toggleId}
+            />
           ))}
         </div>
       )}

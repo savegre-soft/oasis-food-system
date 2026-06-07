@@ -238,7 +238,7 @@ const ExpressView = ({
           (deliveredDays.length === 0 ? (
             <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
           ) : (
-            <EntregaView orderDays={deliveredDays} />
+            <EntregaView orderDays={deliveredDays} onUndeliver={markPacked} />
           ))}
       </div>
     </div>
@@ -613,7 +613,7 @@ const Production = () => {
                   onUnpack={markPending}
                 />
               )}
-              {activeTab === 'entrega' && <EntregaView orderDays={normalDelivered} />}
+              {activeTab === 'entrega' && <EntregaView orderDays={normalDelivered} onUndeliver={markPacked} />}
               {activeTab === 'express' && (
                 <ExpressView
                   pendingDays={expressPendingAll}
