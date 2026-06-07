@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Clock, Truck, CheckCircle } from 'lucide-react';
+import { Clock, Truck, CheckCircle, Archive } from 'lucide-react';
 import RecipeProductionCard from './RecipeProductionCard';
 import { MACRO_UNIT } from './orderUtils';
 
@@ -116,12 +116,34 @@ export const groupByRecipe = (orderDays) => {
 
 const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const grouped = useMemo(() => groupByRecipe(orderDays), [orderDays]);
   const totalPending = orderDays.length;
   const totalUnitsAll = Object.values(grouped).reduce((s, r) => s + r.totalUnits, 0);
 
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
+
+  const allMealIds = useMemo(
+    () =>
+      Object.values(grouped).flatMap((r) =>
+        r.clients.flatMap((c) => c.meals.flatMap((m) => m.orderDayIds ?? []))
+      ),
+    [grouped]
+  );
+  const allSelected = allMealIds.length > 0 && allMealIds.every((id) => selectedIds.has(id));
+  const someSelected = !allSelected && allMealIds.some((id) => selectedIds.has(id));
+
+  const toggleMeal = (ids) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allIn = ids.every((id) => next.has(id));
+      ids.forEach((id) => (allIn ? next.delete(id) : next.add(id)));
+      return next;
+    });
+
+  const toggleAll = () => setSelectedIds(allSelected ? new Set() : new Set(allMealIds));
+  const clearSelection = () => setSelectedIds(new Set());
 
   return (
     <div className="space-y-6">
@@ -151,18 +173,63 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
           <p>Todo empacado para este día</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {Object.entries(grouped).sort(([, a], [, b]) => a.recipe_name.localeCompare(b.recipe_name)).map(([variantKey, recipe]) => (
-            <RecipeProductionCard
-              key={variantKey}
-              variantKey={variantKey}
-              recipe={recipe}
-              isExpanded={expandedRecipes[variantKey] ?? false}
-              onToggle={toggle}
-              onPack={onPack}
+        <>
+          {/* Bulk action bar */}
+          {selectedIds.size > 0 && (
+            <div className="bg-slate-800 dark:bg-slate-700 text-white rounded-2xl px-5 py-3 flex items-center gap-3">
+              <span className="text-sm font-medium flex-1">
+                {selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  [...selectedIds].forEach((id) => onPack(id));
+                  clearSelection();
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
+              >
+                <Archive size={13} />
+                Empacar seleccionados
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-white/60 hover:text-white transition text-lg leading-none px-1"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Select all row */}
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 -mb-2">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              ref={(el) => { if (el) el.indeterminate = someSelected; }}
+              onChange={toggleAll}
+              className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer"
             />
-          ))}
-        </div>
+            <span>Seleccionar todos</span>
+          </div>
+
+          <div className="space-y-4">
+            {Object.entries(grouped)
+              .sort(([, a], [, b]) => a.recipe_name.localeCompare(b.recipe_name))
+              .map(([variantKey, recipe]) => (
+                <RecipeProductionCard
+                  key={variantKey}
+                  variantKey={variantKey}
+                  recipe={recipe}
+                  isExpanded={expandedRecipes[variantKey] ?? false}
+                  onToggle={toggle}
+                  onPack={onPack}
+                  selectedIds={selectedIds}
+                  onToggleMeal={toggleMeal}
+                />
+              ))}
+          </div>
+        </>
       )}
     </div>
   );
