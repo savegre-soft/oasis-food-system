@@ -26,12 +26,12 @@ const IngredientBadges = ({ ingredients }) => {
   );
 };
 
-const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, selectedIds, onToggleMeal }) => {
+const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onPackDetail, selectedIds, onToggleMeal }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
 
-  // IDs de todos los meals de esta receta para la casilla a nivel de tarjeta
+  // IDs (detail level) de todos los meals de esta receta para la casilla a nivel de tarjeta
   const recipeAllIds = (recipe.clients ?? []).flatMap((c) =>
-    c.meals.flatMap((m) => m.orderDayIds ?? [])
+    c.meals.map((m) => m.id_order_day_detail)
   );
   const recipeAllSelected =
     onToggleMeal && recipeAllIds.length > 0 && recipeAllIds.every((id) => selectedIds?.has(id));
@@ -135,9 +135,7 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                   <button
                     type="button"
                     onClick={() =>
-                      (client.meals ?? [])
-                        .flatMap((m) => m.orderDayIds ?? [])
-                        .forEach((id) => onPack(id))
+                      onPackDetail((client.meals ?? []).map((m) => m.id_order_day_detail))
                     }
                     className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition shrink-0 ml-4"
                   >
@@ -152,17 +150,14 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                 {(client.meals ?? []).map((meal, mIndex) => (
                   <div
                     key={mIndex}
-                    className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2"
+                    className="flex items-center justify-between rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
                       {onToggleMeal && (
                         <input
                           type="checkbox"
-                          checked={
-                            (meal.orderDayIds ?? []).length > 0 &&
-                            (meal.orderDayIds ?? []).every((id) => selectedIds?.has(id))
-                          }
-                          onChange={() => onToggleMeal(meal.orderDayIds ?? [])}
+                          checked={selectedIds?.has(meal.id_order_day_detail) ?? false}
+                          onChange={() => onToggleMeal([meal.id_order_day_detail])}
                           className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
                         />
                       )}
@@ -194,7 +189,7 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                     </div>
                     <button
                       type="button"
-                      onClick={() => (meal.orderDayIds ?? []).forEach((id) => onPack(id))}
+                      onClick={() => onPackDetail(meal.id_order_day_detail)}
                       className="flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 px-3 py-1.5 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition shrink-0 ml-3"
                     >
                       <Archive size={13} />

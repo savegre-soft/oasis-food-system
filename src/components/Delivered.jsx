@@ -76,7 +76,7 @@ const ClientDeliveredCard = ({ client, onUndeliver, selectedIds, onToggleId }) =
         {onUndeliver && (
           <button
             type="button"
-            onClick={() => client.orderDays.forEach((od) => onUndeliver(od.id_order_day))}
+            onClick={() => onUndeliver(client.orderDays.map((od) => od.id_order_day))}
             className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl transition shrink-0"
           >
             <Archive size={12} />
@@ -98,7 +98,7 @@ const ClientDeliveredCard = ({ client, onUndeliver, selectedIds, onToggleId }) =
                 {onUndeliver && (
                   <button
                     type="button"
-                    onClick={() => group.ods.forEach((od) => onUndeliver(od.id_order_day))}
+                    onClick={() => onUndeliver(group.ods.map((od) => od.id_order_day))}
                     className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
                   >
                     <Archive size={11} />
@@ -197,7 +197,7 @@ const EntregaView = ({ orderDays, onUndeliver }) => {
           <button
             type="button"
             onClick={() => {
-              [...selectedIds].forEach((id) => onUndeliver?.(id));
+              onUndeliver?.([...selectedIds]);
               clearSelection();
             }}
             className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
