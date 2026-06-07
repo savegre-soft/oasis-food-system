@@ -25,7 +25,9 @@ const ingredientFingerprint = (ingredients) =>
     .map((cat) => `${cat}:${[...(ingredients[cat] ?? [])].sort().join(',')}`)
     .join('|');
 
-export const groupByRecipe = (orderDays) => {
+// filterStatus: when set, only details with that status are included (used by CocinaView
+// to skip already-PACKED details of 'ambos' orders whose order_day is still PENDING).
+export const groupByRecipe = (orderDays, { filterStatus = null } = {}) => {
   const grouped = {};
 
   for (const orderDay of orderDays) {
@@ -35,6 +37,7 @@ export const groupByRecipe = (orderDays) => {
     const classification = orderDay.orders.classification;
 
     for (const detail of orderDay.order_day_details ?? []) {
+      if (filterStatus && detail.status !== filterStatus) continue;
       const recipe = detail.recipes;
       const recipeId = recipe?.id_recipe;
       const recipeName = recipe?.name ?? '(sin nombre)';
@@ -70,6 +73,7 @@ export const groupByRecipe = (orderDays) => {
       if (!g.clients[clientName].meals[mealKey]) {
         g.clients[clientName].meals[mealKey] = {
           id_order_day: orderDay.id_order_day,
+          id_order_day_detail: detail.id_order_day_detail,
           day_of_week: orderDay.day_of_week,
           classification,
           quantity: 0,
@@ -114,21 +118,21 @@ export const groupByRecipe = (orderDays) => {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
+const CocinaView = ({ orderDays, onPack, onPackDetail, DAY_LABELS }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
   const [selectedIds, setSelectedIds] = useState(new Set());
 
-  const grouped = useMemo(() => groupByRecipe(orderDays), [orderDays]);
+  const grouped = useMemo(() => groupByRecipe(orderDays, { filterStatus: 'PENDING' }), [orderDays]);
   const totalPending = orderDays.length;
   const totalUnitsAll = Object.values(grouped).reduce((s, r) => s + r.totalUnits, 0);
 
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
 
+  // Each detail is unique per recipe group, no deduplication needed
   const allMealIds = useMemo(
-    () =>
-      Object.values(grouped).flatMap((r) =>
-        r.clients.flatMap((c) => c.meals.flatMap((m) => m.orderDayIds ?? []))
-      ),
+    () => Object.values(grouped).flatMap((r) =>
+      r.clients.flatMap((c) => c.meals.map((m) => m.id_order_day_detail))
+    ),
     [grouped]
   );
   const allSelected = allMealIds.length > 0 && allMealIds.every((id) => selectedIds.has(id));
@@ -200,7 +204,7 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
               <>
                 <button
                   type="button"
-                  onClick={() => { [...selectedIds].forEach((id) => onPack(id)); clearSelection(); }}
+                  onClick={() => { onPackDetail([...selectedIds]); clearSelection(); }}
                   className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition ml-auto"
                 >
                   <Archive size={13} />
@@ -228,6 +232,7 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
                   isExpanded={expandedRecipes[variantKey] ?? false}
                   onToggle={toggle}
                   onPack={onPack}
+                  onPackDetail={onPackDetail}
                   selectedIds={selectedIds}
                   onToggleMeal={toggleMeal}
                 />

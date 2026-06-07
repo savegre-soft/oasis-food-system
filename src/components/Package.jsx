@@ -57,13 +57,13 @@ const groupByRecipeForPackage = (allDays) => {
     if (!orderDay.orders?.clients) continue;
     const clientName = orderDay.orders.clients.name;
     const classification = orderDay.orders.classification;
-    const status = orderDay.status;
 
     for (const detail of orderDay.order_day_details ?? []) {
       const recipe = detail.recipes;
       const recipeId = recipe?.id_recipe;
       const recipeName = recipe?.name ?? '(sin nombre)';
       const qty = detail.quantity ?? 1;
+      const detailStatus = detail.status ?? orderDay.status;
 
       const { ingredients, isOverridden } = buildEffectiveIngredients(
         detail.order_day_recipe_overrides,
@@ -86,7 +86,7 @@ const groupByRecipeForPackage = (allDays) => {
 
       const g = grouped[variantKey];
       g.totalUnits += qty;
-      if (status === 'PACKED') g.packedUnits += qty;
+      if (detailStatus === 'PACKED') g.packedUnits += qty;
       else g.pendingUnits += qty;
 
       if (!g.clients[clientName]) {
@@ -95,8 +95,9 @@ const groupByRecipeForPackage = (allDays) => {
 
       g.clients[clientName].entries.push({
         id_order_day: orderDay.id_order_day,
+        id_order_day_detail: detail.id_order_day_detail,
         id_order: orderDay.orders?.id_order,
-        status,
+        status: detailStatus,
         classification,
         quantity: qty,
       });
@@ -123,7 +124,6 @@ const groupByOrder = (allDays) => {
     const id_order = orderDay.orders.id_order;
     const clientName = orderDay.orders.clients.name;
     const classification = orderDay.orders.classification;
-    const status = orderDay.status;
 
     if (!grouped[id_order]) {
       grouped[id_order] = {
@@ -142,6 +142,7 @@ const groupByOrder = (allDays) => {
       const recipe = detail.recipes;
       const recipeName = recipe?.name ?? '(sin nombre)';
       const qty = detail.quantity ?? 1;
+      const detailStatus = detail.status ?? orderDay.status;
 
       const { ingredients, isOverridden } = buildEffectiveIngredients(
         detail.order_day_recipe_overrides,
@@ -149,12 +150,13 @@ const groupByOrder = (allDays) => {
       );
 
       g.totalUnits += qty;
-      if (status === 'PACKED') g.packedUnits += qty;
+      if (detailStatus === 'PACKED') g.packedUnits += qty;
       else g.pendingUnits += qty;
 
       g.dishes.push({
         id_order_day: orderDay.id_order_day,
-        status,
+        id_order_day_detail: detail.id_order_day_detail,
+        status: detailStatus,
         recipe_name: recipeName,
         quantity: qty,
         classification,
@@ -197,17 +199,17 @@ const ClassificationBadge = ({ classification }) => {
 
 // ── RecipePackageCard ─────────────────────────────────────────────────────────
 
-const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onDeliver, onUnpack, selectedIds, onToggleId, onToggleIds }) => {
+const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onDeliverDetail, onUnpackDetail, selectedIds, onToggleId, onToggleIds }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
   const hasPending = recipe.pendingUnits > 0;
   const hasPacked = recipe.packedUnits > 0;
 
   const allPackedIds = (recipe.clients ?? []).flatMap((c) =>
-    c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day)
+    c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day_detail)
   );
 
   const recipeAllIds = (recipe.clients ?? []).flatMap((c) =>
-    c.entries.map((e) => e.id_order_day)
+    c.entries.map((e) => e.id_order_day_detail)
   );
   const recipeAllSelected =
     onToggleIds && recipeAllIds.length > 0 && recipeAllIds.every((id) => selectedIds?.has(id));
@@ -281,7 +283,7 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
           {hasPacked && (
             <button
               type="button"
-              onClick={() => allPackedIds.forEach((id) => onDeliver(id))}
+              onClick={() => onDeliverDetail(allPackedIds)}
               className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-xl transition"
             >
               <Truck size={12} />
@@ -304,7 +306,7 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
           {(recipe.clients ?? []).map((client, idx) => {
             const clientPackedIds = client.entries
               .filter((e) => e.status === 'PACKED')
-              .map((e) => e.id_order_day);
+              .map((e) => e.id_order_day_detail);
             const clientHasPacked = clientPackedIds.length > 0;
 
             return (
@@ -321,7 +323,7 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                   {clientHasPacked && client.entries.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => clientPackedIds.forEach((id) => onDeliver(id))}
+                      onClick={() => onDeliverDetail(clientPackedIds)}
                       className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 px-2.5 py-1 rounded-xl transition shrink-0"
                     >
                       <Truck size={11} />
@@ -344,8 +346,8 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                         {onToggleId && (
                           <input
                             type="checkbox"
-                            checked={selectedIds?.has(entry.id_order_day) ?? false}
-                            onChange={() => onToggleId(entry.id_order_day)}
+                            checked={selectedIds?.has(entry.id_order_day_detail) ?? false}
+                            onChange={() => onToggleId(entry.id_order_day_detail)}
                             className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
                           />
                         )}
@@ -369,10 +371,10 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                       </div>
                       {entry.status === 'PACKED' && (
                         <div className="flex items-center gap-1.5 ml-3 shrink-0">
-                          {onUnpack && (
+                          {onUnpackDetail && (
                             <button
                               type="button"
-                              onClick={() => onUnpack(entry.id_order_day)}
+                              onClick={() => onUnpackDetail(entry.id_order_day_detail)}
                               className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl transition"
                             >
                               <Archive size={12} />
@@ -381,7 +383,7 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
                           )}
                           <button
                             type="button"
-                            onClick={() => onDeliver(entry.id_order_day)}
+                            onClick={() => onDeliverDetail(entry.id_order_day_detail)}
                             className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 px-3 py-1.5 rounded-xl transition"
                           >
                             <Truck size={12} />
@@ -403,17 +405,17 @@ const RecipePackageCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, o
 
 // ── OrderPackageCard ──────────────────────────────────────────────────────────
 
-const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId, onToggleIds }) => {
+const OrderPackageCard = ({ order, onDeliverDetail, selectedIds, onToggleId, onToggleIds }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const packedOrderDayIds = useMemo(
-    () => [...new Set(order.dishes.filter((d) => d.status === 'PACKED').map((d) => d.id_order_day))],
+  const packedDetailIds = useMemo(
+    () => order.dishes.filter((d) => d.status === 'PACKED').map((d) => d.id_order_day_detail),
     [order.dishes]
   );
-  const hasPacked = packedOrderDayIds.length > 0;
+  const hasPacked = packedDetailIds.length > 0;
 
   const orderAllIds = useMemo(
-    () => [...new Set(order.dishes.map((d) => d.id_order_day))],
+    () => order.dishes.map((d) => d.id_order_day_detail),
     [order.dishes]
   );
   const orderAllSelected =
@@ -472,7 +474,7 @@ const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId, onToggleI
           {hasPacked && (
             <button
               type="button"
-              onClick={() => packedOrderDayIds.forEach((id) => onDeliver(id))}
+              onClick={() => onDeliverDetail(packedDetailIds)}
               className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-xl transition"
             >
               <Truck size={12} />
@@ -503,8 +505,8 @@ const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId, onToggleI
                 {onToggleId && (
                   <input
                     type="checkbox"
-                    checked={selectedIds?.has(dish.id_order_day) ?? false}
-                    onChange={() => onToggleId(dish.id_order_day)}
+                    checked={selectedIds?.has(dish.id_order_day_detail) ?? false}
+                    onChange={() => onToggleId(dish.id_order_day_detail)}
                     className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
                   />
                 )}
@@ -532,7 +534,7 @@ const OrderPackageCard = ({ order, onDeliver, selectedIds, onToggleId, onToggleI
               {dish.status === 'PACKED' && (
                 <button
                   type="button"
-                  onClick={() => onDeliver(dish.id_order_day)}
+                  onClick={() => onDeliverDetail(dish.id_order_day_detail)}
                   className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 px-3 py-1.5 rounded-xl transition shrink-0 ml-3"
                 >
                   <Truck size={12} />
@@ -561,7 +563,7 @@ const StatCard = ({ icon, label, value }) => (
 
 // ── EmpaqueView ───────────────────────────────────────────────────────────────
 
-const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) => {
+const EmpaqueView = ({ pendingDays, packedDays, onPack, onPackDetail, onDeliver, onDeliverDetail, onUnpack, onUnpackDetail }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewMode, setViewMode] = useState('recipe'); // 'recipe' | 'order'
@@ -579,29 +581,46 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
   const totalPacked = Object.values(groupedByRecipe).reduce((s, r) => s + r.packedUnits, 0);
   const totalPending = Object.values(groupedByRecipe).reduce((s, r) => s + r.pendingUnits, 0);
 
-  const allPackedIds = useMemo(
+  const allPackedDetailIds = useMemo(
     () =>
       Object.values(groupedByRecipe).flatMap((r) =>
         r.clients.flatMap((c) =>
-          c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day)
+          c.entries.filter((e) => e.status === 'PACKED').map((e) => e.id_order_day_detail)
         )
       ),
     [groupedByRecipe]
   );
 
-  const pendingIdSet = useMemo(() => new Set((pendingDays ?? []).map((d) => d.id_order_day)), [pendingDays]);
-  const packedIdSet = useMemo(() => new Set((packedDays ?? []).map((d) => d.id_order_day)), [packedDays]);
+  // Detail-level ID sets for context-sensitive bulk actions
+  const pendingDetailIds = useMemo(() => new Set(
+    allDays.flatMap((od) =>
+      (od.order_day_details ?? [])
+        .filter((d) => (d.status ?? od.status) === 'PENDING')
+        .map((d) => d.id_order_day_detail)
+    )
+  ), [allDays]);
+
+  const packedDetailIds = useMemo(() => new Set(
+    allDays.flatMap((od) =>
+      (od.order_day_details ?? [])
+        .filter((d) => (d.status ?? od.status) === 'PACKED')
+        .map((d) => d.id_order_day_detail)
+    )
+  ), [allDays]);
 
   const selectedPendingIds = useMemo(
-    () => [...selectedIds].filter((id) => pendingIdSet.has(id)),
-    [selectedIds, pendingIdSet]
+    () => [...selectedIds].filter((id) => pendingDetailIds.has(id)),
+    [selectedIds, pendingDetailIds]
   );
   const selectedPackedIds = useMemo(
-    () => [...selectedIds].filter((id) => packedIdSet.has(id)),
-    [selectedIds, packedIdSet]
+    () => [...selectedIds].filter((id) => packedDetailIds.has(id)),
+    [selectedIds, packedDetailIds]
   );
 
-  const allItemIds = useMemo(() => allDays.map((d) => d.id_order_day), [allDays]);
+  const allItemIds = useMemo(
+    () => [...pendingDetailIds, ...packedDetailIds],
+    [pendingDetailIds, packedDetailIds]
+  );
   const allSelected = allItemIds.length > 0 && allItemIds.every((id) => selectedIds.has(id));
   const someSelected = !allSelected && allItemIds.some((id) => selectedIds.has(id));
 
@@ -627,7 +646,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
   const toggle = (key) => setExpandedRecipes((p) => ({ ...p, [key]: !p[key] }));
 
   const handleDeliverAll = () => {
-    allPackedIds.forEach((id) => onDeliver(id));
+    onDeliverDetail(allPackedDetailIds);
     setShowConfirm(false);
   };
 
@@ -688,14 +707,14 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
       </div>
 
       {/* Global deliver all button */}
-      {totalPacked > 0 && (
+      {allPackedDetailIds.length > 0 && (
         <button
           type="button"
           onClick={() => setShowConfirm(true)}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-semibold text-sm hover:bg-green-100 dark:hover:bg-green-900/30 transition"
         >
           <Truck size={15} />
-          Entregar todo ({totalPacked} pedido{totalPacked !== 1 ? 's' : ''})
+          Entregar todo ({allPackedDetailIds.length} pedido{allPackedDetailIds.length !== 1 ? 's' : ''})
         </button>
       )}
 
@@ -726,7 +745,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
             {selectedPendingIds.length > 0 && (
               <button
                 type="button"
-                onClick={() => { selectedPendingIds.forEach((id) => onPack(id)); clearSelection(); }}
+                onClick={() => { onPackDetail(selectedPendingIds); clearSelection(); }}
                 className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition ml-auto"
               >
                 <Archive size={13} />
@@ -737,16 +756,16 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
               <>
                 <button
                   type="button"
-                  onClick={() => { selectedPackedIds.forEach((id) => onDeliver(id)); clearSelection(); }}
+                  onClick={() => { onDeliverDetail(selectedPackedIds); clearSelection(); }}
                   className={`flex items-center gap-1.5 text-xs font-medium bg-green-500/80 hover:bg-green-500 px-3 py-1.5 rounded-xl transition ${selectedPendingIds.length === 0 ? 'ml-auto' : ''}`}
                 >
                   <Truck size={13} />
                   Entregar ({selectedPackedIds.length})
                 </button>
-                {onUnpack && (
+                {onUnpackDetail && (
                   <button
                     type="button"
-                    onClick={() => { selectedPackedIds.forEach((id) => onUnpack(id)); clearSelection(); }}
+                    onClick={() => { onUnpackDetail(selectedPackedIds); clearSelection(); }}
                     className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
                   >
                     <Archive size={13} />
@@ -778,9 +797,8 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
                 recipe={recipe}
                 isExpanded={expandedRecipes[variantKey] ?? false}
                 onToggle={toggle}
-                onPack={onPack}
-                onDeliver={onDeliver}
-                onUnpack={onUnpack}
+                onDeliverDetail={onDeliverDetail}
+                onUnpackDetail={onUnpackDetail}
                 selectedIds={selectedIds}
                 onToggleId={toggleId}
                 onToggleIds={toggleIds}
@@ -793,7 +811,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
             <OrderPackageCard
               key={order.id_order}
               order={order}
-              onDeliver={onDeliver}
+              onDeliverDetail={onDeliverDetail}
               selectedIds={selectedIds}
               onToggleId={toggleId}
               onToggleIds={toggleIds}
@@ -816,7 +834,7 @@ const EmpaqueView = ({ pendingDays, packedDays, onPack, onDeliver, onUnpack }) =
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Se marcarán como entregados{' '}
                 <span className="font-semibold text-slate-700 dark:text-slate-300">
-                  {totalPacked} pedido{totalPacked !== 1 ? 's' : ''}
+                  {allPackedDetailIds.length} pedido{allPackedDetailIds.length !== 1 ? 's' : ''}
                 </span>{' '}
                 empacados. Esta acción no se puede deshacer.
               </p>

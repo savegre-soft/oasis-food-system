@@ -85,6 +85,7 @@ const ORDER_DAY_SELECT = `
   ),
   order_day_details (
     id_order_day_detail,
+    status,
     quantity,
     protein_value_applied,
     carb_value_applied,
@@ -168,8 +169,11 @@ const ExpressView = ({
   packedDays,
   deliveredDays,
   onPack,
+  onPackDetail,
   onDeliver,
+  onDeliverDetail,
   onUnpack,
+  onUnpackDetail,
   expressTab,
   setExpressTab,
   todayStr,
@@ -226,13 +230,13 @@ const ExpressView = ({
           (pendingDays.length === 0 ? (
             <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
           ) : (
-            <CocinaView orderDays={pendingDays} onPack={onPack} DAY_LABELS={DAY_LABELS} />
+            <CocinaView orderDays={pendingDays} onPack={onPack} onPackDetail={onPackDetail} DAY_LABELS={DAY_LABELS} />
           ))}
         {expressTab === 'empaque' &&
           (pendingDays.length === 0 && packedDays.length === 0 ? (
             <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
           ) : (
-            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onPack={onPack} onDeliver={onDeliver} onUnpack={onUnpack} />
+            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onPack={onPack} onPackDetail={onPackDetail} onDeliver={onDeliver} onDeliverDetail={onDeliverDetail} onUnpack={onUnpack} onUnpackDetail={onUnpackDetail} />
           ))}
         {expressTab === 'entrega' &&
           (deliveredDays.length === 0 ? (
@@ -419,12 +423,19 @@ const Production = () => {
 
   // ── Status transitions ─────────────────────────────────────────────────────────
 
-  const updateStatus = async (orderDayId, newStatus, successMsg) => {
-    const { error } = await supabase
+  // Bulk: update ALL details of one or many order_days (trigger auto-syncs order_days.status)
+  const updateAllDetailsStatus = async (orderDayIdOrIds, newStatus, successMsg) => {
+    const ids = Array.isArray(orderDayIdOrIds) ? orderDayIdOrIds : [orderDayIdOrIds];
+    if (ids.length === 0) return;
+
+    const query = supabase
       .schema('operations')
-      .from('order_days')
-      .update({ status: newStatus })
-      .eq('id_order_day', orderDayId);
+      .from('order_day_details')
+      .update({ status: newStatus });
+
+    const { error } = ids.length === 1
+      ? await query.eq('order_day_id', ids[0])
+      : await query.in('order_day_id', ids);
 
     if (error) {
       sileo.error('Error al actualizar el estado');
@@ -435,9 +446,38 @@ const Production = () => {
     await refresh();
   };
 
-  const markPacked = (id) => updateStatus(id, 'PACKED', '📦 Marcado como empacado');
-  const markDelivered = (id) => updateStatus(id, 'DELIVERED', '🚚 Entrega registrada');
-  const markPending = (id) => updateStatus(id, 'PENDING', 'Devuelto a pendiente');
+  // Per-detail: update one OR many order_day_details in a single query
+  const updateDetailStatus = async (idOrIds, newStatus, msgOne, msgMany) => {
+    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+    if (ids.length === 0) return;
+
+    const query = supabase
+      .schema('operations')
+      .from('order_day_details')
+      .update({ status: newStatus });
+
+    const { error } = ids.length === 1
+      ? await query.eq('id_order_day_detail', ids[0])
+      : await query.in('id_order_day_detail', ids);
+
+    if (error) {
+      sileo.error('Error al actualizar el estado');
+      console.error(error);
+      return;
+    }
+    sileo.success(ids.length === 1 ? msgOne : (msgMany ?? msgOne));
+    await refresh();
+  };
+
+  // Bulk handlers (order_day level — for "Devolver toda la orden", bulk selection bar, etc.)
+  const markPacked = (id) => updateAllDetailsStatus(id, 'PACKED', '📦 Marcado como empacado');
+  const markDelivered = (id) => updateAllDetailsStatus(id, 'DELIVERED', '🚚 Entrega registrada');
+  const markPending = (id) => updateAllDetailsStatus(id, 'PENDING', 'Devuelto a pendiente');
+
+  // Per-detail handlers — accept a single ID or an array; bulk path makes 1 DB call + 1 refresh
+  const markPackedDetail = (idOrIds) => updateDetailStatus(idOrIds, 'PACKED', '📦 Plato empacado', '📦 Platos empacados');
+  const markDeliveredDetail = (idOrIds) => updateDetailStatus(idOrIds, 'DELIVERED', '🚚 Plato entregado', '🚚 Platos entregados');
+  const markPendingDetail = (idOrIds) => updateDetailStatus(idOrIds, 'PENDING', 'Plato devuelto a cocina', 'Platos devueltos a cocina');
 
   // ── Filters ────────────────────────────────────────────────────────────────────
 
@@ -602,15 +642,18 @@ const Production = () => {
           ) : (
             <div className="transition-opacity duration-300">
               {activeTab === 'cocina' && (
-                <CocinaView orderDays={normalPending} onPack={markPacked} DAY_LABELS={DAY_LABELS} />
+                <CocinaView orderDays={normalPending} onPack={markPacked} onPackDetail={markPackedDetail} DAY_LABELS={DAY_LABELS} />
               )}
               {activeTab === 'empaque' && (
                 <EmpaqueView
                   pendingDays={normalPending}
                   packedDays={normalPacked}
                   onPack={markPacked}
+                  onPackDetail={markPackedDetail}
                   onDeliver={markDelivered}
+                  onDeliverDetail={markDeliveredDetail}
                   onUnpack={markPending}
+                  onUnpackDetail={markPendingDetail}
                 />
               )}
               {activeTab === 'entrega' && <EntregaView orderDays={normalDelivered} onUndeliver={markPacked} />}
@@ -620,8 +663,11 @@ const Production = () => {
                   packedDays={expressPackedAll}
                   deliveredDays={expressDeliveredAll}
                   onPack={markPacked}
+                  onPackDetail={markPackedDetail}
                   onDeliver={markDelivered}
+                  onDeliverDetail={markDeliveredDetail}
                   onUnpack={markPending}
+                  onUnpackDetail={markPendingDetail}
                   expressTab={expressTab}
                   setExpressTab={setExpressTab}
                   todayStr={todayStr}
