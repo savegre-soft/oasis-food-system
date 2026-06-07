@@ -29,17 +29,38 @@ const IngredientBadges = ({ ingredients }) => {
 const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, selectedIds, onToggleMeal }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
 
+  // IDs de todos los meals de esta receta para la casilla a nivel de tarjeta
+  const recipeAllIds = (recipe.clients ?? []).flatMap((c) =>
+    c.meals.flatMap((m) => m.orderDayIds ?? [])
+  );
+  const recipeAllSelected =
+    onToggleMeal && recipeAllIds.length > 0 && recipeAllIds.every((id) => selectedIds?.has(id));
+  const recipeSomeSelected =
+    onToggleMeal && !recipeAllSelected && recipeAllIds.some((id) => selectedIds?.has(id));
+
   return (
     <div
       className={`bg-white dark:bg-slate-900 rounded-2xl shadow-sm border overflow-hidden ${recipe.isOverridden ? 'border-blue-200 dark:border-blue-800' : 'border-slate-100 dark:border-slate-800'}`}
     >
       {/* Header */}
-      <button
-        type="button"
-        onClick={() => onToggle(variantKey)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-      >
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+      <div className="flex items-center gap-2 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+        {/* Casilla a nivel de receta */}
+        {onToggleMeal && (
+          <input
+            type="checkbox"
+            checked={recipeAllSelected}
+            ref={(el) => { if (el) el.indeterminate = recipeSomeSelected; }}
+            onChange={() => onToggleMeal(recipeAllIds)}
+            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer shrink-0"
+          />
+        )}
+
+        {/* Botón de expansión */}
+        <button
+          type="button"
+          onClick={() => onToggle(variantKey)}
+          className="flex items-center gap-4 flex-1 min-w-0 text-left"
+        >
           <div
             className={`text-white rounded-xl px-3 py-1.5 text-sm font-bold min-w-[48px] text-center shrink-0 ${accentColor}`}
           >
@@ -78,13 +99,20 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
               )}
             </div>
           </div>
-        </div>
-        {isExpanded ? (
-          <ChevronUp size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-2" />
-        ) : (
-          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-2" />
-        )}
-      </button>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onToggle(variantKey)}
+          className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition p-1 shrink-0"
+        >
+          {isExpanded ? (
+            <ChevronUp size={16} />
+          ) : (
+            <ChevronDown size={16} />
+          )}
+        </button>
+      </div>
 
       {/* Clientes */}
       {isExpanded && (

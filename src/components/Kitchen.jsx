@@ -174,43 +174,47 @@ const CocinaView = ({ orderDays, onPack, DAY_LABELS }) => {
         </div>
       ) : (
         <>
-          {/* Bulk action bar */}
-          {selectedIds.size > 0 && (
-            <div className="bg-slate-800 dark:bg-slate-700 text-white rounded-2xl px-5 py-3 flex items-center gap-3">
-              <span className="text-sm font-medium flex-1">
-                {selectedIds.size} seleccionado{selectedIds.size !== 1 ? 's' : ''}
+          {/* Barra combinada: seleccionar todos / acciones masivas */}
+          <div
+            className={`rounded-2xl px-5 py-3 flex items-center gap-3 transition-colors ${
+              selectedIds.size > 0
+                ? 'bg-slate-800 dark:bg-slate-700 text-white'
+                : 'bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                onChange={toggleAll}
+                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer"
+              />
+              <span className="text-sm font-medium">
+                {selectedIds.size > 0
+                  ? `${selectedIds.size} seleccionado${selectedIds.size !== 1 ? 's' : ''}`
+                  : 'Seleccionar todos'}
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  [...selectedIds].forEach((id) => onPack(id));
-                  clearSelection();
-                }}
-                className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition"
-              >
-                <Archive size={13} />
-                Empacar seleccionados
-              </button>
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="text-white/60 hover:text-white transition text-lg leading-none px-1"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
-          {/* Select all row */}
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 -mb-2">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              ref={(el) => { if (el) el.indeterminate = someSelected; }}
-              onChange={toggleAll}
-              className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-orange-500 focus:ring-orange-400 cursor-pointer"
-            />
-            <span>Seleccionar todos</span>
+            </label>
+            {selectedIds.size > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => { [...selectedIds].forEach((id) => onPack(id)); clearSelection(); }}
+                  className="flex items-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl transition ml-auto"
+                >
+                  <Archive size={13} />
+                  Empacar seleccionados
+                </button>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  className="text-white/60 hover:text-white transition text-lg leading-none px-1"
+                >
+                  ✕
+                </button>
+              </>
+            )}
           </div>
 
           <div className="space-y-4">
