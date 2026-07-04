@@ -12,14 +12,20 @@ const StepPayment = ({
   availableMonthly,
   associatePaymentId,
   setAssociatePaymentId,
-}) => (
+  explicitNewPayment,
+  setExplicitNewPayment,
+}) => {
+  const hasMonthlyOptions = paymentType === 'monthly' && availableMonthly.length > 0;
+  const showNewPaymentForm = associatePaymentId === null && (!hasMonthlyOptions || explicitNewPayment);
+
+  return (
   <div className="space-y-5">
     <p className="text-sm text-slate-500 dark:text-slate-400">
       Registra el pago asociado a este pedido.
     </p>
 
     {/* Available monthly payments */}
-    {paymentType === 'monthly' && availableMonthly.length > 0 && (
+    {hasMonthlyOptions && (
       <div className="border border-violet-200 dark:border-violet-800/50 bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 space-y-2">
         <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 uppercase tracking-wide">
           Pago mensual disponible
@@ -37,7 +43,10 @@ const StepPayment = ({
               <button
                 key={mp.id_payment}
                 type="button"
-                onClick={() => setAssociatePaymentId(isSelected ? null : mp.id_payment)}
+                onClick={() => {
+                  setAssociatePaymentId(isSelected ? null : mp.id_payment);
+                  setExplicitNewPayment(false);
+                }}
                 className={`w-full text-left px-3 py-2.5 rounded-xl border text-sm transition ${
                   isSelected
                     ? 'bg-violet-600 border-violet-600 text-white'
@@ -54,9 +63,12 @@ const StepPayment = ({
         </div>
         <button
           type="button"
-          onClick={() => setAssociatePaymentId(null)}
+          onClick={() => {
+            setAssociatePaymentId(null);
+            setExplicitNewPayment(true);
+          }}
           className={`text-xs underline transition ${
-            associatePaymentId === null
+            explicitNewPayment
               ? 'text-violet-800 dark:text-violet-400 font-semibold'
               : 'text-violet-500 dark:text-violet-500 hover:text-violet-700 dark:hover:text-violet-300'
           }`}
@@ -67,7 +79,7 @@ const StepPayment = ({
     )}
 
     {/* New payment form */}
-    {associatePaymentId === null && (
+    {showNewPaymentForm && (
       <>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -139,6 +151,7 @@ const StepPayment = ({
           <div className="flex gap-2">
             {[
               ['pending', 'Pendiente'],
+              ['paid', 'Pagado'],
               ['cancelled', 'Cancelado'],
             ].map(([val, lbl]) => (
               <button
@@ -149,7 +162,9 @@ const StepPayment = ({
                   paymentStatus === val
                     ? val === 'pending'
                       ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400 dark:border-yellow-700 text-yellow-800 dark:text-yellow-400'
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700 text-red-800 dark:text-red-400'
+                      : val === 'paid'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-400 dark:border-emerald-700 text-emerald-800 dark:text-emerald-400'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-400 dark:border-red-700 text-red-800 dark:text-red-400'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >
@@ -174,6 +189,7 @@ const StepPayment = ({
       </>
     )}
   </div>
-);
+  );
+};
 
 export default StepPayment;

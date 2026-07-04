@@ -16,7 +16,7 @@ const PaymentStats = ({ chartRange, setChartRange, chartData, chartPayments }) =
   } = chartData;
 
   const periodLabel = `${chartRange.from} → ${chartRange.to}`;
-  const totalWithCancelled = totalChart + cancelledChart;
+  const grandTotal = totalChart + pendingChart + cancelledChart;
 
   return (
     <div className="space-y-5">
@@ -25,24 +25,24 @@ const PaymentStats = ({ chartRange, setChartRange, chartData, chartPayments }) =
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Total en el período</p>
-          <p className="text-2xl font-bold text-slate-800">{fmtCRC(totalChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{paymentCount} pago{paymentCount !== 1 ? 's' : ''} (sin cancelados)</p>
+          <p className="text-xs text-gray-500 mb-1">Pagado en el período</p>
+          <p className="text-2xl font-bold text-emerald-600">{fmtCRC(totalChart)}</p>
+          <p className="text-xs text-gray-400 mt-1">{paymentCount} pago{paymentCount !== 1 ? 's' : ''} cobrado{paymentCount !== 1 ? 's' : ''}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-xs text-gray-500 mb-1">Pendientes</p>
           <p className="text-2xl font-bold text-amber-500">{fmtCRC(pendingChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{totalWithCancelled > 0 ? `${((pendingChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}</p>
+          <p className="text-xs text-gray-400 mt-1">{grandTotal > 0 ? `${((pendingChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-xs text-gray-500 mb-1">Cancelados</p>
           <p className="text-2xl font-bold text-red-500">{fmtCRC(cancelledChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{totalWithCancelled > 0 ? `${((cancelledChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}</p>
+          <p className="text-xs text-gray-400 mt-1">{grandTotal > 0 ? `${((cancelledChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Cantidad de pagos</p>
-          <p className="text-2xl font-bold text-slate-800">{chartPayments.length}</p>
-          <p className="text-xs text-gray-400 mt-1">{paymentCount} activos · {chartPayments.length - paymentCount} cancelados</p>
+          <p className="text-xs text-gray-500 mb-1">Total registrado</p>
+          <p className="text-2xl font-bold text-slate-800">{fmtCRC(grandTotal)}</p>
+          <p className="text-xs text-gray-400 mt-1">{chartPayments.length} pago{chartPayments.length !== 1 ? 's' : ''} en total</p>
         </div>
       </div>
 

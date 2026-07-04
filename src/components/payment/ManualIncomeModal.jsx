@@ -102,6 +102,7 @@ const ManualIncomeModal = ({ onClose, onSuccess }) => {
           <div className="flex gap-2">
             {[
               ['pending', 'Pendiente'],
+              ['paid', 'Pagado'],
               ['cancelled', 'Cancelado'],
             ].map(([val, lbl]) => (
               <button
@@ -112,7 +113,9 @@ const ManualIncomeModal = ({ onClose, onSuccess }) => {
                   status === val
                     ? val === 'pending'
                       ? 'bg-yellow-50 border-yellow-400 text-yellow-800'
-                      : 'bg-red-50 border-red-400 text-red-800'
+                      : val === 'paid'
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-800'
+                        : 'bg-red-50 border-red-400 text-red-800'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
                 }`}
               >

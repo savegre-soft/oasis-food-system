@@ -51,7 +51,7 @@ export const CATEGORY_COLORS = [
 ];
 
 export const TYPE_PIE_COLORS  = ['#6366f1', '#3b82f6', '#f59e0b'];
-export const STATUS_PIE_COLORS = ['#f59e0b', '#ef4444'];
+export const STATUS_PIE_COLORS = ['#f59e0b', '#10b981', '#ef4444']; // Pendiente, Pagado, Cancelado
 export const CLIENT_BAR_COLORS = [
   '#10b981', '#3b82f6', '#6366f1', '#f59e0b',
   '#f97316', '#a855f7', '#14b8a6', '#64748b',
@@ -68,10 +68,11 @@ export const CHART_PRESETS = [
 
 // ── Income stats builder ──────────────────────────────────────────────────────
 // Single source of truth for the income aggregations shown in the "Ingresos"
-// tab (Estadísticas) and the "Estadísticas" tab of Pagos. Payments with
-// status 'cancelled' represent money that was never actually received, so
-// they're excluded from every real-income bucket (day/type/client/week/total)
-// and only surfaced through pendingChart/cancelledChart for visibility.
+// tab (Estadísticas) and the "Estadísticas" tab of Pagos. Only payments with
+// status 'paid' represent money actually received, so only those count in
+// the real-income buckets (day/type/client/week/total). 'pending' (not yet
+// collected) and 'cancelled' (voided) are tracked separately for visibility
+// but excluded from the totals/charts.
 export const buildIncomeStats = (payments, dateRange) => {
   const dayMap = {};
   for (
@@ -83,14 +84,14 @@ export const buildIncomeStats = (payments, dateRange) => {
   }
 
   const typeMap = { monthly: 0, weekly: 0, express: 0, other: 0 };
-  const statusMap = { pending: 0, cancelled: 0 };
+  const statusMap = { pending: 0, paid: 0, cancelled: 0 };
   const clientMap = {};
   const weekMap = {};
 
   payments.forEach((p) => {
     const amt = p.amount || 0;
     if (p.status in statusMap) statusMap[p.status] += amt;
-    if (p.status === 'cancelled') return; // excluded from real-income buckets below
+    if (p.status !== 'paid') return; // only collected money counts in the buckets below
 
     if (p.payment_date in dayMap) dayMap[p.payment_date] += amt;
     if (p.payment_type in typeMap) typeMap[p.payment_type] += amt;
@@ -117,6 +118,7 @@ export const buildIncomeStats = (payments, dateRange) => {
 
   const incomeByStatus = [
     { name: 'Pendiente', value: statusMap.pending },
+    { name: 'Pagado', value: statusMap.paid },
     { name: 'Cancelado', value: statusMap.cancelled },
   ].filter((x) => x.value > 0);
 
@@ -130,12 +132,13 @@ export const buildIncomeStats = (payments, dateRange) => {
     .map(([date, total]) => ({ semana: date.slice(5).replace('-', '/'), total }));
 
   const pendingChart = statusMap.pending;
+  const paidChart = statusMap.paid;
   const cancelledChart = statusMap.cancelled;
-  const totalChart = pendingChart; // real income in the period (cancelled excluded)
-  const paymentCount = payments.filter((p) => p.status !== 'cancelled').length;
+  const totalChart = paidChart; // real income received in the period
+  const paymentCount = payments.filter((p) => p.status === 'paid').length;
 
   return {
     incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData,
-    totalChart, pendingChart, cancelledChart, paymentCount,
+    totalChart, pendingChart, paidChart, cancelledChart, paymentCount,
   };
 };
