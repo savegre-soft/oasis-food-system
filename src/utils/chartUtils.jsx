@@ -65,3 +65,77 @@ export const CHART_PRESETS = [
   { label: 'Este mes',       fn: getThisMonth },
   { label: 'Últimos 30 días',fn: () => getLast(30) },
 ];
+
+// ── Income stats builder ──────────────────────────────────────────────────────
+// Single source of truth for the income aggregations shown in the "Ingresos"
+// tab (Estadísticas) and the "Estadísticas" tab of Pagos. Payments with
+// status 'cancelled' represent money that was never actually received, so
+// they're excluded from every real-income bucket (day/type/client/week/total)
+// and only surfaced through pendingChart/cancelledChart for visibility.
+export const buildIncomeStats = (payments, dateRange) => {
+  const dayMap = {};
+  for (
+    let d = new Date(dateRange.from + 'T00:00:00');
+    d <= new Date(dateRange.to + 'T00:00:00');
+    d.setDate(d.getDate() + 1)
+  ) {
+    dayMap[d.toISOString().split('T')[0]] = 0;
+  }
+
+  const typeMap = { monthly: 0, weekly: 0, express: 0, other: 0 };
+  const statusMap = { pending: 0, cancelled: 0 };
+  const clientMap = {};
+  const weekMap = {};
+
+  payments.forEach((p) => {
+    const amt = p.amount || 0;
+    if (p.status in statusMap) statusMap[p.status] += amt;
+    if (p.status === 'cancelled') return; // excluded from real-income buckets below
+
+    if (p.payment_date in dayMap) dayMap[p.payment_date] += amt;
+    if (p.payment_type in typeMap) typeMap[p.payment_type] += amt;
+    const name = p.clients?.name || (p.client_id ? `Cliente ${p.client_id}` : 'Ingreso manual');
+    clientMap[name] = (clientMap[name] || 0) + amt;
+    const wk = isoWeekMonday(p.payment_date);
+    weekMap[wk] = (weekMap[wk] || 0) + amt;
+  });
+
+  let running = 0;
+  const incomeByDay = Object.entries(dayMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, total]) => {
+      running += total;
+      return { date: date.slice(5).replace('-', '/'), total, acumulado: running };
+    });
+
+  const incomeByType = [
+    { name: 'Mensual', value: typeMap.monthly },
+    { name: 'Semanal', value: typeMap.weekly },
+    { name: 'Express', value: typeMap.express },
+    { name: 'Otro', value: typeMap.other },
+  ].filter((x) => x.value > 0);
+
+  const incomeByStatus = [
+    { name: 'Pendiente', value: statusMap.pending },
+    { name: 'Cancelado', value: statusMap.cancelled },
+  ].filter((x) => x.value > 0);
+
+  const topClients = Object.entries(clientMap)
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  const weeklyData = Object.entries(weekMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, total]) => ({ semana: date.slice(5).replace('-', '/'), total }));
+
+  const pendingChart = statusMap.pending;
+  const cancelledChart = statusMap.cancelled;
+  const totalChart = pendingChart; // real income in the period (cancelled excluded)
+  const paymentCount = payments.filter((p) => p.status !== 'cancelled').length;
+
+  return {
+    incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData,
+    totalChart, pendingChart, cancelledChart, paymentCount,
+  };
+};

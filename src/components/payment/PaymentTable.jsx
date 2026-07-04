@@ -4,11 +4,12 @@ import { Pencil, Check, X, Eye } from 'lucide-react';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
 
-const TYPE_LABEL = { monthly: 'Mensual', weekly: 'Semanal', express: 'Express' };
+const TYPE_LABEL = { monthly: 'Mensual', weekly: 'Semanal', express: 'Express', other: 'Otro' };
 const TYPE_COLOR  = {
   monthly: 'bg-violet-100 text-violet-700',
   weekly:  'bg-blue-100 text-blue-700',
   express: 'bg-amber-100 text-amber-700',
+  other:   'bg-slate-200 text-slate-700',
 };
 const STATUS_LABEL = { pending: 'Pendiente', cancelled: 'Cancelado' };
 const STATUS_COLOR  = {
@@ -72,6 +73,10 @@ const PaymentTable = ({
   onStatusSave,
   onStatusCancel,
   onViewOrder,
+  selectedIds = [],
+  onToggleSelect,
+  onToggleSelectAll,
+  onBulkStatusSave,
   emptyMessage,
 }) => {
   const [expandedPayment, setExpandedPayment] = useState(null);
@@ -89,6 +94,9 @@ const PaymentTable = ({
   }
 
   const total = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const allIds = payments.map((p) => p.id_payment);
+  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.includes(id));
+  const bulkEnabled = !!onBulkStatusSave;
 
   return (
     <motion.div
@@ -96,10 +104,42 @@ const PaymentTable = ({
       animate={{ opacity: 1 }}
       className="bg-white rounded-2xl shadow-sm overflow-hidden"
     >
+      {bulkEnabled && selectedIds.length > 0 && (
+        <div className="flex items-center justify-between gap-3 px-5 py-3 bg-violet-50 border-b border-violet-100">
+          <p className="text-xs font-medium text-violet-700">
+            {selectedIds.length} pago{selectedIds.length !== 1 ? 's' : ''} seleccionado{selectedIds.length !== 1 ? 's' : ''}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onBulkStatusSave(selectedIds, 'pending')}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
+            >
+              Marcar como Pendiente
+            </button>
+            <button
+              onClick={() => onBulkStatusSave(selectedIds, 'cancelled')}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition"
+            >
+              Marcar como Cancelado
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-800 text-white text-xs uppercase tracking-wide">
+              {bulkEnabled && (
+                <th className="px-4 py-4 text-center font-semibold w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() => onToggleSelectAll(allIds)}
+                    className="w-4 h-4 rounded cursor-pointer accent-violet-600"
+                  />
+                </th>
+              )}
               <th className="px-5 py-4 text-left font-semibold">Cliente</th>
               <th className="px-5 py-4 text-left font-semibold">Tipo</th>
               <th className="px-5 py-4 text-left font-semibold">Fecha</th>
@@ -115,12 +155,25 @@ const PaymentTable = ({
               const isMonthly = p.payment_type === 'monthly';
               const orders = (p.payment_orders ?? []).map((po) => po.orders).filter(Boolean);
               const isExpanded = expandedPayment === p.id_payment;
+              const isSelected = selectedIds.includes(p.id_payment);
 
               return (
                 <React.Fragment key={p.id_payment}>
-                  <tr className={`border-t border-slate-100 transition ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-slate-100`}>
+                  <tr className={`border-t border-slate-100 transition ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} ${isSelected ? 'bg-violet-50' : ''} hover:bg-slate-100`}>
+                    {bulkEnabled && (
+                      <td className="px-4 py-3.5 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => onToggleSelect(p.id_payment)}
+                          className="w-4 h-4 rounded cursor-pointer accent-violet-600"
+                        />
+                      </td>
+                    )}
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-slate-800">{p.clients?.name ?? `Cliente ${p.client_id}`}</p>
+                      <p className="font-medium text-slate-800">
+                        {p.clients?.name ?? (p.client_id ? `Cliente ${p.client_id}` : 'Ingreso manual')}
+                      </p>
                       {p.notes && <p className="text-xs text-slate-400 mt-0.5">{p.notes}</p>}
                     </td>
 
@@ -202,7 +255,7 @@ const PaymentTable = ({
 
                   {isMonthly && isExpanded && (
                     <tr key={`${p.id_payment}-orders`} className="bg-violet-50">
-                      <td colSpan={7} className="px-5 py-3">
+                      <td colSpan={bulkEnabled ? 8 : 7} className="px-5 py-3">
                         <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
                           Órdenes asociadas ({orders.length}/4)
                         </p>
@@ -220,6 +273,7 @@ const PaymentTable = ({
           </tbody>
           <tfoot>
             <tr className="bg-slate-50 border-t-2 border-slate-200">
+              {bulkEnabled && <td />}
               <td colSpan={3} className="px-5 py-3 text-xs text-slate-500 font-medium">
                 {payments.length} registro{payments.length !== 1 ? 's' : ''}
               </td>

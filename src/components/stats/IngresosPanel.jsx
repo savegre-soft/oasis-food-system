@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Hash } from 'lucide-react';
+import { DollarSign, Hash, TrendingDown, Clock } from 'lucide-react';
 import {
   BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -9,7 +9,7 @@ import {
 import ChartCard from '../ChartCard';
 import StatCard from './StatCard';
 import {
-  isoWeekMonday, fmtCRC, renderDonutLabel,
+  fmtCRC, renderDonutLabel, buildIncomeStats,
   ING_COLOR, TYPE_PIE_COLORS, STATUS_PIE_COLORS, CLIENT_BAR_COLORS,
 } from '../../utils/chartUtils';
 
@@ -18,77 +18,18 @@ const IngresosPanel = ({ payments, dateRange, loading }) => {
 
   const {
     incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData,
-    totalChart, pendingChart, cancelledChart,
-  } = useMemo(() => {
-    const dayMap = {};
-    for (
-      let d = new Date(dateRange.from + 'T00:00:00');
-      d <= new Date(dateRange.to + 'T00:00:00');
-      d.setDate(d.getDate() + 1)
-    ) {
-      dayMap[d.toISOString().split('T')[0]] = 0;
-    }
+    totalChart, pendingChart, cancelledChart, paymentCount,
+  } = useMemo(() => buildIncomeStats(payments, dateRange), [payments, dateRange]);
 
-    const typeMap = { monthly: 0, weekly: 0, express: 0 };
-    const statusMap = { pending: 0, cancelled: 0 };
-    const clientMap = {};
-    const weekMap = {};
-
-    payments.forEach((p) => {
-      const amt = p.amount || 0;
-      if (p.payment_date in dayMap) dayMap[p.payment_date] += amt;
-      if (p.payment_type in typeMap) typeMap[p.payment_type] += amt;
-      if (p.status in statusMap) statusMap[p.status] += amt;
-      const name = p.clients?.name || `Cliente ${p.client_id}`;
-      clientMap[name] = (clientMap[name] || 0) + amt;
-      const wk = isoWeekMonday(p.payment_date);
-      weekMap[wk] = (weekMap[wk] || 0) + amt;
-    });
-
-    let running = 0;
-    const incomeByDay = Object.entries(dayMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, total]) => {
-        running += total;
-        return { date: date.slice(5).replace('-', '/'), total, acumulado: running };
-      });
-
-    const incomeByType = [
-      { name: 'Mensual', value: typeMap.monthly },
-      { name: 'Semanal', value: typeMap.weekly },
-      { name: 'Express', value: typeMap.express },
-    ].filter((x) => x.value > 0);
-
-    const incomeByStatus = [
-      { name: 'Pendiente', value: statusMap.pending },
-      { name: 'Cancelado', value: statusMap.cancelled },
-    ].filter((x) => x.value > 0);
-
-    const topClients = Object.entries(clientMap)
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8);
-
-    const weeklyData = Object.entries(weekMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, total]) => ({ semana: date.slice(5).replace('-', '/'), total }));
-
-    const totalChart = payments.reduce((s, p) => s + (p.amount || 0), 0);
-    const pendingChart = payments.filter((p) => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0);
-    const cancelledChart = payments.filter((p) => p.status === 'cancelled').reduce((s, p) => s + (p.amount || 0), 0);
-
-    return { incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData, totalChart, pendingChart, cancelledChart };
-  }, [payments, dateRange]);
-
-  const confirmedChart = totalChart - pendingChart - cancelledChart;
+  const totalWithCancelled = totalChart + cancelledChart;
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={<DollarSign size={14} />}   label="Total en el período" value={loading ? '—' : fmtCRC(totalChart)}     sub={loading ? '' : `${payments.length} pago${payments.length !== 1 ? 's' : ''}`} accent="text-slate-800"  bg="bg-slate-100" iconColor="text-slate-600" />
-        <StatCard icon={<TrendingUp size={14} />}   label="Confirmados"         value={loading ? '—' : fmtCRC(confirmedChart)} sub={totalChart > 0 ? `${((confirmedChart / totalChart) * 100).toFixed(0)}% del total` : '—'} accent="text-emerald-600" bg="bg-emerald-50" iconColor="text-emerald-600" />
-        <StatCard icon={<Hash size={14} />}         label="Pendientes"          value={loading ? '—' : fmtCRC(pendingChart)}   sub={totalChart > 0 ? `${((pendingChart / totalChart) * 100).toFixed(0)}% del total` : '—'}   accent="text-amber-500"  bg="bg-amber-50"  iconColor="text-amber-500" />
-        <StatCard icon={<TrendingDown size={14} />} label="Cancelados"          value={loading ? '—' : fmtCRC(cancelledChart)} sub={totalChart > 0 ? `${((cancelledChart / totalChart) * 100).toFixed(0)}% del total` : '—'}  accent="text-red-500"    bg="bg-red-50"    iconColor="text-red-500" />
+        <StatCard icon={<DollarSign size={14} />}   label="Total en el período" value={loading ? '—' : fmtCRC(totalChart)}     sub={loading ? '' : `${paymentCount} pago${paymentCount !== 1 ? 's' : ''} (sin cancelados)`} accent="text-slate-800"  bg="bg-slate-100" iconColor="text-slate-600" />
+        <StatCard icon={<Clock size={14} />}        label="Pendientes"          value={loading ? '—' : fmtCRC(pendingChart)}   sub={totalWithCancelled > 0 ? `${((pendingChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}   accent="text-amber-500"  bg="bg-amber-50"  iconColor="text-amber-500" />
+        <StatCard icon={<TrendingDown size={14} />} label="Cancelados"          value={loading ? '—' : fmtCRC(cancelledChart)} sub={totalWithCancelled > 0 ? `${((cancelledChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}  accent="text-red-500"    bg="bg-red-50"    iconColor="text-red-500" />
+        <StatCard icon={<Hash size={14} />}         label="Cantidad de pagos"   value={loading ? '—' : payments.length}        sub={loading ? '' : `${paymentCount} activos · ${payments.length - paymentCount} cancelados`} accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
       </div>
 
       <ChartCard title="Ingresos por día" sub={periodLabel} loading={loading}>
