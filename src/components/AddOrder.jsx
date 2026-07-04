@@ -66,6 +66,11 @@ const AddOrder = ({ onSuccess }) => {
   const [paymentNotes, setPaymentNotes] = useState('');
   const [availableMonthly, setAvailableMonthly] = useState([]);
   const [associatePaymentId, setAssociatePaymentId] = useState(null);
+  // True only once the user explicitly clicks "Crear nuevo pago" while a
+  // monthly payment is already available — prevents the new-payment form
+  // (Monto/Fecha) from being filled in by mistake alongside an existing
+  // monthly payment, which was creating a duplicate payment per order.
+  const [explicitNewPayment, setExplicitNewPayment] = useState(false);
 
   // Express
   const [isExpress, setIsExpress] = useState(false);
@@ -331,6 +336,7 @@ const AddOrder = ({ onSuccess }) => {
     setPaymentType(suggested);
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setAssociatePaymentId(null);
+    setExplicitNewPayment(false);
     if (!selectedClient) return;
     (async () => {
       const { data, error } = await supabase
@@ -339,7 +345,7 @@ const AddOrder = ({ onSuccess }) => {
         .select('id_payment, amount, payment_date, payment_orders(id_payment_order)')
         .eq('client_id', selectedClient.id_client)
         .eq('payment_type', 'monthly')
-        .eq('status', 'pending');
+        .in('status', ['pending', 'paid']);
       if (error || !data) return;
       const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
       setAvailableMonthly(available);
@@ -434,6 +440,7 @@ const AddOrder = ({ onSuccess }) => {
     setPaymentNotes('');
     setAvailableMonthly([]);
     setAssociatePaymentId(null);
+    setExplicitNewPayment(false);
     const emptyDays = {};
     DAYS_ORDER.forEach((d) => {
       emptyDays[d] = [];
@@ -816,6 +823,8 @@ const AddOrder = ({ onSuccess }) => {
             availableMonthly={availableMonthly}
             associatePaymentId={associatePaymentId}
             setAssociatePaymentId={setAssociatePaymentId}
+            explicitNewPayment={explicitNewPayment}
+            setExplicitNewPayment={setExplicitNewPayment}
           />
         )}
 

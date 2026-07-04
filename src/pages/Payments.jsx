@@ -127,10 +127,10 @@ const Payments = () => {
   );
 
   const totalWeek = weekPayments
-    .filter((p) => p.status !== 'cancelled')
+    .filter((p) => p.status === 'paid')
     .reduce((s, p) => s + (p.amount || 0), 0);
   const totalAll = payments
-    .filter((p) => p.status !== 'cancelled')
+    .filter((p) => p.status === 'paid')
     .reduce((s, p) => s + (p.amount || 0), 0);
   const pendingCount = payments.filter((p) => p.status === 'pending').length;
   const pendingAmount = payments
@@ -196,6 +196,21 @@ const Payments = () => {
     setSelectedIds((prev) => (ids.every((id) => prev.includes(id)) ? [] : ids));
   };
 
+  const handleAmountSave = async (id, newAmount) => {
+    const { error } = await supabase
+      .schema('operations')
+      .from('payments')
+      .update({ amount: newAmount })
+      .eq('id_payment', id);
+
+    if (error) {
+      sileo.error('No se pudo actualizar el monto');
+      return;
+    }
+    sileo.success('Monto actualizado');
+    await fetchPayments();
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -242,13 +257,13 @@ const Payments = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <SummaryCard
             icon={<TrendingUp size={22} />}
-            label="Esta semana"
+            label="Cobrado esta semana"
             value={`₡${totalWeek.toLocaleString()}`}
             colorClass="bg-green-50 text-green-600"
           />
           <SummaryCard
             icon={<DollarSign size={22} />}
-            label="Total histórico"
+            label="Cobrado histórico"
             value={`₡${totalAll.toLocaleString()}`}
             colorClass="bg-slate-100 text-slate-600"
           />
@@ -284,6 +299,7 @@ const Payments = () => {
               {[
                 ['all', 'Todos'],
                 ['pending', 'Pendientes'],
+                ['paid', 'Pagados'],
                 ['cancelled', 'Cancelados'],
               ].map(([val, lbl]) => (
                 <button
@@ -335,6 +351,7 @@ const Payments = () => {
             onToggleSelect={toggleSelectId}
             onToggleSelectAll={toggleSelectAll}
             onBulkStatusSave={handleBulkStatusSave}
+            onAmountSave={handleAmountSave}
             emptyMessage={
               tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
             }

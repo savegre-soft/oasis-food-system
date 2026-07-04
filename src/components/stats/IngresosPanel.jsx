@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DollarSign, Hash, TrendingDown, Clock } from 'lucide-react';
+import { DollarSign, TrendingDown, Clock } from 'lucide-react';
 import {
   BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -21,15 +21,15 @@ const IngresosPanel = ({ payments, dateRange, loading }) => {
     totalChart, pendingChart, cancelledChart, paymentCount,
   } = useMemo(() => buildIncomeStats(payments, dateRange), [payments, dateRange]);
 
-  const totalWithCancelled = totalChart + cancelledChart;
+  const grandTotal = totalChart + pendingChart + cancelledChart;
 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={<DollarSign size={14} />}   label="Total en el período" value={loading ? '—' : fmtCRC(totalChart)}     sub={loading ? '' : `${paymentCount} pago${paymentCount !== 1 ? 's' : ''} (sin cancelados)`} accent="text-slate-800"  bg="bg-slate-100" iconColor="text-slate-600" />
-        <StatCard icon={<Clock size={14} />}        label="Pendientes"          value={loading ? '—' : fmtCRC(pendingChart)}   sub={totalWithCancelled > 0 ? `${((pendingChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}   accent="text-amber-500"  bg="bg-amber-50"  iconColor="text-amber-500" />
-        <StatCard icon={<TrendingDown size={14} />} label="Cancelados"          value={loading ? '—' : fmtCRC(cancelledChart)} sub={totalWithCancelled > 0 ? `${((cancelledChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}  accent="text-red-500"    bg="bg-red-50"    iconColor="text-red-500" />
-        <StatCard icon={<Hash size={14} />}         label="Cantidad de pagos"   value={loading ? '—' : payments.length}        sub={loading ? '' : `${paymentCount} activos · ${payments.length - paymentCount} cancelados`} accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
+        <StatCard icon={<DollarSign size={14} />}   label="Pagado en el período" value={loading ? '—' : fmtCRC(totalChart)}     sub={loading ? '' : `${paymentCount} pago${paymentCount !== 1 ? 's' : ''} cobrado${paymentCount !== 1 ? 's' : ''}`} accent="text-emerald-600"  bg="bg-emerald-50" iconColor="text-emerald-600" />
+        <StatCard icon={<Clock size={14} />}        label="Pendientes"           value={loading ? '—' : fmtCRC(pendingChart)}   sub={grandTotal > 0 ? `${((pendingChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}   accent="text-amber-500"  bg="bg-amber-50"  iconColor="text-amber-500" />
+        <StatCard icon={<TrendingDown size={14} />} label="Cancelados"           value={loading ? '—' : fmtCRC(cancelledChart)} sub={grandTotal > 0 ? `${((cancelledChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}  accent="text-red-500"    bg="bg-red-50"    iconColor="text-red-500" />
+        <StatCard icon={<DollarSign size={14} />}   label="Total registrado"     value={loading ? '—' : fmtCRC(grandTotal)}     sub={loading ? '' : `${payments.length} pago${payments.length !== 1 ? 's' : ''} en total`} accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
       </div>
 
       <ChartCard title="Ingresos por día" sub={periodLabel} loading={loading}>

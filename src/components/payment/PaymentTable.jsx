@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pencil, Check, X, Eye } from 'lucide-react';
+import ConfirmDialog from '../ConfirmDialog';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
 
@@ -11,9 +12,10 @@ const TYPE_COLOR  = {
   express: 'bg-amber-100 text-amber-700',
   other:   'bg-slate-200 text-slate-700',
 };
-const STATUS_LABEL = { pending: 'Pendiente', cancelled: 'Cancelado' };
+const STATUS_LABEL = { pending: 'Pendiente', paid: 'Pagado', cancelled: 'Cancelado' };
 const STATUS_COLOR  = {
   pending:   'bg-yellow-100 text-yellow-700',
+  paid:      'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-600',
 };
 const ORDER_STATUS_LABEL = {
@@ -77,9 +79,12 @@ const PaymentTable = ({
   onToggleSelect,
   onToggleSelectAll,
   onBulkStatusSave,
+  onAmountSave,
   emptyMessage,
 }) => {
   const [expandedPayment, setExpandedPayment] = useState(null);
+  const [editingAmount, setEditingAmount] = useState(null); // { id, value }
+  const [confirmAmountChange, setConfirmAmountChange] = useState(null); // { id, oldAmount, newAmount, clientName }
 
   if (payments.length === 0) {
     return (
@@ -99,6 +104,7 @@ const PaymentTable = ({
   const bulkEnabled = !!onBulkStatusSave;
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -115,6 +121,12 @@ const PaymentTable = ({
               className="text-xs font-medium px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition"
             >
               Marcar como Pendiente
+            </button>
+            <button
+              onClick={() => onBulkStatusSave(selectedIds, 'paid')}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition"
+            >
+              Marcar como Pagado
             </button>
             <button
               onClick={() => onBulkStatusSave(selectedIds, 'cancelled')}
@@ -186,7 +198,54 @@ const PaymentTable = ({
                     <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">{formatDate(p.payment_date)}</td>
 
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
-                      {p.currency ?? 'CRC'} {Number(p.amount).toLocaleString()}
+                      {editingAmount?.id === p.id_payment ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            autoFocus
+                            value={editingAmount.value}
+                            onChange={(e) => setEditingAmount({ id: p.id_payment, value: e.target.value })}
+                            className="w-28 text-right border border-slate-200 rounded-lg px-2 py-1 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-slate-300"
+                          />
+                          <button
+                            onClick={() => {
+                              const newAmount = Number(editingAmount.value);
+                              if (editingAmount.value === '' || Number.isNaN(newAmount) || newAmount < 0) return;
+                              if (newAmount === Number(p.amount)) {
+                                setEditingAmount(null);
+                                return;
+                              }
+                              setConfirmAmountChange({
+                                id: p.id_payment,
+                                oldAmount: Number(p.amount),
+                                newAmount,
+                                clientName: p.clients?.name ?? (p.client_id ? `Cliente ${p.client_id}` : 'Ingreso manual'),
+                              });
+                            }}
+                            className="p-1 text-green-600 hover:text-green-700 transition"
+                          >
+                            <Check size={14} />
+                          </button>
+                          <button onClick={() => setEditingAmount(null)} className="p-1 text-red-400 hover:text-red-600 transition">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1">
+                          <span>{p.currency ?? 'CRC'} {Number(p.amount).toLocaleString()}</span>
+                          {onAmountSave && (
+                            <button
+                              onClick={() => setEditingAmount({ id: p.id_payment, value: String(p.amount) })}
+                              className="p-1 text-slate-300 hover:text-slate-600 transition"
+                              title="Editar monto"
+                            >
+                              <Pencil size={12} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-5 py-3.5 text-center">
@@ -213,6 +272,7 @@ const PaymentTable = ({
                             className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
                           >
                             <option value="pending">Pendiente</option>
+                            <option value="paid">Pagado</option>
                             <option value="cancelled">Cancelado</option>
                           </select>
                           <button onClick={() => onStatusSave(p.id_payment, editingStatus.status)} className="p-1 text-green-600 hover:text-green-700 transition">
@@ -284,6 +344,25 @@ const PaymentTable = ({
         </table>
       </div>
     </motion.div>
+
+    <ConfirmDialog
+      open={!!confirmAmountChange}
+      title="¿Cambiar el monto de este pago?"
+      message={
+        confirmAmountChange
+          ? `${confirmAmountChange.clientName}: ₡${confirmAmountChange.oldAmount.toLocaleString()} → ₡${confirmAmountChange.newAmount.toLocaleString()}. Esta acción se aplica de inmediato.`
+          : ''
+      }
+      confirmLabel="Confirmar cambio"
+      confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition"
+      onCancel={() => setConfirmAmountChange(null)}
+      onConfirm={async () => {
+        await onAmountSave(confirmAmountChange.id, confirmAmountChange.newAmount);
+        setConfirmAmountChange(null);
+        setEditingAmount(null);
+      }}
+    />
+    </>
   );
 };
 
