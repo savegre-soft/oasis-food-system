@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import PaymentTable from './payment/PaymentTable';
 import OrderDetailModal from './OrderDetailModal';
+import { PAYMENT_STATUS_LABEL } from '../utils/chartUtils';
 import { sileo } from 'sileo';
 
 const PaymentSection = ({ clientId }) => {
@@ -52,10 +53,12 @@ const PaymentSection = ({ clientId }) => {
       .update({ status: newStatus })
       .eq('id_payment', paymentId);
 
+    const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;
     if (error) {
-      sileo.error({ title: 'Error', description: 'No se pudo actualizar el estado' });
+      sileo.error({ title: 'Error', description: `No se pudo marcar como ${label}` });
       return;
     }
+    sileo.success({ title: 'Listo', description: `Marcado como ${label}` });
     setEditingStatus(null);
     fetchPayments();
   };

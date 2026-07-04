@@ -10,7 +10,7 @@ import OrderDetailModal from '../components/OrderDetailModal';
 import PaymentTable from '../components/payment/PaymentTable';
 import PaymentStats from '../components/payment/PaymentStats';
 import ManualIncomeModal from '../components/payment/ManualIncomeModal';
-import { buildIncomeStats } from '../utils/chartUtils';
+import { buildIncomeStats, PAYMENT_STATUS_LABEL } from '../utils/chartUtils';
 import { getThisMonth } from '../hooks/useDashboardData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -162,11 +162,12 @@ const Payments = () => {
       .update({ status: newStatus })
       .eq('id_payment', id);
 
+    const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;
     if (error) {
-      sileo.error('No se pudo actualizar el estado');
+      sileo.error(`No se pudo marcar como ${label}`);
       return;
     }
-    sileo.success('Estado actualizado');
+    sileo.success(`Marcado como ${label}`);
     setEditingStatus(null);
     await fetchPayments();
   };
@@ -179,11 +180,12 @@ const Payments = () => {
       .update({ status: newStatus })
       .in('id_payment', ids);
 
+    const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;
     if (error) {
-      sileo.error('No se pudo actualizar el estado de los pagos seleccionados');
+      sileo.error(`No se pudo marcar los pagos seleccionados como ${label}`);
       return;
     }
-    sileo.success(`${ids.length} pago${ids.length !== 1 ? 's' : ''} actualizado${ids.length !== 1 ? 's' : ''}`);
+    sileo.success(`${ids.length} pago${ids.length !== 1 ? 's' : ''} marcado${ids.length !== 1 ? 's' : ''} como ${label}`);
     setSelectedIds([]);
     await fetchPayments();
   };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pencil, Check, X, Eye } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
+import { PAYMENT_STATUS_LABEL } from '../../utils/chartUtils';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
 
@@ -12,7 +13,7 @@ const TYPE_COLOR  = {
   express: 'bg-amber-100 text-amber-700',
   other:   'bg-slate-200 text-slate-700',
 };
-const STATUS_LABEL = { pending: 'Pendiente', paid: 'Pagado', cancelled: 'Cancelado' };
+const STATUS_LABEL = PAYMENT_STATUS_LABEL;
 const STATUS_COLOR  = {
   pending:   'bg-yellow-100 text-yellow-700',
   paid:      'bg-emerald-100 text-emerald-700',
