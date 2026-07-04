@@ -9,7 +9,8 @@ import DatePicker from '../components/DatePicker';
 import OrderDetailModal from '../components/OrderDetailModal';
 import PaymentTable from '../components/payment/PaymentTable';
 import PaymentStats from '../components/payment/PaymentStats';
-import { isoWeekMonday } from '../utils/chartUtils';
+import ManualIncomeModal from '../components/payment/ManualIncomeModal';
+import { buildIncomeStats } from '../utils/chartUtils';
 import { getThisMonth } from '../hooks/useDashboardData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -56,6 +57,8 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [chartRange, setChartRange] = useState(getThisMonth);
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [showManualIncome, setShowManualIncome] = useState(false);
 
   const fetchPayments = async () => {
     const { data, error } = await supabase
@@ -93,6 +96,10 @@ const Payments = () => {
     fetchPayments();
   }, [supabase]);
 
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [tab, statusFilter, search, dateRange]);
+
   // ── Derived data — table ────────────────────────────────────────────────────
 
   const { start: weekStart, end: weekEnd } = getWeekRange();
@@ -103,7 +110,12 @@ const Payments = () => {
   });
 
   const historyPayments = payments
-    .filter((p) => (p.clients?.name ?? '').toLowerCase().includes(search.toLowerCase()))
+    .filter((p) => {
+      const term = search.toLowerCase();
+      const clientName = (p.clients?.name ?? '').toLowerCase();
+      const notes = (p.notes ?? '').toLowerCase();
+      return clientName.includes(term) || notes.includes(term);
+    })
     .filter((p) => {
       if (!dateRange.startDate || !dateRange.endDate) return true;
       const d = new Date(p.payment_date + 'T00:00:00');
@@ -114,8 +126,12 @@ const Payments = () => {
     (p) => statusFilter === 'all' || p.status === statusFilter
   );
 
-  const totalWeek = weekPayments.reduce((s, p) => s + (p.amount || 0), 0);
-  const totalAll = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalWeek = weekPayments
+    .filter((p) => p.status !== 'cancelled')
+    .reduce((s, p) => s + (p.amount || 0), 0);
+  const totalAll = payments
+    .filter((p) => p.status !== 'cancelled')
+    .reduce((s, p) => s + (p.amount || 0), 0);
   const pendingCount = payments.filter((p) => p.status === 'pending').length;
   const pendingAmount = payments
     .filter((p) => p.status === 'pending')
@@ -132,79 +148,10 @@ const Payments = () => {
     });
   }, [payments, chartRange]);
 
-  const chartData = useMemo(() => {
-    const dayMap = {};
-    for (
-      let d = new Date(chartRange.from + 'T00:00:00');
-      d <= new Date(chartRange.to + 'T00:00:00');
-      d.setDate(d.getDate() + 1)
-    ) {
-      dayMap[d.toISOString().split('T')[0]] = 0;
-    }
-
-    const typeMap = { monthly: 0, weekly: 0, express: 0 };
-    const statusMap = { pending: 0, cancelled: 0 };
-    const clientMap = {};
-    const weekMap = {};
-
-    chartPayments.forEach((p) => {
-      const amt = p.amount || 0;
-      if (p.payment_date in dayMap) dayMap[p.payment_date] += amt;
-      if (p.payment_type in typeMap) typeMap[p.payment_type] += amt;
-      if (p.status in statusMap) statusMap[p.status] += amt;
-      const clientName = p.clients?.name || `Cliente ${p.client_id}`;
-      clientMap[clientName] = (clientMap[clientName] || 0) + amt;
-      const weekKey = isoWeekMonday(p.payment_date);
-      weekMap[weekKey] = (weekMap[weekKey] || 0) + amt;
-    });
-
-    let running = 0;
-    const incomeByDay = Object.entries(dayMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, total]) => {
-        running += total;
-        return { date: date.slice(5).replace('-', '/'), total, acumulado: running };
-      });
-
-    const incomeByType = [
-      { name: 'Mensual', value: typeMap.monthly },
-      { name: 'Semanal', value: typeMap.weekly },
-      { name: 'Express', value: typeMap.express },
-    ].filter((x) => x.value > 0);
-
-    const incomeByStatus = [
-      { name: 'Pendiente', value: statusMap.pending },
-      { name: 'Cancelado', value: statusMap.cancelled },
-    ].filter((x) => x.value > 0);
-
-    const topClients = Object.entries(clientMap)
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8);
-
-    const weeklyData = Object.entries(weekMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, total]) => ({ semana: date.slice(5).replace('-', '/'), total }));
-
-    const totalChart = chartPayments.reduce((s, p) => s + (p.amount || 0), 0);
-    const pendingChart = chartPayments
-      .filter((p) => p.status === 'pending')
-      .reduce((s, p) => s + (p.amount || 0), 0);
-    const cancelledChart = chartPayments
-      .filter((p) => p.status === 'cancelled')
-      .reduce((s, p) => s + (p.amount || 0), 0);
-
-    return {
-      incomeByDay,
-      incomeByType,
-      incomeByStatus,
-      topClients,
-      weeklyData,
-      totalChart,
-      pendingChart,
-      cancelledChart,
-    };
-  }, [chartPayments, chartRange]);
+  const chartData = useMemo(
+    () => buildIncomeStats(chartPayments, chartRange),
+    [chartPayments, chartRange]
+  );
 
   // ── Status update ───────────────────────────────────────────────────────────
 
@@ -224,6 +171,31 @@ const Payments = () => {
     await fetchPayments();
   };
 
+  const handleBulkStatusSave = async (ids, newStatus) => {
+    if (ids.length === 0) return;
+    const { error } = await supabase
+      .schema('operations')
+      .from('payments')
+      .update({ status: newStatus })
+      .in('id_payment', ids);
+
+    if (error) {
+      sileo.error('No se pudo actualizar el estado de los pagos seleccionados');
+      return;
+    }
+    sileo.success(`${ids.length} pago${ids.length !== 1 ? 's' : ''} actualizado${ids.length !== 1 ? 's' : ''}`);
+    setSelectedIds([]);
+    await fetchPayments();
+  };
+
+  const toggleSelectId = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+  };
+
+  const toggleSelectAll = (ids) => {
+    setSelectedIds((prev) => (ids.every((id) => prev.includes(id)) ? [] : ids));
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -237,16 +209,33 @@ const Payments = () => {
           {viewingOrder && (
             <OrderDetailModal order={viewingOrder} onClose={() => setViewingOrder(null)} />
           )}
+          {showManualIncome && (
+            <ManualIncomeModal
+              onClose={() => setShowManualIncome(false)}
+              onSuccess={async () => {
+                setShowManualIncome(false);
+                await fetchPayments();
+              }}
+            />
+          )}
         </AnimatePresence>
 
         {/* Header */}
         <motion.div
           initial={{ y: -25, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-2xl shadow-sm p-6 mb-8"
+          className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex items-center justify-between gap-4"
         >
-          <h1 className="text-3xl font-bold text-slate-800">Ingresos</h1>
-          <p className="text-slate-500 mt-1">Pagos asociados a órdenes de clientes</p>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-800">Ingresos</h1>
+            <p className="text-slate-500 mt-1">Pagos asociados a órdenes de clientes</p>
+          </div>
+          <button
+            onClick={() => setShowManualIncome(true)}
+            className="shrink-0 bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-700 transition"
+          >
+            + Registrar ingreso manual
+          </button>
         </motion.div>
 
         {/* Summary cards */}
@@ -323,7 +312,7 @@ const Payments = () => {
                 <Search size={18} className="absolute left-4 top-3.5 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Buscar cliente…"
+                  placeholder="Buscar cliente o descripción…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
@@ -342,6 +331,10 @@ const Payments = () => {
             onStatusSave={handleStatusSave}
             onStatusCancel={() => setEditingStatus(null)}
             onViewOrder={setViewingOrder}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelectId}
+            onToggleSelectAll={toggleSelectAll}
+            onBulkStatusSave={handleBulkStatusSave}
             emptyMessage={
               tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
             }

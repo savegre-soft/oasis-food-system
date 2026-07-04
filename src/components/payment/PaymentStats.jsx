@@ -12,11 +12,11 @@ const PaymentStats = ({ chartRange, setChartRange, chartData, chartPayments }) =
   const {
     incomeByDay, incomeByType, incomeByStatus,
     topClients, weeklyData,
-    totalChart, pendingChart, cancelledChart,
+    totalChart, pendingChart, cancelledChart, paymentCount,
   } = chartData;
 
   const periodLabel = `${chartRange.from} → ${chartRange.to}`;
-  const confirmedChart = totalChart - pendingChart - cancelledChart;
+  const totalWithCancelled = totalChart + cancelledChart;
 
   return (
     <div className="space-y-5">
@@ -27,22 +27,22 @@ const PaymentStats = ({ chartRange, setChartRange, chartData, chartPayments }) =
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-xs text-gray-500 mb-1">Total en el período</p>
           <p className="text-2xl font-bold text-slate-800">{fmtCRC(totalChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{chartPayments.length} pago{chartPayments.length !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Confirmados</p>
-          <p className="text-2xl font-bold text-emerald-600">{fmtCRC(confirmedChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{totalChart > 0 ? `${((confirmedChart / totalChart) * 100).toFixed(0)}% del total` : '—'}</p>
+          <p className="text-xs text-gray-400 mt-1">{paymentCount} pago{paymentCount !== 1 ? 's' : ''} (sin cancelados)</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-xs text-gray-500 mb-1">Pendientes</p>
           <p className="text-2xl font-bold text-amber-500">{fmtCRC(pendingChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{totalChart > 0 ? `${((pendingChart / totalChart) * 100).toFixed(0)}% del total` : '—'}</p>
+          <p className="text-xs text-gray-400 mt-1">{totalWithCancelled > 0 ? `${((pendingChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <p className="text-xs text-gray-500 mb-1">Cancelados</p>
           <p className="text-2xl font-bold text-red-500">{fmtCRC(cancelledChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{totalChart > 0 ? `${((cancelledChart / totalChart) * 100).toFixed(0)}% del total` : '—'}</p>
+          <p className="text-xs text-gray-400 mt-1">{totalWithCancelled > 0 ? `${((cancelledChart / totalWithCancelled) * 100).toFixed(0)}% del total` : '—'}</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Cantidad de pagos</p>
+          <p className="text-2xl font-bold text-slate-800">{chartPayments.length}</p>
+          <p className="text-xs text-gray-400 mt-1">{paymentCount} activos · {chartPayments.length - paymentCount} cancelados</p>
         </div>
       </div>
 
