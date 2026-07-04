@@ -52,6 +52,12 @@ export const CATEGORY_COLORS = [
 
 export const TYPE_PIE_COLORS  = ['#6366f1', '#3b82f6', '#f59e0b'];
 export const STATUS_PIE_COLORS = ['#f59e0b', '#10b981', '#ef4444']; // Pendiente, Pagado, Cancelado
+
+// ── Payment status label ──────────────────────────────────────────────────────
+// Single source of truth for the Spanish label of each payment status, used
+// both for display (badges, dropdowns) and for user-facing confirmation/error
+// messages so they say "Pagado", not the raw 'paid' DB value.
+export const PAYMENT_STATUS_LABEL = { pending: 'Pendiente', paid: 'Pagado', cancelled: 'Cancelado' };
 export const CLIENT_BAR_COLORS = [
   '#10b981', '#3b82f6', '#6366f1', '#f59e0b',
   '#f97316', '#a855f7', '#14b8a6', '#64748b',
