@@ -612,47 +612,59 @@ const Orders = () => {
     if (!deletingOrder) return;
     const orderId = deletingOrder.id_order;
 
-    const { data: orderDays } = await supabase
+    const fail = (step, error) => {
+      console.error(`Error eliminando pedido (${step}):`, error);
+      sileo.error(`No se pudo eliminar el pedido (${step}). Intenta de nuevo.`);
+    };
+
+    const { data: orderDays, error: orderDaysError } = await supabase
       .schema('operations')
       .from('order_days')
       .select('id_order_day')
       .eq('order_id', orderId);
+    if (orderDaysError) return fail('días del pedido', orderDaysError);
 
     if (orderDays?.length) {
       const dayIds = orderDays.map((d) => d.id_order_day);
 
-      const { data: details } = await supabase
+      const { data: details, error: detailsSelectError } = await supabase
         .schema('operations')
         .from('order_day_details')
         .select('id_order_day_detail')
         .in('order_day_id', dayIds);
+      if (detailsSelectError) return fail('detalles del pedido', detailsSelectError);
 
       if (details?.length) {
         const detailIds = details.map((d) => d.id_order_day_detail);
-        await supabase
+        const { error: overridesError } = await supabase
           .schema('operations')
           .from('order_day_recipe_overrides')
           .delete()
           .in('order_day_detail_id', detailIds);
-        await supabase
+        if (overridesError) return fail('sustituciones de ingredientes', overridesError);
+
+        const { error: detailsDeleteError } = await supabase
           .schema('operations')
           .from('order_day_details')
           .delete()
           .in('id_order_day_detail', detailIds);
+        if (detailsDeleteError) return fail('detalles del pedido', detailsDeleteError);
       }
 
-      await supabase
+      const { error: daysDeleteError } = await supabase
         .schema('operations')
         .from('order_days')
         .delete()
         .in('id_order_day', dayIds);
+      if (daysDeleteError) return fail('días del pedido', daysDeleteError);
     }
 
-    await supabase
+    const { error: paymentOrdersError } = await supabase
       .schema('operations')
       .from('payment_orders')
       .delete()
       .eq('order_id', orderId);
+    if (paymentOrdersError) return fail('vínculo con el pago', paymentOrdersError);
 
     const { error } = await supabase
       .schema('operations')
@@ -661,7 +673,7 @@ const Orders = () => {
       .eq('id_order', orderId);
 
     if (error) {
-      sileo.error('Error al eliminar el pedido');
+      fail('pedido', error);
     } else {
       sileo.success('Pedido eliminado');
       setDeletingOrder(null);

@@ -1,10 +1,52 @@
 import { useState, useEffect } from 'react';
+import { z } from 'zod';
 import { useApp } from '../context/AppContext';
 import SafeMap from './SafeMap';
 import L from 'leaflet';
 import { sileo } from 'sileo';
 import PlanToggle from './PlanToggle';
-import { MACRO_UNIT } from './orderUtils';
+import { MACRO_UNIT, STANDARD_MACRO } from './orderUtils';
+
+// ── Validación (piloto de esquema declarativo con Zod) ─────────────────────────
+// Los macros solo son obligatorios para clientes 'personal'; los clientes
+// 'family' no tienen perfil de macros. Antes de este esquema, un campo de
+// macro vacío se convertía silenciosamente en NaN al hacer parseInt() y
+// terminaba guardándose así en la base de datos.
+const customerSchema = z
+  .object({
+    nombre: z.string().trim().min(1, 'El nombre del cliente es obligatorio'),
+    phone: z.string().trim().optional().or(z.literal('')),
+    address: z.string().trim().optional().or(z.literal('')),
+    clientType: z.enum(['personal', 'family']),
+    lunchProtein: z.string(),
+    lunchCarb: z.string(),
+    dinnerProtein: z.string(),
+    dinnerCarb: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.clientType !== 'personal') return;
+    const macroFields = [
+      ['lunchProtein', 'Proteína de almuerzo'],
+      ['lunchCarb', 'Carbohidratos de almuerzo'],
+      ['dinnerProtein', 'Proteína de cena'],
+      ['dinnerCarb', 'Carbohidratos de cena'],
+    ];
+    for (const [key, label] of macroFields) {
+      const raw = data[key];
+      if (raw.trim() === '') {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} es obligatorio` });
+        continue;
+      }
+      const n = Number(raw);
+      if (!Number.isInteger(n) || n < 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `${label} debe ser un número entero mayor o igual a 0`,
+        });
+      }
+    }
+  });
 
 // Icono del marker
 delete L.Icon.Default.prototype._getIconUrl;
@@ -90,8 +132,8 @@ const AddCustomer = ({ onAdd, initialData }) => {
   const filteredCantons = cantons.filter((c) => c.province_id === Number(selectedProvince));
   const filteredDistricts = districts.filter((d) => d.canton_id === Number(selectedCanton));
 
-  const STANDARD_PROTEIN = '4';
-  const STANDARD_CARB = '2';
+  const STANDARD_PROTEIN = String(STANDARD_MACRO.protein_value);
+  const STANDARD_CARB = String(STANDARD_MACRO.carb_value);
   const isStandard = (p, c) => String(p) === STANDARD_PROTEIN && String(c) === STANDARD_CARB;
 
   const handleLunchPlanChange = (value) => {
@@ -152,7 +194,24 @@ const AddCustomer = ({ onAdd, initialData }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nombre.trim()) return;
+
+    const parsed = customerSchema.safeParse({
+      nombre,
+      phone,
+      address,
+      clientType,
+      lunchProtein,
+      lunchCarb,
+      dinnerProtein,
+      dinnerCarb,
+    });
+    if (!parsed.success) {
+      const message = parsed.error.issues[0].message;
+      setErrorMsg(message);
+      sileo.error(message);
+      return;
+    }
+
     setLoading(true);
     setErrorMsg('');
 

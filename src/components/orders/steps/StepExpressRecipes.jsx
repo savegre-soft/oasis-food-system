@@ -1,8 +1,6 @@
 import MacroPanel from '../../MacroPanel';
 import RecipeIngredientEditor from '../../RecipeIngredientEditor';
-import { MACRO_UNIT } from '../../orderUtils';
-
-const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
+import { MACRO_UNIT, STANDARD_MACRO } from '../../orderUtils';
 
 const StepExpressRecipes = ({
   expressType,
@@ -98,7 +96,7 @@ const StepExpressRecipes = ({
                   : 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
               }`}
             >
-              ⭐ Estándar (1 {MACRO_UNIT})
+              ⭐ Estándar ({STANDARD_MACRO.protein_value}/{STANDARD_MACRO.carb_value} {MACRO_UNIT})
             </button>
           </div>
         </div>

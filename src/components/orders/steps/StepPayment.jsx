@@ -38,7 +38,11 @@ const StepPayment = ({
           {availableMonthly.map((mp) => {
             const used = mp.payment_orders?.length ?? 0;
             const isSelected = associatePaymentId === mp.id_payment;
-            const [y, m, d] = mp.payment_date.split('-');
+            const fmt = (str) => {
+              if (!str) return '?';
+              const [y, m, d] = str.split('-');
+              return `${d}/${m}/${y}`;
+            };
             return (
               <button
                 key={mp.id_payment}
@@ -55,7 +59,7 @@ const StepPayment = ({
               >
                 <span className="font-medium">₡{Number(mp.amount).toLocaleString()}</span>
                 <span className={`ml-2 text-xs ${isSelected ? 'text-violet-200' : 'text-slate-400 dark:text-slate-500'}`}>
-                  {d}/{m}/{y} · {used}/4 órdenes
+                  {fmt(mp.period_start_date)} – {fmt(mp.period_end_date)} · {used}/4 órdenes
                 </span>
               </button>
             );
@@ -134,18 +138,6 @@ const StepPayment = ({
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-            Fecha de pago
-          </label>
-          <input
-            type="date"
-            value={paymentDate}
-            onChange={(e) => setPaymentDate(e.target.value)}
-            className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
             Estado
           </label>
           <div className="flex gap-2">
@@ -173,6 +165,40 @@ const StepPayment = ({
             ))}
           </div>
         </div>
+
+        {paymentType === 'monthly' ? (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              Período
+            </label>
+            <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5">
+              Cubre desde hoy hasta 30 días después. La fecha de pago se registra sola cuando el
+              pago quede marcado como "Pagado" (ahora, o luego desde Ingresos).
+            </p>
+          </div>
+        ) : paymentStatus === 'paid' ? (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              Fecha de pago
+            </label>
+            <input
+              type="date"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              Fecha de pago
+            </label>
+            <p className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5">
+              Se registra sola cuando el pago quede marcado como "Pagado" (ahora, o luego desde
+              Ingresos).
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">

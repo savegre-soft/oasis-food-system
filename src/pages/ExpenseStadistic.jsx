@@ -10,6 +10,7 @@ import { useExpenseStatistics } from '../hooks/useExpenseStatistics';
 import { getThisMonth } from '../hooks/useDashboardData';
 import ChartCard from '../components/ChartCard';
 import DateRangeFilter from '../components/DateRangeFilter';
+import AuthRoles from '../components/auth/AuthRoles';
 import {
   isoWeekMonday, fmtCRC, renderDonutLabel,
   CATEGORY_COLORS, EXP_COLOR, EMP_COLOR,
@@ -17,7 +18,7 @@ import {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-const ExpenseStadistic = () => {
+const ExpenseStadisticContent = () => {
   const [dateRange, setDateRange] = useState(getThisMonth);
 
   const { expenses, empCosts, loading, error } = useExpenseStatistics(dateRange);
@@ -224,5 +225,11 @@ const ExpenseStadistic = () => {
     </div>
   );
 };
+
+const ExpenseStadistic = () => (
+  <AuthRoles rolesNames={['Finanzas', 'Administrador']}>
+    <ExpenseStadisticContent />
+  </AuthRoles>
+);
 
 export default ExpenseStadistic;

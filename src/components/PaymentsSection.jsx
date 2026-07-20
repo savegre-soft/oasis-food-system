@@ -21,7 +21,7 @@ const PaymentSection = ({ clientId }) => {
       .from('payments')
       .select(`
         id_payment, client_id, payment_type, amount, currency,
-        payment_date, status, notes, created_at,
+        payment_date, period_start_date, period_end_date, status, notes, created_at,
         clients(name),
         payment_orders(
           id_payment_order, order_id,
@@ -35,7 +35,7 @@ const PaymentSection = ({ clientId }) => {
         )
       `)
       .eq('client_id', clientId)
-      .order('payment_date', { ascending: false });
+      .order('payment_date', { ascending: false, nullsFirst: false });
 
     if (error) console.error('[PaymentSection] fetch error:', error);
     setPayments(data ?? []);
@@ -47,10 +47,18 @@ const PaymentSection = ({ clientId }) => {
   }, [clientId]);
 
   const handleStatusSave = async (paymentId, newStatus) => {
+    // Igual que en la sección de Ingresos: si un pago (de cualquier tipo)
+    // pasa a 'paid' y todavía no tiene payment_date (se dejó pendiente al
+    // crearlo), se completa con la fecha de hoy.
+    const current = payments.find((p) => p.id_payment === paymentId);
+    const payload = { status: newStatus };
+    if (newStatus === 'paid' && !current?.payment_date) {
+      payload.payment_date = new Date().toISOString().split('T')[0];
+    }
     const { error } = await supabase
       .schema('operations')
       .from('payments')
-      .update({ status: newStatus })
+      .update(payload)
       .eq('id_payment', paymentId);
 
     const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;

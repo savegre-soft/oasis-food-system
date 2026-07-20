@@ -6,6 +6,7 @@ import AuthRoles from '../components/auth/AuthRoles';
 
 import { useApp } from '../context/AppContext';
 import DatePicker from '../components/DatePicker';
+import ConfirmDialog from '../components/ConfirmDialog';
 import OrderDetailModal from '../components/OrderDetailModal';
 import PaymentTable from '../components/payment/PaymentTable';
 import PaymentStats from '../components/payment/PaymentStats';
@@ -59,6 +60,7 @@ const Payments = () => {
   const [viewingOrder, setViewingOrder] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [showManualIncome, setShowManualIncome] = useState(false);
+  const [closingPayment, setClosingPayment] = useState(null);
 
   const fetchPayments = async () => {
     const { data, error } = await supabase
@@ -67,7 +69,7 @@ const Payments = () => {
       .select(
         `
         id_payment, client_id, payment_type, amount, currency,
-        payment_date, status, notes, created_at,
+        payment_date, period_start_date, period_end_date, closed_at, status, notes, created_at,
         clients(name),
         payment_orders(
           id_payment_order, order_id,
@@ -83,7 +85,7 @@ const Payments = () => {
         )
       `
       )
-      .order('payment_date', { ascending: false });
+      .order('payment_date', { ascending: false, nullsFirst: false });
 
     if (error) {
       console.error(error);
@@ -102,10 +104,18 @@ const Payments = () => {
 
   // ── Derived data — table ────────────────────────────────────────────────────
 
+  // Pagos pending (de cualquier tipo) pueden no tener payment_date todavía —
+  // se llena sola cuando se marcan pagados. Mientras tanto, se ubican por el
+  // inicio de su período (monthly) o por created_at, para que no desaparezcan
+  // de las vistas filtradas por fecha.
+  const effectiveDate = (p) => p.payment_date || p.period_start_date || p.created_at?.split('T')[0];
+
   const { start: weekStart, end: weekEnd } = getWeekRange();
 
   const weekPayments = payments.filter((p) => {
-    const d = new Date(p.payment_date + 'T00:00:00');
+    const raw = effectiveDate(p);
+    if (!raw) return false;
+    const d = new Date(raw + 'T00:00:00');
     return d >= weekStart && d <= weekEnd;
   });
 
@@ -118,7 +128,9 @@ const Payments = () => {
     })
     .filter((p) => {
       if (!dateRange.startDate || !dateRange.endDate) return true;
-      const d = new Date(p.payment_date + 'T00:00:00');
+      const raw = effectiveDate(p);
+      if (!raw) return false;
+      const d = new Date(raw + 'T00:00:00');
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
@@ -143,7 +155,9 @@ const Payments = () => {
     const from = new Date(chartRange.from + 'T00:00:00');
     const to = new Date(chartRange.to + 'T23:59:59');
     return payments.filter((p) => {
-      const d = new Date(p.payment_date + 'T00:00:00');
+      const raw = effectiveDate(p);
+      if (!raw) return false;
+      const d = new Date(raw + 'T00:00:00');
       return d >= from && d <= to;
     });
   }, [payments, chartRange]);
@@ -155,11 +169,25 @@ const Payments = () => {
 
   // ── Status update ───────────────────────────────────────────────────────────
 
+  // Al marcar un pago mensual como 'paid', si todavía no tiene payment_date
+  // (se dejó pendiente al crearlo), se completa con la fecha de hoy — es el
+  // momento en que se está registrando el cobro real.
+  const buildStatusPayload = (payment, newStatus) => {
+    const payload = { status: newStatus };
+    // Aplica a cualquier tipo de pago: si todavía no tiene payment_date (se
+    // dejó pendiente al crearlo), se completa con la fecha de hoy al pasar a 'paid'.
+    if (newStatus === 'paid' && !payment?.payment_date) {
+      payload.payment_date = new Date().toISOString().split('T')[0];
+    }
+    return payload;
+  };
+
   const handleStatusSave = async (id, newStatus) => {
+    const current = payments.find((p) => p.id_payment === id);
     const { error } = await supabase
       .schema('operations')
       .from('payments')
-      .update({ status: newStatus })
+      .update(buildStatusPayload(current, newStatus))
       .eq('id_payment', id);
 
     const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;
@@ -174,17 +202,31 @@ const Payments = () => {
 
   const handleBulkStatusSave = async (ids, newStatus) => {
     if (ids.length === 0) return;
-    const { error } = await supabase
-      .schema('operations')
-      .from('payments')
-      .update({ status: newStatus })
-      .in('id_payment', ids);
+
+    // payment_date solo se completa para los que aún no lo tienen, así que
+    // hay que separar el update en dos grupos si no todos necesitan el mismo payload.
+    const groups = new Map();
+    for (const id of ids) {
+      const current = payments.find((p) => p.id_payment === id);
+      const key = JSON.stringify(buildStatusPayload(current, newStatus));
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(id);
+    }
+
+    for (const [payloadStr, groupIds] of groups) {
+      const { error } = await supabase
+        .schema('operations')
+        .from('payments')
+        .update(JSON.parse(payloadStr))
+        .in('id_payment', groupIds);
+      if (error) {
+        const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;
+        sileo.error(`No se pudo marcar los pagos seleccionados como ${label}`);
+        return;
+      }
+    }
 
     const label = PAYMENT_STATUS_LABEL[newStatus] ?? newStatus;
-    if (error) {
-      sileo.error(`No se pudo marcar los pagos seleccionados como ${label}`);
-      return;
-    }
     sileo.success(`${ids.length} pago${ids.length !== 1 ? 's' : ''} marcado${ids.length !== 1 ? 's' : ''} como ${label}`);
     setSelectedIds([]);
     await fetchPayments();
@@ -213,6 +255,25 @@ const Payments = () => {
     await fetchPayments();
   };
 
+  // Cierra manualmente un pago mensual aunque no tenga las 4 órdenes
+  // completas — deja de ofrecerse para reutilizar en el asistente de pedidos.
+  const handleClosePayment = async () => {
+    if (!closingPayment) return;
+    const { error } = await supabase
+      .schema('operations')
+      .from('payments')
+      .update({ closed_at: new Date().toISOString() })
+      .eq('id_payment', closingPayment.id_payment);
+
+    if (error) {
+      sileo.error('No se pudo cerrar el pago');
+      return;
+    }
+    sileo.success('Pago cerrado');
+    setClosingPayment(null);
+    await fetchPayments();
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -236,6 +297,20 @@ const Payments = () => {
             />
           )}
         </AnimatePresence>
+
+        <ConfirmDialog
+          open={!!closingPayment}
+          title="¿Cerrar este pago mensual?"
+          message={
+            closingPayment
+              ? `Tiene ${closingPayment.payment_orders?.length ?? 0}/4 órdenes vinculadas. Si lo cerrás, no se va a poder asociar ningún pedido más a este pago aunque le quede espacio — el cliente necesitará un pago nuevo para las siguientes órdenes. Esta acción no se puede deshacer desde la interfaz.`
+              : ''
+          }
+          confirmLabel="Cerrar pago"
+          confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition"
+          onConfirm={handleClosePayment}
+          onCancel={() => setClosingPayment(null)}
+        />
 
         {/* Header */}
         <motion.div
@@ -354,6 +429,7 @@ const Payments = () => {
             onToggleSelectAll={toggleSelectAll}
             onBulkStatusSave={handleBulkStatusSave}
             onAmountSave={handleAmountSave}
+            onClosePayment={setClosingPayment}
             emptyMessage={
               tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
             }

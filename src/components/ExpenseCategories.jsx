@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Check, X } from 'lucide-react';
+import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 
 const ExpenseCategories = () => {
@@ -19,7 +20,11 @@ const ExpenseCategories = () => {
       .from('expense_categories')
       .select('*')
       .order('name');
-    if (!error) setCategories(data ?? []);
+    if (error) {
+      sileo.error('No se pudieron cargar las categorías de gasto');
+    } else {
+      setCategories(data ?? []);
+    }
     setLoading(false);
   };
 
@@ -35,7 +40,9 @@ const ExpenseCategories = () => {
       .schema('operations')
       .from('expense_categories')
       .insert({ name: trimmed, is_active: true });
-    if (!error) {
+    if (error) {
+      sileo.error('No se pudo crear la categoría');
+    } else {
       setNewName('');
       setAdding(false);
       await fetchCategories();
@@ -52,7 +59,9 @@ const ExpenseCategories = () => {
       .from('expense_categories')
       .update({ name: trimmed })
       .eq('id_expense_category', id);
-    if (!error) {
+    if (error) {
+      sileo.error('No se pudo renombrar la categoría');
+    } else {
       setEditingId(null);
       setEditingName('');
       await fetchCategories();
@@ -66,7 +75,9 @@ const ExpenseCategories = () => {
       .from('expense_categories')
       .update({ is_active: !cat.is_active })
       .eq('id_expense_category', cat.id_expense_category);
-    if (!error) {
+    if (error) {
+      sileo.error('No se pudo cambiar el estado de la categoría');
+    } else {
       setCategories((prev) =>
         prev.map((c) =>
           c.id_expense_category === cat.id_expense_category

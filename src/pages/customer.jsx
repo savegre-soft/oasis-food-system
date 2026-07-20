@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { supabase } from '../lib/supabase';
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
 import OrdersSection from '../components/orders/OrdersSection';
-import MacroPanel from '../components/macro/MacroPanel';
+import MacroPanel from '../components/MacroPanel';
 import PaymentSection from '../components/PaymentsSection';
 import AuthRoles from '../components/auth/AuthRoles';
 
