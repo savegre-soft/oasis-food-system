@@ -1,27 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Truck, ChefHat, Package, Zap, Printer } from 'lucide-react';
+import { Truck, Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { sileo } from 'sileo';
-import { Sun, Moon } from 'lucide-react';
 
-import CocinaView from '../components/Kitchen';
 import ProductionPrintReport from '../components/ProductionPrintReport';
-import EmpaqueView from '../components/Package';
-import EntregaView from '../components/Delivered';
+import KitchenPipeline from '../components/KitchenPipeline';
+import { useOrderDayActions } from '../hooks/useOrderDayActions';
 
 import { DAYS_ORDER as DAY_ORDER, DAY_LABELS, cycleIdx, getAbsoluteDate, toDateString } from '../components/orderUtils';
-const TABS = [
-  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
-  { id: 'empaque', label: 'Empaque', Icon: Package },
-  { id: 'entrega', label: 'Entrega', Icon: Truck },
-  { id: 'express', label: 'Express', Icon: Zap },
-];
-
-const EXPRESS_SUBTABS = [
-  { id: 'cocina', label: 'Cocina', Icon: ChefHat },
-  { id: 'empaque', label: 'Empaque', Icon: Package },
-  { id: 'entrega', label: 'Entrega', Icon: Truck },
-];
 
 // ── Week range ─────────────────────────────────────────────────────────────────
 
@@ -109,28 +94,6 @@ const SlotButton = ({ slot, isActive, onSelect }) => {
   );
 };
 
-const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
-  const cls =
-    'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border ' +
-    (isActive
-      ? 'bg-slate-800 dark:bg-indigo-600 border-slate-800 dark:border-indigo-600 text-white shadow-sm'
-      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600');
-
-  const badgeCls =
-    'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ' +
-    (isActive
-      ? 'bg-white dark:bg-slate-100 text-slate-800'
-      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400');
-
-  return (
-    <button key={id} onClick={() => onSelect(id)} className={cls}>
-      <Icon size={15} />
-      {label}
-      {count > 0 && <span className={badgeCls}>{count}</span>}
-    </button>
-  );
-};
-
 const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
   const cls =
     'px-4 py-1.5 rounded-xl text-xs font-medium transition border ' +
@@ -145,111 +108,16 @@ const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
   );
 };
 
-const EmptyState = ({ icon, text }) => (
-  <div className="text-center py-16 text-slate-400">
-    <div className="mx-auto mb-3 opacity-30 flex justify-center">{icon}</div>
-    <p>{text}</p>
-  </div>
-);
-
-// ── ExpressView ────────────────────────────────────────────────────────────────
-
-const ExpressView = ({
-  pendingDays,
-  packedDays,
-  deliveredDays,
-  onPack,
-  onPackDetail,
-  onDeliver,
-  onDeliverDetail,
-  onUnpack,
-  onUnpackDetail,
-  expressTab,
-  setExpressTab,
-  todayStr,
-}) => {
-  const subCounts = {
-    cocina: pendingDays.length,
-    empaque: pendingDays.length + packedDays.length,
-    entrega: deliveredDays.length,
-  };
-
-  const todayLabel = new Date(todayStr + 'T00:00:00').toLocaleDateString('es-CR', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  });
-
-  return (
-    <div className="space-y-5">
-      {/* Alerta Express con soporte Dark Mode */}
-      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl px-5 py-4 flex items-center gap-3">
-        <Zap size={18} className="text-amber-500 dark:text-amber-400 shrink-0" />
-        <div>
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-            Pedidos Express
-          </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400/80">
-            Entrega hoy · {todayLabel}
-          </p>
-        </div>
-        <div className="ml-auto">
-          <span className="bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-100 px-2 py-0.5 rounded-full text-xs font-semibold">
-            {pendingDays.length + packedDays.length} activos
-          </span>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        {EXPRESS_SUBTABS.map(({ id, label, Icon }) => (
-          <TabButton
-            key={id}
-            id={id}
-            label={label}
-            Icon={Icon}
-            isActive={expressTab === id}
-            count={subCounts[id] ?? 0}
-            onSelect={setExpressTab}
-          />
-        ))}
-      </div>
-
-      {/* El contenido de las vistas debe ir envuelto o manejar su propio dark mode */}
-      <div className="dark:text-slate-300">
-        {expressTab === 'cocina' &&
-          (pendingDays.length === 0 ? (
-            <EmptyState icon={<ChefHat size={36} />} text="No hay pedidos express pendientes" />
-          ) : (
-            <CocinaView orderDays={pendingDays} onPack={onPack} onPackDetail={onPackDetail} DAY_LABELS={DAY_LABELS} />
-          ))}
-        {expressTab === 'empaque' &&
-          (pendingDays.length === 0 && packedDays.length === 0 ? (
-            <EmptyState icon={<Package size={36} />} text="No hay pedidos express para empacar" />
-          ) : (
-            <EmpaqueView pendingDays={pendingDays} packedDays={packedDays} onPack={onPack} onPackDetail={onPackDetail} onDeliver={onDeliver} onDeliverDetail={onDeliverDetail} onUnpack={onUnpack} onUnpackDetail={onUnpackDetail} />
-          ))}
-        {expressTab === 'entrega' &&
-          (deliveredDays.length === 0 ? (
-            <EmptyState icon={<Truck size={36} />} text="No hay entregas express hoy" />
-          ) : (
-            <EntregaView orderDays={deliveredDays} onUndeliver={markPacked} />
-          ))}
-      </div>
-    </div>
-  );
-};
-
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const Production = () => {
-  const { supabase, isDark } = useApp();
+  const { supabase } = useApp();
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [weekOffset, setWeekOffset] = useState(0);
   const { weekStart, weekEnd } = computeWeekRange(weekOffset);
 
   const [activeTab, setActiveTab] = useState('cocina');
-  const [expressTab, setExpressTab] = useState('cocina');
   const [showPrint, setShowPrint] = useState(false);
   const [clientFilter, setClientFilter] = useState('todos');
 
@@ -360,29 +228,6 @@ const Production = () => {
     setLoading(false);
   };
 
-  // ── Express: fetch today's orders regardless of slot ─────────────────────────
-
-  const [expressPendingAll, setExpressPendingAll] = useState([]);
-  const [expressPackedAll, setExpressPackedAll] = useState([]);
-  const [expressDeliveredAll, setExpressDeliveredAll] = useState([]);
-
-  const getExpressData = async () => {
-    const base = (status) =>
-      supabase
-        .schema('operations')
-        .from('order_days')
-        .select(ORDER_DAY_SELECT)
-        .eq('delivery_date', todayStr)
-        .eq('status', status)
-        .order('id_order_day');
-
-    const [p, k, d] = await Promise.all([base('PENDING'), base('PACKED'), base('DELIVERED')]);
-    const isExpress = (row) => row.orders?.route_id === null;
-    setExpressPendingAll((p.data ?? []).filter(isExpress));
-    setExpressPackedAll((k.data ?? []).filter(isExpress));
-    setExpressDeliveredAll((d.data ?? []).filter(isExpress));
-  };
-
   useEffect(() => {
     const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
     // Clear stale data immediately so old week's orders don't linger
@@ -390,14 +235,7 @@ const Production = () => {
     setPendingDays([]);
     setPackedDays([]);
     setDeliveredDays([]);
-    // Express is always today-based; clear it when not on current week
-    if (weekOffset !== 0) {
-      setExpressPendingAll([]);
-      setExpressPackedAll([]);
-      setExpressDeliveredAll([]);
-    }
     getAvailableDays(ws, we);
-    if (weekOffset === 0) getExpressData();
   }, [weekOffset]);
 
   useEffect(() => {
@@ -408,66 +246,16 @@ const Production = () => {
     const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
     await getAvailableDays(ws, we);
     await getData();
-    if (weekOffset === 0) await getExpressData();
   };
 
-  // ── Status transitions ─────────────────────────────────────────────────────────
-
-  // Bulk: update ALL details of one or many order_days (trigger auto-syncs order_days.status)
-  const updateAllDetailsStatus = async (orderDayIdOrIds, newStatus, successMsg) => {
-    const ids = Array.isArray(orderDayIdOrIds) ? orderDayIdOrIds : [orderDayIdOrIds];
-    if (ids.length === 0) return;
-
-    const query = supabase
-      .schema('operations')
-      .from('order_day_details')
-      .update({ status: newStatus });
-
-    const { error } = ids.length === 1
-      ? await query.eq('order_day_id', ids[0])
-      : await query.in('order_day_id', ids);
-
-    if (error) {
-      sileo.error('Error al actualizar el estado');
-      console.error(error);
-      return;
-    }
-    sileo.success(successMsg);
-    await refresh();
-  };
-
-  // Per-detail: update one OR many order_day_details in a single query
-  const updateDetailStatus = async (idOrIds, newStatus, msgOne, msgMany) => {
-    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
-    if (ids.length === 0) return;
-
-    const query = supabase
-      .schema('operations')
-      .from('order_day_details')
-      .update({ status: newStatus });
-
-    const { error } = ids.length === 1
-      ? await query.eq('id_order_day_detail', ids[0])
-      : await query.in('id_order_day_detail', ids);
-
-    if (error) {
-      sileo.error('Error al actualizar el estado');
-      console.error(error);
-      return;
-    }
-    sileo.success(ids.length === 1 ? msgOne : (msgMany ?? msgOne));
-    await refresh();
-  };
-
-  // Bulk handlers (order_day level — for "Devolver toda la orden", bulk selection bar, etc.)
-  const markPacked = (id) => updateAllDetailsStatus(id, 'PACKED', '📦 Marcado como empacado');
-  const markDelivered = (id) => updateAllDetailsStatus(id, 'DELIVERED', '🚚 Entrega registrada');
-  const markPending = (id) => updateAllDetailsStatus(id, 'PENDING', 'Devuelto a pendiente');
-
-  // Per-detail handlers — accept a single ID or an array; bulk path makes 1 DB call + 1 refresh
-  const markPackedDetail = (idOrIds) => updateDetailStatus(idOrIds, 'PACKED', '📦 Plato empacado', '📦 Platos empacados');
-  const markDeliveredDetail = (idOrIds) => updateDetailStatus(idOrIds, 'DELIVERED', '🚚 Plato entregado', '🚚 Platos entregados');
-  const markPendingDetail = (idOrIds) => updateDetailStatus(idOrIds, 'PENDING', 'Plato devuelto a cocina', 'Platos devueltos a cocina');
+  const {
+    markPacked,
+    markDelivered,
+    markPending,
+    markPackedDetail,
+    markDeliveredDetail,
+    markPendingDetail,
+  } = useOrderDayActions(supabase, refresh);
 
   // ── Filters ────────────────────────────────────────────────────────────────────
 
@@ -476,25 +264,18 @@ const Production = () => {
     return days.filter((d) => d.orders?.clients?.client_type === clientFilter);
   };
 
-  // Normal tabs exclude express (route_id = null + today)
+  // Excluye pedidos Express (route_id = null + entrega hoy) — tienen su propia página.
   const isExpressDay = (d) => d.orders?.route_id === null && d.delivery_date === todayStr;
   const normalPending = filterByClient(pendingDays.filter((d) => !isExpressDay(d)));
   const normalPacked = filterByClient(packedDays.filter((d) => !isExpressDay(d)));
   const normalDelivered = filterByClient(deliveredDays.filter((d) => !isExpressDay(d)));
-
-  const counts = {
-    cocina: normalPending.length,
-    empaque: normalPacked.length + normalPending.length,
-    entrega: normalDelivered.length,
-    express: expressPendingAll.length + expressPackedAll.length,
-  };
 
   // ── Render ─────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
       {/* Print report */}
-      {showPrint && activeTab !== 'express' && (
+      {showPrint && (
         <ProductionPrintReport
           orderDays={[...pendingDays, ...packedDays, ...deliveredDays]}
           slotLabel={selectedSlot?.label}
@@ -510,18 +291,6 @@ const Production = () => {
               year: 'numeric',
             })
           }
-          onClose={() => setShowPrint(false)}
-        />
-      )}
-      {showPrint && activeTab === 'express' && (
-        <ProductionPrintReport
-          orderDays={[...expressPendingAll, ...expressPackedAll, ...expressDeliveredAll]}
-          slotLabel="Express"
-          weekLabel={new Date(todayStr + 'T00:00:00').toLocaleDateString('es-CR', {
-            weekday: 'long',
-            day: '2-digit',
-            month: 'long',
-          })}
           onClose={() => setShowPrint(false)}
         />
       )}
@@ -574,96 +343,55 @@ const Production = () => {
         <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando días...</p>
       ) : (
         <>
-          {activeTab !== 'express' && (
-            <>
-              {slots.length === 0 ? (
-                <div className="text-center py-10 text-slate-400 dark:text-slate-600">
-                  <Truck size={40} className="mx-auto mb-3 opacity-30" />
-                  <p>No hay pedidos activos esta semana</p>
-                </div>
-              ) : (
-                <div className="flex gap-2 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-6">
-                  {slots.map((slot) => (
-                    <SlotButton
-                      key={slot.name}
-                      slot={slot}
-                      isActive={selectedSlot?.name === slot.name}
-                      onSelect={setSelectedSlot}
-                    />
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-1 mb-4">
-                {[
-                  { id: 'todos', label: '🌐 Todos' },
-                  { id: 'personal', label: '👤 Personales' },
-                  { id: 'family', label: '👨‍👩‍👧 Familiares' },
-                ].map(({ id, label }) => (
-                  <ClientFilterButton
-                    key={id}
-                    id={id}
-                    label={label}
-                    isActive={clientFilter === id}
-                    onSelect={setClientFilter}
-                  />
-                ))}
-              </div>
-            </>
+          {slots.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 dark:text-slate-600">
+              <Truck size={40} className="mx-auto mb-3 opacity-30" />
+              <p>No hay pedidos activos esta semana</p>
+            </div>
+          ) : (
+            <div className="flex gap-2 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-6">
+              {slots.map((slot) => (
+                <SlotButton
+                  key={slot.name}
+                  slot={slot}
+                  isActive={selectedSlot?.name === slot.name}
+                  onSelect={setSelectedSlot}
+                />
+              ))}
+            </div>
           )}
-
-          {/* Tab bar */}
-          <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-            {TABS.map(({ id, label, Icon }) => (
-              <TabButton
+          <div className="flex gap-1 mb-4">
+            {[
+              { id: 'todos', label: '🌐 Todos' },
+              { id: 'personal', label: '👤 Personales' },
+              { id: 'family', label: '👨‍👩‍👧 Familiares' },
+            ].map(({ id, label }) => (
+              <ClientFilterButton
                 key={id}
                 id={id}
                 label={label}
-                Icon={Icon}
-                isActive={activeTab === id}
-                count={counts[id] ?? 0}
-                onSelect={setActiveTab}
+                isActive={clientFilter === id}
+                onSelect={setClientFilter}
               />
             ))}
           </div>
 
-          {/* Views */}
-          {loading && activeTab !== 'express' ? (
+          {loading ? (
             <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
           ) : (
-            <div className="transition-opacity duration-300">
-              {activeTab === 'cocina' && (
-                <CocinaView orderDays={normalPending} onPack={markPacked} onPackDetail={markPackedDetail} DAY_LABELS={DAY_LABELS} />
-              )}
-              {activeTab === 'empaque' && (
-                <EmpaqueView
-                  pendingDays={normalPending}
-                  packedDays={normalPacked}
-                  onPack={markPacked}
-                  onPackDetail={markPackedDetail}
-                  onDeliver={markDelivered}
-                  onDeliverDetail={markDeliveredDetail}
-                  onUnpack={markPending}
-                  onUnpackDetail={markPendingDetail}
-                />
-              )}
-              {activeTab === 'entrega' && <EntregaView orderDays={normalDelivered} onUndeliver={markPacked} />}
-              {activeTab === 'express' && (
-                <ExpressView
-                  pendingDays={expressPendingAll}
-                  packedDays={expressPackedAll}
-                  deliveredDays={expressDeliveredAll}
-                  onPack={markPacked}
-                  onPackDetail={markPackedDetail}
-                  onDeliver={markDelivered}
-                  onDeliverDetail={markDeliveredDetail}
-                  onUnpack={markPending}
-                  onUnpackDetail={markPendingDetail}
-                  expressTab={expressTab}
-                  setExpressTab={setExpressTab}
-                  todayStr={todayStr}
-                />
-              )}
-            </div>
+            <KitchenPipeline
+              pendingDays={normalPending}
+              packedDays={normalPacked}
+              deliveredDays={normalDelivered}
+              onPack={markPacked}
+              onPackDetail={markPackedDetail}
+              onDeliver={markDelivered}
+              onDeliverDetail={markDeliveredDetail}
+              onUnpack={markPending}
+              onUnpackDetail={markPendingDetail}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
           )}
         </>
       )}
