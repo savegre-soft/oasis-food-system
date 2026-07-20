@@ -47,7 +47,7 @@ const ManualIncomeModal = ({ onClose, onSuccess }) => {
 
   return (
     <Modal isOpen onClose={onClose}>
-      <div className="space-y-5 max-w-md">
+      <div className="space-y-5 max-w-md mx-auto">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Registrar ingreso manual</h2>
           <p className="text-sm text-slate-500 mt-1">

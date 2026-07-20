@@ -16,6 +16,11 @@ import {
   Settings,
   Handbag,
   ChartScatterIcon,
+  Salad,
+  Package,
+  PackageCheck,
+  ChefHat,
+  Zap,
   Sun,
   Moon,
   Monitor,
@@ -25,8 +30,14 @@ import { useApp } from '../context/AppContext';
 
 const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
-  { to: '/entregas', label: 'Entregas', icon: RouteIcon },
   { to: '/orders', label: 'Órdenes', icon: Handbag },
+  { to: '/combos', label: 'Combos', icon: Package },
+];
+
+const entregasLinks = [
+  { to: '/entregas', label: 'Producción', icon: ChefHat },
+  { to: '/entregas/express', label: 'Express', icon: Zap },
+  { to: '/entregas/combos', label: 'Combos', icon: PackageCheck },
 ];
 
 const gestionLinks = [
@@ -34,6 +45,7 @@ const gestionLinks = [
   { to: '/menus', label: 'Platos', icon: HamburgerIcon },
   { to: '/routes', label: 'Rutas', icon: RouteIcon },
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
+  { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
 ];
 
 const financialLinks = [
@@ -43,7 +55,7 @@ const financialLinks = [
   { to: '/estadisticas', label: 'Estadísticas', icon: ChartScatterIcon },
 ];
 
-const allLinks = [...links, ...gestionLinks, ...financialLinks];
+const allLinks = [...links, ...entregasLinks, ...gestionLinks, ...financialLinks];
 
 export default function Navbar() {
   const nav = useNavigate();
@@ -309,6 +321,14 @@ export default function Navbar() {
           })}
 
           <Dropdown
+            label="Entregas"
+            menuKey="entregas"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={entregasLinks}
+            baseStyle={baseStyle}
+          />
+          <Dropdown
             label="Gestión"
             menuKey="gestion"
             openMenu={openMenu}
@@ -478,7 +498,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {[...links, ...gestionLinks, ...financialLinks].map((link) => {
+          {[...links, ...entregasLinks, ...gestionLinks, ...financialLinks].map((link) => {
             const Icon = link.icon;
             return (
               <NavLink

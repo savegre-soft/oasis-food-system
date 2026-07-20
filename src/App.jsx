@@ -14,6 +14,8 @@ import Promotions from './pages/Promotions';
 import Customers from './pages/customers';
 import Order from './pages/Order';
 import Deliveries from './pages/Deliveries';
+import DeliveriesExpress from './pages/DeliveriesExpress';
+import DeliveriesCombos from './pages/DeliveriesCombos';
 import Bills from './pages/Bills';
 import Menus from './pages/Menus';
 import Settings from './pages/Settings';
@@ -27,6 +29,8 @@ import Estadisticas from './pages/Estadisticas';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
 import Planilla from './pages/Planilla';
+import ComboItems from './pages/ComboItems';
+import Combos from './pages/Combos';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -39,14 +43,18 @@ export default function App() {
             <Route path="/Clientes" element={<Customers />} />
             <Route path="/main" element={<Main />} />
             <Route path="/entregas" element={<Deliveries />} />
+            <Route path="/entregas/express" element={<DeliveriesExpress />} />
+            <Route path="/entregas/combos" element={<DeliveriesCombos />} />
             <Route path="/gastos" element={<Bills />} />
             <Route path="/menus" element={<Menus />} />
             <Route path="/cliente/:id" element={<Customer />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
+            <Route path="/combo-items" element={<ComboItems />} />
 
             <Route path="/orders" element={<Orders />} />
+            <Route path="/combos" element={<Combos />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />
             <Route path="/empleados" element={<Navigate to="/planilla" replace />} />
