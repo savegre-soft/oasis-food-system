@@ -11,11 +11,20 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [linkError, setLinkError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
+
+    const urlErrorDescription = params.get('error_description');
+    if (params.get('error')) {
+      const message = decodeURIComponent(urlErrorDescription || 'El enlace no es válido o ya expiró.');
+      setLinkError(message);
+      sileo.error({ title: 'Enlace inválido', description: message });
+      return;
+    }
 
     const accessToken = params.get('access_token');
     const refreshToken = params.get('refresh_token');
@@ -68,6 +77,27 @@ const ResetPassword = () => {
       setLoading(false);
     }
   };
+
+  if (linkError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md text-center"
+        >
+          <h1 className="text-2xl font-bold mb-2">Enlace inválido</h1>
+          <p className="text-gray-600 mb-6">{linkError}</p>
+          <button
+            onClick={() => navigate('/login')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
+          >
+            Volver al inicio de sesión
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">

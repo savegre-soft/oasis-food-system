@@ -1,6 +1,5 @@
 import { Search, UserCheck, UserX, RotateCcw, LayoutGrid, Table } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import InactiveCustomerCard from '../components/customer/InactiveCustomerCard';
 
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';

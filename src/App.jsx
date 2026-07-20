@@ -1,8 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layout/MainLayout';
 import Home from './pages/Homes';
 import About from './pages/About';
-import Test from './pages/Test';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import ForgotPassword from './pages/ForgotPassword';
@@ -18,16 +17,13 @@ import Deliveries from './pages/Deliveries';
 import Bills from './pages/Bills';
 import Menus from './pages/Menus';
 import Settings from './pages/Settings';
-import Recipes from './pages/Recipes';
 import Routes_page from './pages/Routes';
 import ResetPassword from './pages/ResetPassword';
 import Templates from './pages/Templates';
 import Customer from './pages/customer';
 import Orders from './pages/Orders';
-import ExpenseEmployees from './pages/ExpenseEmployees';
 import ExpenseStadistic from './pages/ExpenseStadistic';
 import Estadisticas from './pages/Estadisticas';
-import ChangePassword from './pages/ChangePassword';
 import Payments from './pages/Payments';
 import Profile from './pages/Profile';
 import Planilla from './pages/Planilla';
@@ -40,14 +36,12 @@ export default function App() {
         <Routes>
           <Route element={<MainLayout />}>
             <Route path="/about" element={<About />} />
-            <Route path="/Pedidos" element={<Test />} />
             <Route path="/Clientes" element={<Customers />} />
             <Route path="/main" element={<Main />} />
             <Route path="/entregas" element={<Deliveries />} />
             <Route path="/gastos" element={<Bills />} />
             <Route path="/menus" element={<Menus />} />
             <Route path="/cliente/:id" element={<Customer />} />
-            <Route path="/recetas" element={<Recipes />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
@@ -55,7 +49,7 @@ export default function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />
-            <Route path="/empleados" element={<ExpenseEmployees />} />
+            <Route path="/empleados" element={<Navigate to="/planilla" replace />} />
             <Route path="/estadisticas" element={<Estadisticas />} />
             <Route path="/perfil" element={<Profile />} />
             <Route path="/planilla" element={<Planilla />} />
@@ -69,7 +63,6 @@ export default function App() {
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/ChangePassword/*" element={<ChangePassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/forgot-password" element={<ForgotPassword />} />

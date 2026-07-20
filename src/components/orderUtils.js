@@ -4,6 +4,11 @@
  *  Cambiar este valor actualiza toda la UI y los reportes automáticamente. */
 export const MACRO_UNIT = 'ud.';
 
+/** Valores de macro que definen el plan "estándar" (por oposición a "nutricional").
+ *  Única fuente de verdad: usar esta constante en cualquier lugar que necesite
+ *  el valor estándar (alta de cliente, asistente de pedidos, express, etc.). */
+export const STANDARD_MACRO = { protein_value: 4, carb_value: 2 };
+
 export const DAYS_ORDER = [
   'Monday',
   'Tuesday',

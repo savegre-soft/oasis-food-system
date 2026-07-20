@@ -9,8 +9,7 @@ import ProductionPrintReport from '../components/ProductionPrintReport';
 import EmpaqueView from '../components/Package';
 import EntregaView from '../components/Delivered';
 
-import { DAY_LABELS } from '../utils/DAY_LABELS';
-import { DAY_ORDER } from '../utils/DAY_ORDER';
+import { DAYS_ORDER as DAY_ORDER, DAY_LABELS, cycleIdx, getAbsoluteDate, toDateString } from '../components/orderUtils';
 const TABS = [
   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
   { id: 'empaque', label: 'Empaque', Icon: Package },
@@ -49,23 +48,14 @@ const WEEK_SEGMENTS = [
 ];
 
 // ── Delivery slot helpers ──────────────────────────────────────────────────────
-
-const cycleIdx = (d) => (d === 'Sunday' ? -1 : DAY_ORDER.indexOf(d));
-
-const isoOfDay = (name, weekMonday) => {
-  const d = new Date(weekMonday);
-  if (name === 'Sunday') {
-    d.setDate(weekMonday.getDate() - 1);
-  } else {
-    d.setDate(weekMonday.getDate() + DAY_ORDER.indexOf(name));
-  }
-  return d.toISOString().split('T')[0];
-};
+// cycleIdx/getAbsoluteDate/toDateString son las mismas utilidades usadas por el
+// asistente de pedidos (src/components/orderUtils.js) — única fuente de verdad
+// para la resolución de fecha de entrega en todo el sistema.
 
 const buildDeliverySlots = (deliveryDayNames, weekMonday) => {
   const sorted = [...deliveryDayNames].sort((a, b) => cycleIdx(a) - cycleIdx(b));
   return sorted.map((name) => {
-    const deliveryDate = isoOfDay(name, weekMonday);
+    const deliveryDate = toDateString(getAbsoluteDate(name, weekMonday));
     return { name, label: DAY_LABELS[name] ?? name, deliveryDate };
   });
 };

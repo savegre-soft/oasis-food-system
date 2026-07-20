@@ -1,16 +1,14 @@
 import { RefreshCw } from 'lucide-react';
-
-const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
+import MacroPanel from './MacroPanel';
+import RouteSelector from './RouteSelector';
+import DayRecipeBlock from './DayRecipeBlock';
+import { DAYS_ORDER, MACRO_UNIT, STANDARD_MACRO } from './orderUtils';
 
 // Helper: are the current macros equal to standard values?
 const isStandard = (m) =>
   m &&
-  String(m.protein_value) === '1' &&
-  String(m.carb_value) === '1';
-import MacroPanel from './MacroPanel';
-import RouteSelector from './RouteSelector';
-import DayRecipeBlock from './DayRecipeBlock';
-import { DAYS_ORDER, MACRO_UNIT } from './orderUtils';
+  String(m.protein_value) === String(STANDARD_MACRO.protein_value) &&
+  String(m.carb_value) === String(STANDARD_MACRO.carb_value);
 
 // Shared "step 3" UI: route selector + base macros + per-day recipe blocks
 // Used by both AddOrder (step 3) and EditOrder (single view)
@@ -142,7 +140,7 @@ const OrderAdjustments = ({
                           : 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
                       }`}
                     >
-                      ⭐ Estándar (1 {MACRO_UNIT})
+                      ⭐ Estándar ({STANDARD_MACRO.protein_value}/{STANDARD_MACRO.carb_value} {MACRO_UNIT})
                     </button>
                   )}
                 </div>
@@ -183,7 +181,7 @@ const OrderAdjustments = ({
                           : 'border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
                       }`}
                     >
-                      ⭐ Estándar (1 {MACRO_UNIT})
+                      ⭐ Estándar ({STANDARD_MACRO.protein_value}/{STANDARD_MACRO.carb_value} {MACRO_UNIT})
                     </button>
                   )}
                 </div>

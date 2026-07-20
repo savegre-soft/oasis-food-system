@@ -13,6 +13,7 @@ import {
   getWeekRange,
   toDateString,
   getDateForDay,
+  STANDARD_MACRO,
 } from './orderUtils';
 
 import StepClient from './orders/steps/StepClient';
@@ -22,8 +23,6 @@ import StepPayment from './orders/steps/StepPayment';
 import StepConfirm from './orders/steps/StepConfirm';
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const STANDARD_MACRO = { protein_value: 1, carb_value: 1 };
-
 const PERSONAL_STEPS = ['Cliente', 'Menú', 'Ajustes', 'Pago', 'Confirmar'];
 const FAMILY_STEPS = ['Cliente', 'Ajustes', 'Pago', 'Confirmar'];
 const EXPRESS_STEPS = ['Cliente', 'Menú', 'Pago', 'Confirmar'];
@@ -328,29 +327,44 @@ const AddOrder = ({ onSuccess }) => {
   // Auto-suggest payment type + fetch available monthly payments
   useEffect(() => {
     if (step !== 4) return;
-    const suggested = isExpress
-      ? 'express'
-      : familyClient || menuType === 'both'
-        ? 'monthly'
-        : 'weekly';
-    setPaymentType(suggested);
+    // Sugerencia inicial basada en el tipo de menú del pedido puntual — se
+    // corrige más abajo en cuanto se sabe si el cliente ya tiene un pago
+    // mensual con espacio disponible (señal más confiable que el menú).
+    const menuSuggestsMonthly = familyClient || menuType === 'both';
+    setPaymentType(isExpress ? 'express' : menuSuggestsMonthly ? 'monthly' : 'weekly');
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setAssociatePaymentId(null);
     setExplicitNewPayment(false);
     if (!selectedClient) return;
     (async () => {
+      // Un pago mensual solo se ofrece para reutilizar mientras su período
+      // siga vigente (period_end_date >= hoy). payment_date ya no sirve para
+      // esto: queda en blanco hasta que el pago se marca 'paid', así que
+      // filtrar por payment_date excluiría por error a los pagos pending.
+      const todayStr = toDateString(new Date());
+
       const { data, error } = await supabase
         .schema('operations')
         .from('payments')
-        .select('id_payment, amount, payment_date, payment_orders(id_payment_order)')
+        .select('id_payment, amount, payment_date, period_start_date, period_end_date, payment_orders(id_payment_order)')
         .eq('client_id', selectedClient.id_client)
         .eq('payment_type', 'monthly')
-        .in('status', ['pending', 'paid']);
+        .in('status', ['pending', 'paid'])
+        .gte('period_end_date', todayStr)
+        .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
       if (error || !data) return;
       const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
       setAvailableMonthly(available);
-      if (available.length > 0 && suggested === 'monthly')
+      // Si el cliente ya tiene un pago mensual con espacio, se prioriza sobre
+      // la sugerencia por tipo de menú (antes esto solo pasaba cuando el
+      // pedido era "Ambos" — un pedido de un solo tiempo de comida nunca
+      // activaba la reutilización automática, obligando al personal a darse
+      // cuenta y cambiar el tipo de pago a mano; cuando se les pasaba, se
+      // creaba un pago mensual nuevo en vez de reutilizar el existente).
+      if (available.length > 0 && !isExpress) {
+        setPaymentType('monthly');
         setAssociatePaymentId(available[0].id_payment);
+      }
     })();
   }, [step]);
 
@@ -615,6 +629,23 @@ const AddOrder = ({ onSuccess }) => {
           );
         if (lke) console.error('Error vinculando pago con órdenes:', lke);
       } else if (paymentAmount !== '') {
+        const isMonthly = paymentType === 'monthly';
+        const today = toDateString(new Date());
+        let periodStart = null;
+        let periodEnd = null;
+        // payment_date es "cuándo se cobró de verdad": para cualquier tipo de
+        // pago, solo se llena si se registra como pagado en el momento; si
+        // queda pendiente (o cancelado), se completa después al marcarlo
+        // pagado desde Ingresos o el detalle de cliente.
+        let effectivePaymentDate = paymentStatus === 'paid' ? paymentDate : null;
+        if (isMonthly) {
+          // Período automático: inicio = hoy, fin = hoy + 30 días.
+          periodStart = today;
+          const end = new Date();
+          end.setDate(end.getDate() + 30);
+          periodEnd = toDateString(end);
+          effectivePaymentDate = paymentStatus === 'paid' ? today : null;
+        }
         const { data: pd, error: pe } = await supabase
           .schema('operations')
           .from('payments')
@@ -624,7 +655,9 @@ const AddOrder = ({ onSuccess }) => {
               payment_type: paymentType,
               amount: Number(paymentAmount),
               currency: 'CRC',
-              payment_date: paymentDate,
+              payment_date: effectivePaymentDate,
+              period_start_date: periodStart,
+              period_end_date: periodEnd,
               status: paymentStatus,
               notes: paymentNotes || null,
             },

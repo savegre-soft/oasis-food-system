@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Pencil, Check, X, Eye } from 'lucide-react';
+import { Pencil, Check, X, Eye, Lock } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
 import { PAYMENT_STATUS_LABEL } from '../../utils/chartUtils';
 
@@ -81,6 +81,7 @@ const PaymentTable = ({
   onToggleSelectAll,
   onBulkStatusSave,
   onAmountSave,
+  onClosePayment,
   emptyMessage,
 }) => {
   const [expandedPayment, setExpandedPayment] = useState(null);
@@ -196,7 +197,14 @@ const PaymentTable = ({
                       </span>
                     </td>
 
-                    <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">{formatDate(p.payment_date)}</td>
+                    <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">
+                      {formatDate(p.payment_date)}
+                      {isMonthly && (p.period_start_date || p.period_end_date) && (
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {formatDate(p.period_start_date)} – {formatDate(p.period_end_date)}
+                        </p>
+                      )}
+                    </td>
 
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-800 whitespace-nowrap">
                       {editingAmount?.id === p.id_payment ? (
@@ -250,18 +258,28 @@ const PaymentTable = ({
                     </td>
 
                     <td className="px-5 py-3.5 text-center">
-                      {isMonthly && orders.length > 0 ? (
-                        <button
-                          onClick={() => setExpandedPayment(isExpanded ? null : p.id_payment)}
-                          className={`text-xs px-2.5 py-1 rounded-full font-medium transition ${isExpanded ? 'bg-violet-600 text-white' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
-                        >
-                          {orders.length}/4 ver
-                        </button>
-                      ) : (
-                        <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">
-                          {orders.length}
-                        </span>
-                      )}
+                      <div className="flex items-center justify-center gap-1.5">
+                        {isMonthly && orders.length > 0 ? (
+                          <button
+                            onClick={() => setExpandedPayment(isExpanded ? null : p.id_payment)}
+                            className={`text-xs px-2.5 py-1 rounded-full font-medium transition ${isExpanded ? 'bg-violet-600 text-white' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
+                          >
+                            {orders.length}/4 ver
+                          </button>
+                        ) : (
+                          <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">
+                            {orders.length}
+                          </span>
+                        )}
+                        {isMonthly && p.closed_at && (
+                          <span
+                            className="flex items-center gap-1 text-xs bg-slate-200 text-slate-500 px-2 py-1 rounded-full font-medium"
+                            title={`Cerrado manualmente el ${formatDate(p.closed_at.split('T')[0])}`}
+                          >
+                            <Lock size={10} /> Cerrado
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-center">
@@ -308,6 +326,15 @@ const PaymentTable = ({
                             title="Editar estado"
                           >
                             <Pencil size={14} />
+                          </button>
+                        )}
+                        {onClosePayment && isMonthly && !p.closed_at && orders.length < 4 && (
+                          <button
+                            onClick={() => onClosePayment(p)}
+                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                            title="Cerrar pago (no completó las 4 órdenes)"
+                          >
+                            <Lock size={14} />
                           </button>
                         )}
                       </div>
