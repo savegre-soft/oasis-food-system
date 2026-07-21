@@ -93,7 +93,7 @@ const ComboItems = () => {
       />
 
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
-        <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Ítems de Combo</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -102,7 +102,7 @@ const ComboItems = () => {
           </div>
           <button
             onClick={openAdd}
-            className="bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 dark:hover:bg-indigo-500 transition text-sm font-medium shrink-0 shadow-sm"
+            className="bg-green-800 dark:bg-green-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-green-700 dark:hover:bg-green-500 transition text-sm font-medium shrink-0 shadow-sm"
           >
             <Plus size={16} /> Nuevo ítem
           </button>

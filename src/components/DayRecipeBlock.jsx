@@ -82,7 +82,7 @@ const DayRecipeBlock = ({
                     <select
                       value={item.recipe_id || ''}
                       onChange={(e) => onUpdateRecipe(day, index, 'recipe_id', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
+                      className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
                     >
                       <option value="">Seleccionar receta</option>
                       {allRecipes.map((r) => (
@@ -131,7 +131,7 @@ const DayRecipeBlock = ({
                     min="1"
                     value={item.quantity}
                     onChange={(e) => onUpdateRecipe(day, index, 'quantity', e.target.value)}
-                    className="w-16 px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
+                    className="w-16 px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
                   />
 
                   {/* Remove */}

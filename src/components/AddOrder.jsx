@@ -718,7 +718,7 @@ const AddOrder = ({ onSuccess }) => {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                   active
-                    ? 'bg-slate-800 dark:bg-indigo-600 text-white ring-4 ring-slate-100 dark:ring-indigo-900/30'
+                    ? 'bg-green-800 dark:bg-green-600 text-white ring-4 ring-slate-100 dark:ring-green-900/30'
                     : done
                       ? 'bg-green-500 text-white'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
@@ -902,7 +902,7 @@ const AddOrder = ({ onSuccess }) => {
             type="button"
             onClick={goNext}
             disabled={!canGoNext()}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-800 dark:bg-indigo-600 text-white hover:bg-slate-700 dark:hover:bg-indigo-500 transition text-sm font-semibold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-green-800 dark:bg-green-600 text-white hover:bg-green-700 dark:hover:bg-green-500 transition text-sm font-semibold shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Siguiente <ChevronRight size={16} />
           </button>

@@ -17,7 +17,7 @@ const StepClient = ({
       placeholder="Buscar cliente…"
       value={clientSearch}
       onChange={(e) => setClientSearch(e.target.value)}
-      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600 bg-white dark:bg-slate-900 dark:text-slate-200 transition-all shadow-sm"
+      className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600 bg-white dark:bg-slate-900 dark:text-slate-200 transition-all shadow-sm"
       spellCheck="false"
       autoComplete="off"
     />
@@ -35,7 +35,7 @@ const StepClient = ({
               onClick={() => setSelectedClient(c)}
               className={`w-full text-left px-4 py-3 rounded-xl border transition-all text-sm shadow-sm ${
                 isSelected
-                  ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-500'
+                  ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-500'
                   : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600'
               }`}
             >
@@ -44,7 +44,7 @@ const StepClient = ({
                 <span
                   className={`text-xs px-2 py-0.5 rounded-lg ${
                     isSelected
-                      ? 'bg-slate-700 dark:bg-indigo-500 text-slate-200'
+                      ? 'bg-green-700 dark:bg-green-500 text-slate-200'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                   }`}
                 >

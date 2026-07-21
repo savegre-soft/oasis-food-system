@@ -152,7 +152,7 @@ const OrderDetailModal = ({ order, onClose, onEdit, onDelete }) => {
             {onEdit && (
               <button
                 onClick={() => onEdit(order)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition shadow-sm"
+                className="flex items-center gap-1.5 text-xs font-medium bg-green-800 dark:bg-green-600 text-white px-3 py-1.5 rounded-xl hover:bg-green-700 dark:hover:bg-green-500 transition shadow-sm"
               >
                 <Pencil size={12} /> Editar
               </button>
@@ -397,7 +397,7 @@ const OrderCard = ({ order, onClick, onEdit }) => {
             e.stopPropagation();
             onEdit(order);
           }}
-          className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white px-3 py-1.5 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition shadow-md opacity-0 group-hover:opacity-100"
+          className="absolute top-3 right-3 flex items-center gap-1.5 text-xs font-medium bg-green-800 dark:bg-green-600 text-white px-3 py-1.5 rounded-xl hover:bg-green-700 dark:hover:bg-green-500 transition shadow-md opacity-0 group-hover:opacity-100"
         >
           <Pencil size={12} /> Editar
         </button>
@@ -812,7 +812,7 @@ const Orders = () => {
       </AnimatePresence>
 
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
-        <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Pedidos</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -821,7 +821,7 @@ const Orders = () => {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 dark:hover:bg-indigo-500 transition text-sm font-medium shrink-0 shadow-sm"
+            className="bg-green-800 dark:bg-green-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-green-700 dark:hover:bg-green-500 transition text-sm font-medium shrink-0 shadow-sm"
           >
             <ClipboardList size={16} /> Nuevo Pedido
           </button>

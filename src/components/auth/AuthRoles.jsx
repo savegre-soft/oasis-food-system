@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 
 const AuthRoles = ({ rolesNames = [], children }) => {
   const { supabase, user } = useApp();
+  const navigate = useNavigate();
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -58,6 +60,12 @@ const AuthRoles = ({ rolesNames = [], children }) => {
         <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
           Roles requeridos: {rolesNames.join(', ')}
         </p>
+        <button
+          onClick={() => navigate('/Main')}
+          className="mt-5 bg-green-800 dark:bg-green-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-green-700 dark:hover:bg-green-500 transition"
+        >
+          Volver al Dashboard
+        </button>
       </div>
     );
   }

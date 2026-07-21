@@ -122,7 +122,7 @@ const ClienteView = ({ stage, pending, packed, delivered, onPack, onDeliver, onU
             actions={
               <button
                 onClick={() => onPack(o.id_combo_order)}
-                className="flex items-center gap-1.5 text-xs font-medium text-white bg-slate-800 dark:bg-indigo-600 hover:bg-slate-700 dark:hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition"
+                className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-800 dark:bg-green-600 hover:bg-green-700 dark:hover:bg-green-500 px-3 py-1.5 rounded-xl transition"
               >
                 <Archive size={12} /> Marcar empacado
               </button>
@@ -150,7 +150,7 @@ const ClienteView = ({ stage, pending, packed, delivered, onPack, onDeliver, onU
             actions={
               <button
                 onClick={() => onPack(o.id_combo_order)}
-                className="flex items-center gap-1.5 text-xs font-medium text-white bg-slate-800 dark:bg-indigo-600 hover:bg-slate-700 dark:hover:bg-indigo-500 px-3 py-1.5 rounded-xl transition"
+                className="flex items-center gap-1.5 text-xs font-medium text-white bg-green-800 dark:bg-green-600 hover:bg-green-700 dark:hover:bg-green-500 px-3 py-1.5 rounded-xl transition"
               >
                 <Archive size={12} /> Empacar
               </button>
@@ -245,7 +245,7 @@ const ComboDeliveryView = ({ orders, onPack, onDeliver, onUnpack, onUndeliver })
               onClick={() => setStage(id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition border ${
                 stage === id
-                  ? 'bg-slate-800 dark:bg-indigo-600 border-slate-800 dark:border-indigo-600 text-white shadow-sm'
+                  ? 'bg-green-800 dark:bg-green-600 border-green-800 dark:border-green-600 text-white shadow-sm'
                   : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
               }`}
             >

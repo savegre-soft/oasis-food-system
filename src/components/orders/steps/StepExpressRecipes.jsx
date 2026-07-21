@@ -80,7 +80,7 @@ const StepExpressRecipes = ({
                 onClick={applyClientMacro}
                 className={`text-xs px-2.5 py-1 rounded-lg border transition ${
                   isClientActive
-                    ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                    ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
                     : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >
@@ -134,7 +134,7 @@ const StepExpressRecipes = ({
                     });
                     if (e.target.value) fetchRecipeIngredients([String(e.target.value)]);
                   }}
-                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
+                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
                 >
                   <option value="">Seleccionar receta</option>
                   {allRecipes.map((r) => (
@@ -154,7 +154,7 @@ const StepExpressRecipes = ({
                       return updated;
                     })
                   }
-                  className="w-16 px-2 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
+                  className="w-16 px-2 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
                 />
                 <button
                   type="button"

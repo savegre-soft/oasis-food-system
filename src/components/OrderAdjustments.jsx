@@ -123,7 +123,7 @@ const OrderAdjustments = ({
                         !isStandard(lunchMacros) &&
                         String(lunchMacros?.protein_value) === String(clientLunchMacro.protein_value) &&
                         String(lunchMacros?.carb_value) === String(clientLunchMacro.carb_value)
-                          ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                          ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
                           : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                       }`}
                     >
@@ -164,7 +164,7 @@ const OrderAdjustments = ({
                         !isStandard(dinnerMacros) &&
                         String(dinnerMacros?.protein_value) === String(clientDinnerMacro.protein_value) &&
                         String(dinnerMacros?.carb_value) === String(clientDinnerMacro.carb_value)
-                          ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                          ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
                           : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
                       }`}
                     >

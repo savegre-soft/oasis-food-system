@@ -131,7 +131,7 @@ const Templates = () => {
 
       <div className="min-h-screen bg-slate-50 p-8">
         {/* Header */}
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Menús</h1>
             <p className="text-slate-500 mt-2">Crea y administra menús semanales reutilizables</p>
