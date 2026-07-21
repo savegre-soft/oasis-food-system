@@ -295,7 +295,7 @@ const Production = () => {
         />
       )}
 
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Producción</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">

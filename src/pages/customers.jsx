@@ -131,7 +131,7 @@ export default function Customers() {
       <AuthRoles rolesNames={['Administrador','Clientes']}>
         <div className="p-8 bg-slate-50 rounded-2xl min-h-screen">
           {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-slate-800">Clientes</h1>
               <p className="text-slate-500 mt-1">Gestiona los clientes registrados</p>

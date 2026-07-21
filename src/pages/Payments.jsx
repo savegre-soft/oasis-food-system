@@ -316,7 +316,7 @@ const Payments = () => {
         <motion.div
           initial={{ y: -25, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex items-center justify-between gap-4"
+          className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Ingresos</h1>

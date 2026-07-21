@@ -66,7 +66,7 @@ const RouteSelector = ({ resolvedRoute, allRoutes, onChange, readOnly = false })
                 }}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition text-sm ${
                   active
-                    ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                    ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
                     : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >

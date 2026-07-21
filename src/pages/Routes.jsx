@@ -123,7 +123,7 @@ const Routes = () => {
 
       <div className="min-h-screen bg-slate-50 p-8">
         {/* Header */}
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Gestión de Rutas</h1>
             <p className="text-slate-500 mt-2">Administra las rutas de entrega del sistema</p>

@@ -126,7 +126,7 @@ const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }
                   onChange={(e) => setNewItem((prev) => ({ ...prev, [cat.key]: e.target.value }))}
                   onKeyDown={(e) => handleKeyDown(e, cat.key)}
                   placeholder={cat.input}
-                  className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600"
+                  className="flex-1 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
                 />
                 <button
                   type="button"

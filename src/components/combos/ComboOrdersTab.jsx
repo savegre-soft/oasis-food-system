@@ -116,7 +116,7 @@ const ComboOrdersTab = () => {
           <p className="mb-4">No hay un combo configurado para esta semana</p>
           <button
             onClick={() => setShowBuilder(true)}
-            className="inline-flex items-center gap-2 bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition text-sm font-medium"
+            className="inline-flex items-center gap-2 bg-green-800 dark:bg-green-600 text-white px-5 py-2.5 rounded-xl hover:bg-green-700 dark:hover:bg-green-500 transition text-sm font-medium"
           >
             <Settings2 size={16} /> Configurar combo de la semana
           </button>
@@ -143,7 +143,7 @@ const ComboOrdersTab = () => {
               </button>
               <button
                 onClick={() => setShowAddOrder(true)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 dark:bg-indigo-600 text-white px-3 py-2 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-500 transition"
+                className="flex items-center gap-1.5 text-xs font-medium bg-green-800 dark:bg-green-600 text-white px-3 py-2 rounded-xl hover:bg-green-700 dark:hover:bg-green-500 transition"
               >
                 <Plus size={13} /> Nuevo pedido de combo
               </button>

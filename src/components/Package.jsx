@@ -442,7 +442,7 @@ const OrderPackageCard = ({ order, onDeliverDetail, selectedIds, onToggleId, onT
           onClick={() => setIsExpanded((p) => !p)}
           className="flex items-center gap-4 flex-1 min-w-0 text-left"
         >
-          <div className="text-white rounded-xl px-3 py-1.5 text-sm font-bold min-w-[48px] text-center shrink-0 bg-slate-800 dark:bg-indigo-600">
+          <div className="text-white rounded-xl px-3 py-1.5 text-sm font-bold min-w-[48px] text-center shrink-0 bg-green-800 dark:bg-green-600">
             {order.totalUnits}
           </div>
           <div className="min-w-0 flex-1">

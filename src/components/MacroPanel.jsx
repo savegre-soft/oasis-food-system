@@ -38,7 +38,7 @@ const MacroPanel = ({
   if (readOnly && !values) return null;
 
   const inp =
-    'w-24 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-indigo-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200';
+    'w-24 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200';
 
   return (
     <div className={`rounded-xl p-3 border ${c.border} ${c.bg}`}>

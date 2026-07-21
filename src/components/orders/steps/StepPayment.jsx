@@ -104,7 +104,7 @@ const StepPayment = ({
                 }}
                 className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                   paymentType === val
-                    ? 'bg-slate-800 dark:bg-indigo-600 text-white border-slate-800 dark:border-indigo-600'
+                    ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
                     : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
                 }`}
               >
@@ -132,7 +132,7 @@ const StepPayment = ({
             placeholder="0"
             value={paymentAmount}
             onChange={(e) => setPaymentAmount(e.target.value)}
-            className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 placeholder:text-slate-400 dark:placeholder:text-slate-600"
+            className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-green-600 placeholder:text-slate-400 dark:placeholder:text-slate-600"
           />
         </div>
 
@@ -185,7 +185,7 @@ const StepPayment = ({
               type="date"
               value={paymentDate}
               onChange={(e) => setPaymentDate(e.target.value)}
-              className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
+              className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-green-600"
             />
           </div>
         ) : (
@@ -209,7 +209,7 @@ const StepPayment = ({
             placeholder="Observaciones del pago…"
             value={paymentNotes}
             onChange={(e) => setPaymentNotes(e.target.value)}
-            className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
+            className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-green-600 resize-none placeholder:text-slate-400 dark:placeholder:text-slate-600"
           />
         </div>
       </>
