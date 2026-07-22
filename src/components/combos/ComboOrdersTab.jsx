@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Settings2, Plus, Package } from 'lucide-react';
+import { Settings2, Plus, Package, Sparkles } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
+import { sileo } from 'sileo';
 import { useApp } from '../../context/AppContext';
 
 import Modal from '../Modal';
@@ -9,7 +10,7 @@ import AddComboOrder from './AddComboOrder';
 import ComboOrderCard from './ComboOrderCard';
 
 const COMBO_WEEK_SELECT = `
-  id_combo_week, week_start_date, week_end_date, base_price, status,
+  id_combo_week, week_start_date, week_end_date, base_price, status, image_url,
   combo_week_categories (
     id_combo_week_category, category, max_selections,
     combo_week_category_items (
@@ -28,6 +29,7 @@ const ComboOrdersTab = () => {
   const [orders, setOrders] = useState([]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [showAddOrder, setShowAddOrder] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   const getComboWeek = async () => {
     setLoading(true);
@@ -90,6 +92,36 @@ const ComboOrdersTab = () => {
     getOrders(comboWeek?.id_combo_week);
   };
 
+  const generateImage = async () => {
+    if (!comboWeek) return;
+    setGeneratingImage(true);
+    const { error } = await supabase.functions.invoke('generate-combo-image', {
+      body: { comboWeekId: comboWeek.id_combo_week },
+    });
+    setGeneratingImage(false);
+    if (error) {
+      console.error(error);
+      let detail = '';
+      try {
+        detail = (await error.context?.json())?.error ?? '';
+      } catch {
+        // el body del error no era JSON parseable; se ignora y se usa el mensaje genérico
+      }
+      if (/billing|payment|pago|hard limit|insufficient_quota/i.test(detail)) {
+        sileo.error({
+          title: 'Sin saldo en OpenAI',
+          description:
+            'La cuenta de OpenAI no tiene saldo o alcanzó su límite de pago. Revisa el billing en platform.openai.com.',
+        });
+      } else {
+        sileo.error({ title: 'No se pudo generar la imagen del combo' });
+      }
+      return;
+    }
+    sileo.success({ title: 'Imagen generada' });
+    getComboWeek();
+  };
+
   if (loading) return <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando...</p>;
 
   return (
@@ -124,22 +156,47 @@ const ComboOrdersTab = () => {
       ) : (
         <div className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-            <div>
-              <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">
-                Combo de la semana
-              </p>
-              <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
-                Precio base: <span className="font-semibold">₡{Number(comboWeek.base_price).toLocaleString('es-CR')}</span>
-                {' · '}
-                {(comboWeek.combo_week_categories ?? []).length} categorías configuradas
-              </p>
+            <div className="flex items-center gap-4 min-w-0">
+              {comboWeek.image_url && (
+                <img
+                  src={comboWeek.image_url}
+                  alt="Combo de la semana"
+                  className="w-16 h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">
+                  Combo de la semana
+                </p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
+                  Precio base: <span className="font-semibold">₡{Number(comboWeek.base_price).toLocaleString('es-CR')}</span>
+                  {' · '}
+                  {(comboWeek.combo_week_categories ?? []).length} categorías configuradas
+                </p>
+              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setShowBuilder(true)}
                 className="flex items-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl hover:border-slate-400 transition"
               >
                 <Settings2 size={13} /> Reconfigurar
+              </button>
+              <button
+                onClick={generateImage}
+                disabled={generatingImage}
+                className="flex items-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl hover:border-slate-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generatingImage ? (
+                  <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Sparkles size={13} />
+                )}
+                {generatingImage
+                  ? 'Generando…'
+                  : comboWeek.image_url
+                    ? 'Regenerar imagen'
+                    : 'Generar imagen con IA'}
               </button>
               <button
                 onClick={() => setShowAddOrder(true)}
