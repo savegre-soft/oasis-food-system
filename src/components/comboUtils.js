@@ -32,6 +32,51 @@ export const COMBO_ORDER_STATUS_LABEL = {
   CANCELLED: 'Cancelado',
 };
 
+export const CATEGORY_ORDER = Object.fromEntries(COMBO_CATEGORIES.map((c, i) => [c.key, i]));
+
+export const compareByCategoryThenName = (a, b) =>
+  (CATEGORY_ORDER[a.category] ?? 99) - (CATEGORY_ORDER[b.category] ?? 99) ||
+  a.name.localeCompare(b.name);
+
+// Agrega las selecciones de un conjunto de pedidos de combo por ítem de
+// catálogo (ej. "Arroz blanco: 3000 g"), ordenado por categoría y nombre.
+// Usado por la vista "Por plato" y por el resumen de impresión.
+export const aggregateComboSelections = (orders) => {
+  const grouped = {};
+  for (const order of orders ?? []) {
+    for (const sel of order.combo_order_selections ?? []) {
+      const item = sel.combo_items;
+      if (!item) continue;
+      const key = sel.combo_item_id;
+      if (!grouped[key]) {
+        grouped[key] = {
+          name: item.name,
+          category: sel.category,
+          portion_size_g: item.portion_size_g,
+          count: 0,
+        };
+      }
+      grouped[key].count += 1;
+    }
+  }
+  return Object.values(grouped).sort(compareByCategoryThenName);
+};
+
+// Agrupa una lista ya ordenada por categoría (aggregateComboSelections) en
+// bloques consecutivos, para secciones con encabezado por categoría.
+export const groupByCategory = (aggregatedRows) => {
+  const groups = [];
+  for (const row of aggregatedRows) {
+    const last = groups[groups.length - 1];
+    if (last && last.category === row.category) {
+      last.items.push(row);
+    } else {
+      groups.push({ category: row.category, items: [row] });
+    }
+  }
+  return groups;
+};
+
 // selections: array de filas ya elegidas, cada una con { category, extra_price }
 // (extra_price viene de combo_week_category_items, solo relevante en plato_extra)
 export const computeComboPrice = (basePrice, selections) => {

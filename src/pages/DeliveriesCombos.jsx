@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
 import ComboDeliveryView from '../components/combos/ComboDeliveryView';
+import ComboPrintReport from '../components/combos/ComboPrintReport';
 
 // offset: -1 = previous week, 0 = current week, 1 = next week
 const computeWeekRange = (offset = 0) => {
@@ -33,6 +35,7 @@ const DeliveriesCombos = () => {
 
   const [loading, setLoading] = useState(false);
   const [comboOrders, setComboOrders] = useState([]);
+  const [showPrint, setShowPrint] = useState(false);
 
   const getComboData = async (wsStr, weStr) => {
     setLoading(true);
@@ -81,16 +84,27 @@ const DeliveriesCombos = () => {
   const markComboDelivered = (id) => updateComboOrderStatus(id, 'DELIVERED', '🚚 Combo entregado');
   const markComboPending = (id) => updateComboOrderStatus(id, 'PENDING', 'Combo devuelto a pendiente');
 
+  const weekLabel =
+    'Semana del ' +
+    new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' }) +
+    ' al ' +
+    new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Combos</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">
-          {'Semana del '}
-          {new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' })}
-          {' al '}
-          {new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' })}
-        </p>
+      {showPrint && <ComboPrintReport orders={comboOrders} weekLabel={weekLabel} onClose={() => setShowPrint(false)} />}
+
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Combos</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{weekLabel}</p>
+        </div>
+        <button
+          onClick={() => setShowPrint(true)}
+          className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+        >
+          <Printer size={15} /> Imprimir resumen
+        </button>
       </div>
 
       <div className="flex gap-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-8">

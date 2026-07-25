@@ -1,6 +1,12 @@
 import { useState, useMemo } from 'react';
 import { ChefHat, Package, Truck, Archive, CheckCircle } from 'lucide-react';
-import { COMBO_CATEGORY_LABEL, formatComboQuantity } from '../comboUtils';
+import {
+  CATEGORY_ORDER,
+  COMBO_CATEGORY_LABEL,
+  aggregateComboSelections,
+  groupByCategory,
+  formatComboQuantity,
+} from '../comboUtils';
 
 const SUBTABS = [
   { id: 'cocina', label: 'Cocina', Icon: ChefHat },
@@ -18,31 +24,8 @@ const StatCard = ({ icon, label, value }) => (
   </div>
 );
 
-// Agrega las selecciones de un conjunto de pedidos por ítem de catálogo —
-// usado por la vista "Por plato" (ej. "Arroz blanco: 3000 g").
-const aggregateByItem = (orders) => {
-  const grouped = {};
-  for (const order of orders) {
-    for (const sel of order.combo_order_selections ?? []) {
-      const item = sel.combo_items;
-      if (!item) continue;
-      const key = sel.combo_item_id;
-      if (!grouped[key]) {
-        grouped[key] = {
-          name: item.name,
-          category: sel.category,
-          portion_size_g: item.portion_size_g,
-          count: 0,
-        };
-      }
-      grouped[key].count += 1;
-    }
-  }
-  return Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
-};
-
 const PlatoView = ({ orders }) => {
-  const aggregated = useMemo(() => aggregateByItem(orders), [orders]);
+  const aggregated = useMemo(() => aggregateComboSelections(orders), [orders]);
 
   if (aggregated.length === 0) {
     return (
@@ -53,22 +36,28 @@ const PlatoView = ({ orders }) => {
     );
   }
 
+  const groups = groupByCategory(aggregated);
+
   return (
-    <div className="space-y-3">
-      {aggregated.map((row) => (
-        <div
-          key={row.name + row.category}
-          className="flex items-center justify-between bg-white dark:bg-slate-900 px-5 py-3.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"
-        >
-          <div>
-            <p className="font-semibold text-slate-800 dark:text-slate-100">{row.name}</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              {COMBO_CATEGORY_LABEL[row.category] ?? row.category}
-            </p>
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <div key={group.category}>
+          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+            {COMBO_CATEGORY_LABEL[group.category] ?? group.category}
+          </h3>
+          <div className="space-y-3">
+            {group.items.map((row) => (
+              <div
+                key={row.name}
+                className="flex items-center justify-between bg-white dark:bg-slate-900 px-5 py-3.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"
+              >
+                <p className="font-semibold text-slate-800 dark:text-slate-100">{row.name}</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {formatComboQuantity(row.category, row.count, row.portion_size_g)}
+                </p>
+              </div>
+            ))}
           </div>
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            {formatComboQuantity(row.category, row.count, row.portion_size_g)}
-          </p>
         </div>
       ))}
     </div>
@@ -91,7 +80,13 @@ const ComboOrderCard = ({ order, actions }) => (
     </div>
     {(order.combo_order_selections ?? []).length > 0 && (
       <div className="flex gap-1.5 flex-wrap mt-2 ml-10">
-        {order.combo_order_selections.map((s) => (
+        {[...order.combo_order_selections]
+          .sort(
+            (a, b) =>
+              (CATEGORY_ORDER[a.category] ?? 99) - (CATEGORY_ORDER[b.category] ?? 99) ||
+              (a.combo_items?.name ?? '').localeCompare(b.combo_items?.name ?? '')
+          )
+          .map((s) => (
           <span
             key={s.id_combo_order_selection}
             className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-lg"

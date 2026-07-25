@@ -6,11 +6,20 @@ import { PAYMENT_STATUS_LABEL } from '../../utils/chartUtils';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
 
-const TYPE_LABEL = { monthly: 'Mensual', weekly: 'Semanal', express: 'Express', other: 'Otro' };
+const TYPE_LABEL = {
+  monthly: 'Mensual',
+  weekly: 'Semanal',
+  express: 'Express',
+  combo: 'Combo',
+  bulk: 'Venta masiva',
+  other: 'Otro',
+};
 const TYPE_COLOR  = {
   monthly: 'bg-violet-100 text-violet-700',
   weekly:  'bg-blue-100 text-blue-700',
   express: 'bg-amber-100 text-amber-700',
+  combo:   'bg-pink-100 text-pink-700',
+  bulk:    'bg-teal-100 text-teal-700',
   other:   'bg-slate-200 text-slate-700',
 };
 const STATUS_LABEL = PAYMENT_STATUS_LABEL;

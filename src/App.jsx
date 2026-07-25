@@ -31,6 +31,8 @@ import Profile from './pages/Profile';
 import Planilla from './pages/Planilla';
 import ComboItems from './pages/ComboItems';
 import Combos from './pages/Combos';
+import BulkDishes from './pages/BulkDishes';
+import BulkSales from './pages/BulkSales';
 import { sileo, Toaster } from 'sileo';
 
 export default function App() {
@@ -52,6 +54,8 @@ export default function App() {
             <Route path="/routes" element={<Routes_page />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/combo-items" element={<ComboItems />} />
+            <Route path="/ventas-masivas" element={<BulkSales />} />
+            <Route path="/platos-venta-masiva" element={<BulkDishes />} />
 
             <Route path="/orders" element={<Orders />} />
             <Route path="/combos" element={<Combos />} />
