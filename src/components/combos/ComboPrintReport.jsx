@@ -36,7 +36,6 @@ const ComboPrintReport = ({ orders, weekLabel, onClose }) => {
   const groups = groupByCategory(aggregated);
   const totalOrders = activeOrders.length;
   const totalItems = aggregated.reduce((sum, r) => sum + r.count, 0);
-  const totalRevenue = activeOrders.reduce((sum, o) => sum + (Number(o.price) || 0), 0);
 
   const today = new Date().toLocaleDateString('es-CR', {
     weekday: 'long',
@@ -67,7 +66,7 @@ const ComboPrintReport = ({ orders, weekLabel, onClose }) => {
     const div = printDivRef.current;
     if (!div) return;
 
-    div.innerHTML = buildPrintHTML({ groups, totalOrders, totalItems, totalRevenue, weekLabel, today });
+    div.innerHTML = buildPrintHTML({ groups, totalOrders, totalItems, weekLabel, today });
 
     div.style.display = 'block';
     requestAnimationFrame(() => {
@@ -116,10 +115,9 @@ const ComboPrintReport = ({ orders, weekLabel, onClose }) => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <SummaryCard label="Pedidos" value={totalOrders} icon={<Package size={16} className="text-slate-400" />} />
                 <SummaryCard label="Ítems totales" value={totalItems} icon={<UtensilsCrossed size={16} className="text-slate-400" />} />
-                <SummaryCard label="Ingresos" value={`₡${totalRevenue.toLocaleString('es-CR')}`} icon={<span className="text-slate-400 font-bold">₡</span>} />
               </div>
 
               {groups.map((group) => (
@@ -161,7 +159,7 @@ const SummaryCard = ({ label, value, icon }) => (
   </div>
 );
 
-function buildPrintHTML({ groups, totalOrders, totalItems, totalRevenue, weekLabel, today }) {
+function buildPrintHTML({ groups, totalOrders, totalItems, weekLabel, today }) {
   const groupSections = groups
     .map((group) => {
       const rows = group.items
@@ -198,10 +196,6 @@ function buildPrintHTML({ groups, totalOrders, totalItems, totalRevenue, weekLab
       <div style="flex:1;border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;padding:10px 14px;">
         <p style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Ítems totales</p>
         <p style="font-size:22px;font-weight:800;color:#0f172a;margin:0;">${totalItems}</p>
-      </div>
-      <div style="flex:1;border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;padding:10px 14px;">
-        <p style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Ingresos</p>
-        <p style="font-size:22px;font-weight:800;color:#0f172a;margin:0;">₡${totalRevenue.toLocaleString('es-CR')}</p>
       </div>
     </div>
 
