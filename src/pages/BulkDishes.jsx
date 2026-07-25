@@ -90,7 +90,7 @@ const BulkDishes = () => {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Platos de Venta Masiva</h1>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Platos de Venta</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
               Catálogo de platos que se cocinan en lote para venta (ej. arroz con pollo)
             </p>

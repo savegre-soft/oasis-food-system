@@ -29,12 +29,14 @@ import {
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
+import LogoUrl from '../assets/Oasis-logo.png';
 
-const links = [
-  { to: '/Main', label: 'Dashboards', icon: Home },
+const links = [{ to: '/Main', label: 'Dashboards', icon: Home }];
+
+const ordersLinks = [
   { to: '/orders', label: 'Órdenes', icon: Handbag },
   { to: '/combos', label: 'Combos', icon: Package },
-  { to: '/ventas-masivas', label: 'Ventas Masivas', icon: Boxes },
+  { to: '/ventas-masivas', label: 'Ventas', icon: Boxes },
 ];
 
 const entregasLinks = [
@@ -49,7 +51,7 @@ const gestionLinks = [
   { to: '/routes', label: 'Rutas', icon: RouteIcon },
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
   { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
-  { to: '/platos-venta-masiva', label: 'Platos de Venta Masiva', icon: Layers },
+  { to: '/platos-venta-masiva', label: 'Platos de Venta', icon: Layers },
 ];
 
 const financialLinks = [
@@ -59,7 +61,7 @@ const financialLinks = [
   { to: '/estadisticas', label: 'Estadísticas', icon: ChartScatterIcon },
 ];
 
-const allLinks = [...links, ...entregasLinks, ...gestionLinks, ...financialLinks];
+const allLinks = [...links, ...ordersLinks, ...entregasLinks, ...gestionLinks, ...financialLinks];
 
 export default function Navbar() {
   const nav = useNavigate();
@@ -265,7 +267,7 @@ export default function Navbar() {
       className="sticky top-0 z-50 bg-green-800/95 backdrop-blur-md text-white shadow-lg"
     >
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
-        <h1 className="text-lg font-bold tracking-wide">Oasis Food</h1>
+        <img src={LogoUrl} alt="Oasis Food" className="h-10 w-10 rounded-full object-cover shrink-0" />
 
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-3">
@@ -324,6 +326,14 @@ export default function Navbar() {
             );
           })}
 
+          <Dropdown
+            label="Pedidos"
+            menuKey="pedidos"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={ordersLinks}
+            baseStyle={baseStyle}
+          />
           <Dropdown
             label="Entregas"
             menuKey="entregas"
@@ -503,7 +513,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {[...links, ...entregasLinks, ...gestionLinks, ...financialLinks].map((link) => {
+          {links.map((link) => {
             const Icon = link.icon;
             return (
               <NavLink
@@ -519,6 +529,43 @@ export default function Navbar() {
               </NavLink>
             );
           })}
+
+          <MobileDropdown
+            label="Pedidos"
+            menuKey="pedidos"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={ordersLinks}
+            baseStyle={baseStyle}
+            onNavigate={() => setIsOpen(false)}
+          />
+          <MobileDropdown
+            label="Entregas"
+            menuKey="entregas"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={entregasLinks}
+            baseStyle={baseStyle}
+            onNavigate={() => setIsOpen(false)}
+          />
+          <MobileDropdown
+            label="Gestión"
+            menuKey="gestion"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={gestionLinks}
+            baseStyle={baseStyle}
+            onNavigate={() => setIsOpen(false)}
+          />
+          <MobileDropdown
+            label="Finanzas"
+            menuKey="finanzas"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={financialLinks}
+            baseStyle={baseStyle}
+            onNavigate={() => setIsOpen(false)}
+          />
 
           <div className="flex rounded-lg overflow-hidden border border-green-600 mt-1">
             {[
@@ -588,6 +635,43 @@ function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
                 className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
               >
                 <Icon size={16} />
+                {link.label}
+              </NavLink>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Mismo grupo que Dropdown pero como acordeón vertical, para el menú móvil.
+function MobileDropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle, onNavigate }) {
+  const open = openMenu === menuKey;
+  return (
+    <div>
+      <button
+        onClick={() => toggleMenu(menuKey)}
+        className={`${baseStyle} w-full justify-between hover:bg-green-700`}
+      >
+        {label}
+        <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="pl-3 flex flex-col gap-1 mt-1">
+          {links.map((link) => {
+            const Icon = link.icon;
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
+                }
+              >
+                <Icon size={18} />
                 {link.label}
               </NavLink>
             );
