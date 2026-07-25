@@ -1,3 +1,4 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { COMBO_CATEGORY_LABEL, COMBO_ORDER_STATUS_LABEL, isGramCategory } from '../comboUtils';
 
 const STATUS_CLS = {
@@ -8,8 +9,10 @@ const STATUS_CLS = {
 };
 
 // Tarjeta de un pedido de combo — compartida entre la pestaña Semana
-// (ComboOrdersTab) y la pestaña Histórico (ComboHistoryView).
-const ComboOrderCard = ({ order }) => (
+// (ComboOrdersTab) y la pestaña Histórico (ComboHistoryView). onEdit/onDelete
+// son opcionales: si no se pasan, no se muestran acciones (ej. Histórico solo
+// pasa onDelete).
+const ComboOrderCard = ({ order, onEdit, onDelete }) => (
   <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <p className="font-semibold text-slate-800 dark:text-slate-100">{order.clients?.name}</p>
@@ -19,6 +22,28 @@ const ComboOrderCard = ({ order }) => (
       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-auto">
         ₡{Number(order.price).toLocaleString('es-CR')}
       </span>
+      {(onEdit || onDelete) && (
+        <div className="flex items-center gap-1">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(order)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
+              title="Editar pedido"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(order)}
+              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition"
+              title="Eliminar pedido"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
+      )}
     </div>
     <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Entrega: {order.delivery_date}</p>
     {(order.combo_order_selections ?? []).length > 0 && (
