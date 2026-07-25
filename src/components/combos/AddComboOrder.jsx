@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { sileo } from 'sileo';
-import { COMBO_CATEGORIES, isGramCategory, computeComboPrice } from '../comboUtils';
+import { COMBO_CATEGORIES, isGramCategory, isPooledCategory, computeComboPrice } from '../comboUtils';
 import { toDateString } from '../orderUtils';
 
 const STEPS = ['Cliente', 'Combo', 'Pago', 'Confirmar'];
@@ -24,11 +24,28 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
 
   const categories = comboWeek?.combo_week_categories ?? [];
 
+  // Arroz/Proteína/Acompañamiento/Extra comparten un pool de unidades: lo que
+  // no se usa en una categoría queda libre para otra. Plato Extra mantiene su
+  // propio tope porque tiene costo aparte (ver isPooledCategory).
+  const poolTotal = categories
+    .filter((c) => isPooledCategory(c.category))
+    .reduce((sum, c) => sum + c.max_selections, 0);
+
+  const pooledUsed = categories
+    .filter((c) => isPooledCategory(c.category))
+    .reduce((sum, c) => sum + (selections[c.category]?.size ?? 0), 0);
+
   const toggleSelection = (category, itemId, maxSelections) => {
     setSelections((prev) => {
       const current = new Set(prev[category] ?? []);
       if (current.has(itemId)) {
         current.delete(itemId);
+      } else if (isPooledCategory(category)) {
+        const pooledUsedNow = categories
+          .filter((c) => isPooledCategory(c.category))
+          .reduce((sum, c) => sum + (prev[c.category]?.size ?? 0), 0);
+        if (pooledUsedNow >= poolTotal) return prev;
+        current.add(itemId);
       } else {
         if (current.size >= maxSelections) return prev;
         current.add(itemId);
@@ -244,9 +261,20 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
         {/* Paso 2 — Selecciones del combo */}
         {step === 2 && (
           <div className="space-y-4">
+            {poolTotal > 0 && (
+              <div className="flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900">
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Unidades usadas (Arroz/Proteína/Acompañamiento/Extra)
+                </span>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  {pooledUsed} / {poolTotal}
+                </span>
+              </div>
+            )}
             {categories.map((cat) => {
               const meta = COMBO_CATEGORIES.find((c) => c.key === cat.category);
               const chosen = selections[cat.category] ?? new Set();
+              const pooled = isPooledCategory(cat.category);
               return (
                 <div
                   key={cat.id_combo_week_category}
@@ -255,14 +283,18 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
                   <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
                     {meta?.label ?? cat.category}{' '}
                     <span className="text-slate-400 dark:text-slate-500 font-normal">
-                      (elige hasta {cat.max_selections})
+                      {pooled
+                        ? `(sugerido: ${cat.max_selections}, según unidades disponibles)`
+                        : `(elige hasta ${cat.max_selections})`}
                     </span>
                   </p>
                   <div className="space-y-2">
                     {(cat.combo_week_category_items ?? []).map((cwci) => {
                       const item = cwci.combo_items;
                       const checked = chosen.has(cwci.combo_item_id);
-                      const atLimit = chosen.size >= cat.max_selections && !checked;
+                      const atLimit = pooled
+                        ? pooledUsed >= poolTotal && !checked
+                        : chosen.size >= cat.max_selections && !checked;
                       return (
                         <label
                           key={cwci.id_combo_week_category_item}

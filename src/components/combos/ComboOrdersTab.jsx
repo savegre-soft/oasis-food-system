@@ -129,7 +129,7 @@ const ComboOrdersTab = () => {
       <AnimatePresence>
         {showBuilder && (
           <Modal isOpen={showBuilder} onClose={closeBuilder}>
-            <ComboWeekBuilder onSuccess={closeBuilder} />
+            <ComboWeekBuilder comboWeek={comboWeek} onSuccess={closeBuilder} />
           </Modal>
         )}
       </AnimatePresence>

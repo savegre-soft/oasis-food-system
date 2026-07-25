@@ -20,6 +20,11 @@ export const COMBO_CATEGORY_UNIT = Object.fromEntries(
 
 export const isGramCategory = (category) => category === 'arroz' || category === 'proteina';
 
+// Todas las categorías salvo Plato Extra comparten un mismo "pool" de unidades:
+// lo que el cliente no usa en una (ej. proteína) queda disponible para otra
+// (ej. acompañamientos). Plato Extra queda fuera porque tiene costo aparte.
+export const isPooledCategory = (category) => category !== 'plato_extra';
+
 export const COMBO_ORDER_STATUS_LABEL = {
   PENDING: 'Pendiente',
   PACKED: 'Empacado',

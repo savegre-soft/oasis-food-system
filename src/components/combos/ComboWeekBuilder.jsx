@@ -6,8 +6,10 @@ import { toDateString } from '../orderUtils';
 
 // Construye/abre el combo de la semana: precio base, y por categoría qué
 // ítems del catálogo están disponibles + cuántos puede elegir el cliente.
-const ComboWeekBuilder = ({ onSuccess }) => {
+// Si se pasa `comboWeek`, edita esa semana existente en vez de crear una nueva.
+const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
   const { supabase } = useApp();
+  const isEdit = !!comboWeek;
 
   const [catalog, setCatalog] = useState([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
@@ -16,16 +18,29 @@ const ComboWeekBuilder = ({ onSuccess }) => {
   const inSevenDays = new Date(today);
   inSevenDays.setDate(today.getDate() + 6);
 
-  const [weekStart, setWeekStart] = useState(toDateString(today));
-  const [weekEnd, setWeekEnd] = useState(toDateString(inSevenDays));
-  const [basePrice, setBasePrice] = useState('');
+  const [weekStart, setWeekStart] = useState(comboWeek?.week_start_date ?? toDateString(today));
+  const [weekEnd, setWeekEnd] = useState(comboWeek?.week_end_date ?? toDateString(inSevenDays));
+  const [basePrice, setBasePrice] = useState(comboWeek?.base_price ?? '');
 
   // { [category]: { maxSelections: number, itemIds: Set<number>, extraPrices: {itemId: string} } }
   const emptyConfig = () =>
     Object.fromEntries(
       COMBO_CATEGORIES.map((c) => [c.key, { maxSelections: 1, itemIds: new Set(), extraPrices: {} }])
     );
-  const [config, setConfig] = useState(emptyConfig());
+  const configFromComboWeek = () => {
+    const cfg = emptyConfig();
+    for (const cat of comboWeek?.combo_week_categories ?? []) {
+      const itemIds = new Set();
+      const extraPrices = {};
+      for (const cwci of cat.combo_week_category_items ?? []) {
+        itemIds.add(cwci.combo_item_id);
+        if (cwci.extra_price != null) extraPrices[cwci.combo_item_id] = String(cwci.extra_price);
+      }
+      cfg[cat.category] = { maxSelections: cat.max_selections, itemIds, extraPrices };
+    }
+    return cfg;
+  };
+  const [config, setConfig] = useState(isEdit ? configFromComboWeek() : emptyConfig());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,8 +52,27 @@ const ComboWeekBuilder = ({ onSuccess }) => {
         .eq('is_active', true)
         .order('name');
       if (error) console.error(error);
-      setCatalog(data ?? []);
+      const items = data ?? [];
+      setCatalog(items);
       setLoadingCatalog(false);
+
+      // Si se está editando una semana ya guardada, puede traer ítems que
+      // desde entonces se desactivaron en el catálogo — no tienen casilla
+      // visible para destildarlos, así que quedaban "pegados" y se
+      // regrababan en cada guardado. Se descartan acá al cargar.
+      const validIds = new Set(items.map((i) => i.id_combo_item));
+      setConfig((prev) => {
+        const next = {};
+        for (const key of Object.keys(prev)) {
+          const cat = prev[key];
+          const itemIds = new Set([...cat.itemIds].filter((id) => validIds.has(id)));
+          const extraPrices = Object.fromEntries(
+            Object.entries(cat.extraPrices).filter(([id]) => itemIds.has(Number(id)) || itemIds.has(id))
+          );
+          next[key] = { ...cat, itemIds, extraPrices };
+        }
+        return next;
+      });
     };
     fetchCatalog();
   }, []);
@@ -96,25 +130,64 @@ const ComboWeekBuilder = ({ onSuccess }) => {
     }
     setLoading(true);
 
-    const { data: weekData, error: weekError } = await supabase
-      .schema('operations')
-      .from('combo_weeks')
-      .insert([
-        {
+    let weekId;
+    if (isEdit) {
+      const { error: weekError } = await supabase
+        .schema('operations')
+        .from('combo_weeks')
+        .update({
           week_start_date: weekStart,
           week_end_date: weekEnd,
           base_price: Number(basePrice),
-          status: 'open',
-        },
-      ])
-      .select('id_combo_week')
-      .single();
+        })
+        .eq('id_combo_week', comboWeek.id_combo_week);
 
-    if (weekError) {
-      sileo.error('Error al crear el combo de la semana');
-      console.error(weekError);
-      setLoading(false);
-      return;
+      if (weekError) {
+        sileo.error('Error al actualizar el combo de la semana');
+        console.error(weekError);
+        setLoading(false);
+        return;
+      }
+      weekId = comboWeek.id_combo_week;
+
+      // Se reemplaza toda la configuración de categorías/ítems — el cascade
+      // en combo_week_category_items se encarga de limpiar los hijos. Los
+      // pedidos ya registrados no se ven afectados: combo_order_selections
+      // guarda combo_item_id directo, no depende de esta tabla intermedia.
+      const { error: deleteError } = await supabase
+        .schema('operations')
+        .from('combo_week_categories')
+        .delete()
+        .eq('combo_week_id', weekId);
+
+      if (deleteError) {
+        sileo.error('Error al reemplazar la configuración anterior');
+        console.error(deleteError);
+        setLoading(false);
+        return;
+      }
+    } else {
+      const { data: weekData, error: weekError } = await supabase
+        .schema('operations')
+        .from('combo_weeks')
+        .insert([
+          {
+            week_start_date: weekStart,
+            week_end_date: weekEnd,
+            base_price: Number(basePrice),
+            status: 'open',
+          },
+        ])
+        .select('id_combo_week')
+        .single();
+
+      if (weekError) {
+        sileo.error('Error al crear el combo de la semana');
+        console.error(weekError);
+        setLoading(false);
+        return;
+      }
+      weekId = weekData.id_combo_week;
     }
 
     for (const { key: category } of COMBO_CATEGORIES) {
@@ -126,7 +199,7 @@ const ComboWeekBuilder = ({ onSuccess }) => {
         .from('combo_week_categories')
         .insert([
           {
-            combo_week_id: weekData.id_combo_week,
+            combo_week_id: weekId,
             category,
             max_selections: cat.maxSelections,
           },
@@ -161,14 +234,16 @@ const ComboWeekBuilder = ({ onSuccess }) => {
       }
     }
 
-    sileo.success('Combo de la semana configurado');
+    sileo.success(isEdit ? 'Combo de la semana actualizado' : 'Combo de la semana configurado');
     setLoading(false);
     if (onSuccess) onSuccess();
   };
 
   return (
     <div className="p-2 max-w-2xl mx-auto">
-      <h2 className="text-xl font-bold text-slate-800 mb-1">Configurar combo de la semana</h2>
+      <h2 className="text-xl font-bold text-slate-800 mb-1">
+        {isEdit ? 'Editar combo de la semana' : 'Configurar combo de la semana'}
+      </h2>
       <p className="text-sm text-slate-500 mb-6">
         Elegí qué opciones están disponibles esta semana por categoría y cuántas puede elegir cada
         cliente.
@@ -289,7 +364,7 @@ const ComboWeekBuilder = ({ onSuccess }) => {
           disabled={loading || loadingCatalog}
           className="w-full bg-slate-800 text-white py-3 rounded-xl hover:bg-slate-700 transition disabled:opacity-50 text-sm font-medium"
         >
-          {loading ? 'Guardando...' : 'Guardar combo de la semana'}
+          {loading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Guardar combo de la semana'}
         </button>
       </form>
     </div>
