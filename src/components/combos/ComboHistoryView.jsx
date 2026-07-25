@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { History, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { sileo } from 'sileo';
+import ConfirmDialog from '../ConfirmDialog';
 import ComboOrderCard from './ComboOrderCard';
 
 const HISTORY_PAGE_SIZE = 8;
@@ -10,7 +12,7 @@ const fmtDate = (str, opts) => new Date(str + 'T00:00:00').toLocaleDateString('e
 const COMBO_WEEK_HISTORY_SELECT = `
   id_combo_week, week_start_date, week_end_date, base_price, image_url,
   combo_orders (
-    id_combo_order, delivery_date, price, status,
+    id_combo_order, delivery_date, price, status, payment_id,
     clients ( id_client, name ),
     combo_order_selections ( id_combo_order_selection, category, combo_items ( name, portion_size_g ) )
   )
@@ -24,21 +26,48 @@ const ComboHistoryView = () => {
   const [weeks, setWeeks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
+  const [deletingOrder, setDeletingOrder] = useState(null);
+
+  const fetchWeeks = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('combo_weeks')
+      .select(COMBO_WEEK_HISTORY_SELECT)
+      .order('id_combo_week', { ascending: false });
+    if (error) console.error(error);
+    setWeeks((data ?? []).slice(1));
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchWeeks = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('combo_weeks')
-        .select(COMBO_WEEK_HISTORY_SELECT)
-        .order('id_combo_week', { ascending: false });
-      if (error) console.error(error);
-      setWeeks((data ?? []).slice(1));
-      setLoading(false);
-    };
     fetchWeeks();
   }, []);
+
+  const handleDeleteOrder = async () => {
+    if (!deletingOrder) return;
+    const { error: orderError } = await supabase
+      .schema('operations')
+      .from('combo_orders')
+      .delete()
+      .eq('id_combo_order', deletingOrder.id_combo_order); // cascada: combo_order_selections
+    if (orderError) {
+      sileo.error('Error al eliminar el pedido de combo');
+      console.error(orderError);
+      return;
+    }
+    if (deletingOrder.payment_id) {
+      const { error: paymentError } = await supabase
+        .schema('operations')
+        .from('payments')
+        .delete()
+        .eq('id_payment', deletingOrder.payment_id);
+      if (paymentError) console.error(paymentError);
+    }
+    sileo.success('Pedido de combo eliminado');
+    setDeletingOrder(null);
+    fetchWeeks();
+  };
 
   const totalPages = Math.ceil(weeks.length / HISTORY_PAGE_SIZE);
   const paginated = weeks.slice(page * HISTORY_PAGE_SIZE, (page + 1) * HISTORY_PAGE_SIZE);
@@ -56,6 +85,14 @@ const ComboHistoryView = () => {
 
   return (
     <div className="space-y-8">
+      <ConfirmDialog
+        open={!!deletingOrder}
+        title="¿Eliminar pedido de combo?"
+        message={`Se eliminará el pedido de "${deletingOrder?.clients?.name ?? ''}" y su pago asociado.`}
+        onConfirm={handleDeleteOrder}
+        onCancel={() => setDeletingOrder(null)}
+      />
+
       {paginated.map((week) => (
         <div key={week.id_combo_week}>
           <div className="flex items-center gap-3 mb-3">
@@ -86,7 +123,7 @@ const ComboHistoryView = () => {
               {[...week.combo_orders]
                 .sort((a, b) => b.id_combo_order - a.id_combo_order)
                 .map((o) => (
-                  <ComboOrderCard key={o.id_combo_order} order={o} />
+                  <ComboOrderCard key={o.id_combo_order} order={o} onDelete={setDeletingOrder} />
                 ))}
             </div>
           )}

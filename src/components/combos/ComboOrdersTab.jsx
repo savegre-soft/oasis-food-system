@@ -5,8 +5,10 @@ import { sileo } from 'sileo';
 import { useApp } from '../../context/AppContext';
 
 import Modal from '../Modal';
+import ConfirmDialog from '../ConfirmDialog';
 import ComboWeekBuilder from './ComboWeekBuilder';
 import AddComboOrder from './AddComboOrder';
+import EditComboOrder from './EditComboOrder';
 import ComboOrderCard from './ComboOrderCard';
 
 const COMBO_WEEK_SELECT = `
@@ -29,6 +31,8 @@ const ComboOrdersTab = () => {
   const [orders, setOrders] = useState([]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [showAddOrder, setShowAddOrder] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
+  const [deletingOrder, setDeletingOrder] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
 
   const getComboWeek = async () => {
@@ -55,9 +59,10 @@ const ComboOrdersTab = () => {
       .schema('operations')
       .from('combo_orders')
       .select(
-        `id_combo_order, delivery_date, price, status, notes,
+        `id_combo_order, delivery_date, price, status, notes, payment_id,
          clients ( id_client, name ),
-         combo_order_selections ( id_combo_order_selection, category, combo_items ( name, portion_size_g ) )`
+         payments ( status, payment_date ),
+         combo_order_selections ( id_combo_order_selection, category, combo_item_id, combo_items ( name, portion_size_g ) )`
       )
       .eq('combo_week_id', weekId)
       .order('id_combo_order', { ascending: false });
@@ -89,6 +94,36 @@ const ComboOrdersTab = () => {
 
   const closeAddOrder = () => {
     setShowAddOrder(false);
+    getOrders(comboWeek?.id_combo_week);
+  };
+
+  const closeEditOrder = () => {
+    setEditingOrder(null);
+    getOrders(comboWeek?.id_combo_week);
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!deletingOrder) return;
+    const { error: orderError } = await supabase
+      .schema('operations')
+      .from('combo_orders')
+      .delete()
+      .eq('id_combo_order', deletingOrder.id_combo_order); // cascada: combo_order_selections
+    if (orderError) {
+      sileo.error('Error al eliminar el pedido de combo');
+      console.error(orderError);
+      return;
+    }
+    if (deletingOrder.payment_id) {
+      const { error: paymentError } = await supabase
+        .schema('operations')
+        .from('payments')
+        .delete()
+        .eq('id_payment', deletingOrder.payment_id);
+      if (paymentError) console.error(paymentError);
+    }
+    sileo.success('Pedido de combo eliminado');
+    setDeletingOrder(null);
     getOrders(comboWeek?.id_combo_week);
   };
 
@@ -141,6 +176,22 @@ const ComboOrdersTab = () => {
           </Modal>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {editingOrder && comboWeek && (
+          <Modal isOpen={!!editingOrder} onClose={closeEditOrder}>
+            <EditComboOrder order={editingOrder} comboWeek={comboWeek} onSuccess={closeEditOrder} />
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <ConfirmDialog
+        open={!!deletingOrder}
+        title="¿Eliminar pedido de combo?"
+        message={`Se eliminará el pedido de "${deletingOrder?.clients?.name ?? ''}" y su pago asociado.`}
+        onConfirm={handleDeleteOrder}
+        onCancel={() => setDeletingOrder(null)}
+      />
 
       {!comboWeek ? (
         <div className="text-center py-20 text-slate-400 dark:text-slate-600">
@@ -215,7 +266,12 @@ const ComboOrdersTab = () => {
           ) : (
             <div className="space-y-3">
               {orders.map((o) => (
-                <ComboOrderCard key={o.id_combo_order} order={o} />
+                <ComboOrderCard
+                  key={o.id_combo_order}
+                  order={o}
+                  onEdit={setEditingOrder}
+                  onDelete={setDeletingOrder}
+                />
               ))}
             </div>
           )}
