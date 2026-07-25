@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
@@ -37,28 +37,34 @@ const DeliveriesCombos = () => {
   const [comboOrders, setComboOrders] = useState([]);
   const [showPrint, setShowPrint] = useState(false);
 
-  const getComboData = async (wsStr, weStr) => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .schema('operations')
-      .from('combo_orders')
-      .select(
-        `id_combo_order, delivery_date, price, status,
+  const getComboData = useCallback(
+    async (wsStr, weStr) => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('combo_orders')
+        .select(
+          `id_combo_order, delivery_date, price, status,
          clients ( id_client, name ),
          combo_order_selections ( id_combo_order_selection, category, combo_item_id, combo_items ( name, portion_size_g ) )`
-      )
-      .gte('delivery_date', wsStr)
-      .lte('delivery_date', weStr)
-      .order('id_combo_order', { ascending: false });
-    if (error) console.error(error);
-    setComboOrders(data ?? []);
-    setLoading(false);
-  };
+        )
+        .gte('delivery_date', wsStr)
+        .lte('delivery_date', weStr)
+        .order('id_combo_order', { ascending: false });
+      if (error) console.error(error);
+      setComboOrders(data ?? []);
+      setLoading(false);
+    },
+    [supabase]
+  );
 
   useEffect(() => {
-    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
-    getComboData(ws, we);
-  }, [weekOffset]);
+    const run = async () => {
+      const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
+      await getComboData(ws, we);
+    };
+    run();
+  }, [weekOffset, getComboData]);
 
   const refresh = async () => {
     const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);

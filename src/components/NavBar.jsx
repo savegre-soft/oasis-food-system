@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -135,7 +135,7 @@ export default function Navbar() {
 
     // Limpiar el timer si el componente se desmonta o el query cambia
     return () => clearTimeout(debounceRef.current);
-  }, [searchQuery]);
+  }, [searchQuery, supabase]);
 
   function handleSearchSelect(to) {
     closeSearch();
@@ -403,6 +403,7 @@ export default function Navbar() {
                       { key: 'light', Icon: Sun, label: 'Claro' },
                       { key: 'dark', Icon: Moon, label: 'Oscuro' },
                       { key: 'system', Icon: Monitor, label: 'Auto' },
+                    // eslint-disable-next-line no-unused-vars -- Ic renders as <Ic/> below; no-unused-vars doesn't see JSX tag usage of a mapped/destructured var
                     ].map(({ key, Icon: Ic, label }) => (
                       <button
                         key={key}
@@ -524,6 +525,7 @@ export default function Navbar() {
               { key: 'light', Icon: Sun, label: 'Claro' },
               { key: 'dark', Icon: Moon, label: 'Oscuro' },
               { key: 'system', Icon: Monitor, label: 'Auto' },
+              // eslint-disable-next-line no-unused-vars -- Ic renders as <Ic/> below; no-unused-vars doesn't see JSX tag usage of a mapped/destructured var
             ].map(({ key, Icon: Ic, label }) => (
               <button
                 key={key}

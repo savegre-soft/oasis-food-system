@@ -234,6 +234,7 @@ const ComboDeliveryView = ({ orders, onPack, onDeliver, onUnpack, onUndeliver })
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2">
+          {/* eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a mapped/destructured var */}
           {SUBTABS.map(({ id, label, Icon }) => (
             <button
               key={id}

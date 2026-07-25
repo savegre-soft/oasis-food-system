@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { UtensilsCrossed, Plus, Pencil, Trash2 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
@@ -18,7 +18,7 @@ const BulkDishes = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
 
-  const getData = async () => {
+  const getData = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .schema('operations')
@@ -29,11 +29,14 @@ const BulkDishes = () => {
     if (error) console.error(error);
     setItems(data ?? []);
     setLoading(false);
-  };
+  }, [supabase]);
 
   useEffect(() => {
-    getData();
-  }, []);
+    const run = async () => {
+      await getData();
+    };
+    run();
+  }, [getData]);
 
   const openAdd = () => {
     setEditingItem(null);
