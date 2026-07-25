@@ -89,7 +89,7 @@ export const buildIncomeStats = (payments, dateRange) => {
     dayMap[d.toISOString().split('T')[0]] = 0;
   }
 
-  const typeMap = { monthly: 0, weekly: 0, express: 0, other: 0 };
+  const typeMap = { monthly: 0, weekly: 0, express: 0, combo: 0, bulk: 0, other: 0 };
   const statusMap = { pending: 0, paid: 0, cancelled: 0 };
   const clientMap = {};
   const weekMap = {};
@@ -119,6 +119,8 @@ export const buildIncomeStats = (payments, dateRange) => {
     { name: 'Mensual', value: typeMap.monthly },
     { name: 'Semanal', value: typeMap.weekly },
     { name: 'Express', value: typeMap.express },
+    { name: 'Combo', value: typeMap.combo },
+    { name: 'Venta masiva', value: typeMap.bulk },
     { name: 'Otro', value: typeMap.other },
   ].filter((x) => x.value > 0);
 

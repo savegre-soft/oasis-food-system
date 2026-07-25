@@ -24,6 +24,8 @@ import {
   Sun,
   Moon,
   Monitor,
+  Boxes,
+  Layers,
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
@@ -32,6 +34,7 @@ const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
   { to: '/orders', label: 'Órdenes', icon: Handbag },
   { to: '/combos', label: 'Combos', icon: Package },
+  { to: '/ventas-masivas', label: 'Ventas Masivas', icon: Boxes },
 ];
 
 const entregasLinks = [
@@ -46,6 +49,7 @@ const gestionLinks = [
   { to: '/routes', label: 'Rutas', icon: RouteIcon },
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
   { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
+  { to: '/platos-venta-masiva', label: 'Platos de Venta Masiva', icon: Layers },
 ];
 
 const financialLinks = [
