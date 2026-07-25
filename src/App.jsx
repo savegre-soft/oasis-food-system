@@ -33,7 +33,7 @@ import ComboItems from './pages/ComboItems';
 import Combos from './pages/Combos';
 import BulkDishes from './pages/BulkDishes';
 import BulkSales from './pages/BulkSales';
-import { sileo, Toaster } from 'sileo';
+import { Toaster } from 'sileo';
 
 export default function App() {
   return (

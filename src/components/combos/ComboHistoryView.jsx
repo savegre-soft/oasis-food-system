@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { History, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { sileo } from 'sileo';
@@ -28,7 +28,7 @@ const ComboHistoryView = () => {
   const [page, setPage] = useState(0);
   const [deletingOrder, setDeletingOrder] = useState(null);
 
-  const fetchWeeks = async () => {
+  const fetchWeeks = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .schema('operations')
@@ -38,11 +38,14 @@ const ComboHistoryView = () => {
     if (error) console.error(error);
     setWeeks((data ?? []).slice(1));
     setLoading(false);
-  };
+  }, [supabase]);
 
   useEffect(() => {
-    fetchWeeks();
-  }, []);
+    const run = async () => {
+      await fetchWeeks();
+    };
+    run();
+  }, [fetchWeeks]);
 
   const handleDeleteOrder = async () => {
     if (!deletingOrder) return;

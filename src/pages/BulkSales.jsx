@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Plus, Boxes } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
@@ -30,7 +30,7 @@ const BulkSales = () => {
   const [deletingEntry, setDeletingEntry] = useState(null);
   const [deletingBatch, setDeletingBatch] = useState(null);
 
-  const getBatches = async () => {
+  const getBatches = useCallback(async () => {
     const { data, error } = await supabase
       .schema('operations')
       .from('bulk_sale_batches')
@@ -39,9 +39,9 @@ const BulkSales = () => {
       .order('id_bulk_sale_batch', { ascending: false });
     if (error) console.error(error);
     setBatches(data ?? []);
-  };
+  }, [supabase]);
 
-  const getData = async () => {
+  const getData = useCallback(async () => {
     setLoading(true);
     const [dishesRes, clientsRes] = await Promise.all([
       supabase
@@ -56,11 +56,14 @@ const BulkSales = () => {
     setClients(clientsRes.data ?? []);
     await getBatches();
     setLoading(false);
-  };
+  }, [supabase, getBatches]);
 
   useEffect(() => {
-    getData();
-  }, []);
+    const run = async () => {
+      await getData();
+    };
+    run();
+  }, [getData]);
 
   const closeAddBatch = () => {
     setShowAddBatch(false);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { motion } from 'framer-motion';
 import { Pencil, Check, X, Eye, Lock } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';

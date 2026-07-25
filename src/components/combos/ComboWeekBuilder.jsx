@@ -75,7 +75,7 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
       });
     };
     fetchCatalog();
-  }, []);
+  }, [supabase]);
 
   const toggleItem = (category, itemId) => {
     setConfig((prev) => {

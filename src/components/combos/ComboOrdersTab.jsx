@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Settings2, Plus, Package, Sparkles } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { sileo } from 'sileo';
@@ -35,7 +35,7 @@ const ComboOrdersTab = () => {
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
 
-  const getComboWeek = async () => {
+  const getComboWeek = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .schema('operations')
@@ -48,27 +48,30 @@ const ComboOrdersTab = () => {
     if (error) console.error(error);
     setComboWeek(data ?? null);
     setLoading(false);
-  };
+  }, [supabase]);
 
-  const getOrders = async (weekId) => {
-    if (!weekId) {
-      setOrders([]);
-      return;
-    }
-    const { data, error } = await supabase
-      .schema('operations')
-      .from('combo_orders')
-      .select(
-        `id_combo_order, delivery_date, price, status, notes, payment_id,
+  const getOrders = useCallback(
+    async (weekId) => {
+      if (!weekId) {
+        setOrders([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('combo_orders')
+        .select(
+          `id_combo_order, delivery_date, price, status, notes, payment_id,
          clients ( id_client, name ),
          payments ( status, payment_date ),
          combo_order_selections ( id_combo_order_selection, category, combo_item_id, combo_items ( name, portion_size_g ) )`
-      )
-      .eq('combo_week_id', weekId)
-      .order('id_combo_order', { ascending: false });
-    if (error) console.error(error);
-    setOrders(data ?? []);
-  };
+        )
+        .eq('combo_week_id', weekId)
+        .order('id_combo_order', { ascending: false });
+      if (error) console.error(error);
+      setOrders(data ?? []);
+    },
+    [supabase]
+  );
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -79,13 +82,19 @@ const ComboOrdersTab = () => {
         .order('name');
       setClients(data ?? []);
     };
-    fetchClients();
-    getComboWeek();
-  }, []);
+    const run = async () => {
+      await fetchClients();
+      await getComboWeek();
+    };
+    run();
+  }, [supabase, getComboWeek]);
 
   useEffect(() => {
-    getOrders(comboWeek?.id_combo_week);
-  }, [comboWeek]);
+    const run = async () => {
+      await getOrders(comboWeek?.id_combo_week);
+    };
+    run();
+  }, [comboWeek, getOrders]);
 
   const closeBuilder = () => {
     setShowBuilder(false);
