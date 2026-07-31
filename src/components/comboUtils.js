@@ -14,9 +14,7 @@ export const COMBO_CATEGORY_LABEL = Object.fromEntries(
   COMBO_CATEGORIES.map((c) => [c.key, c.label])
 );
 
-export const COMBO_CATEGORY_UNIT = Object.fromEntries(
-  COMBO_CATEGORIES.map((c) => [c.key, c.unit])
-);
+export const COMBO_CATEGORY_UNIT = Object.fromEntries(COMBO_CATEGORIES.map((c) => [c.key, c.unit]));
 
 export const isGramCategory = (category) => category === 'arroz' || category === 'proteina';
 
@@ -77,13 +75,53 @@ export const groupByCategory = (aggregatedRows) => {
   return groups;
 };
 
-// selections: array de filas ya elegidas, cada una con { category, extra_price }
-// (extra_price viene de combo_week_category_items, solo relevante en plato_extra)
+// selections: array de filas, UNA POR UNIDAD elegida (un ítem con cantidad 3
+// aparece como 3 filas — mismo criterio que ya usa aggregateComboSelections
+// para contar producción), cada una con { category, extra_price, is_extra,
+// extra_charge }. extra_price viene de combo_week_category_items (solo
+// relevante en plato_extra, se cobra por cada unidad normal); extra_charge es
+// el monto ingresado a mano por unidad que excede el máximo configurado de su
+// categoría (ver useComboSelections) — en ese caso reemplaza a extra_price
+// para esa fila, no se suman.
 export const computeComboPrice = (basePrice, selections) => {
-  const extrasTotal = (selections ?? [])
-    .filter((s) => s.category === 'plato_extra')
-    .reduce((sum, s) => sum + (Number(s.extra_price) || 0), 0);
+  const extrasTotal = (selections ?? []).reduce((sum, s) => {
+    if (s.is_extra) return sum + (Number(s.extra_charge) || 0);
+    if (s.category === 'plato_extra') return sum + (Number(s.extra_price) || 0);
+    return sum;
+  }, 0);
   return (Number(basePrice) || 0) + extrasTotal;
+};
+
+// Agrupa filas por-unidad (ver computeComboPrice) de vuelta por ítem de
+// catálogo, para mostrarlas como "Ensalada ×3" en vez de 3 líneas repetidas.
+// Usado en el resumen de confirmación del pedido y en ComboOrderCard.
+export const groupSelectionsByItem = (rows) => {
+  const map = new Map();
+  for (const row of rows ?? []) {
+    const key = row.combo_item_id;
+    if (!map.has(key)) {
+      map.set(key, {
+        combo_item_id: key,
+        category: row.category,
+        combo_items: row.combo_items,
+        extra_price: row.extra_price,
+        qty: 0,
+        extraQty: 0,
+        extraTotal: 0,
+      });
+    }
+    const g = map.get(key);
+    g.qty += 1;
+    if (row.is_extra) {
+      g.extraQty += 1;
+      g.extraTotal += Number(row.extra_charge) || 0;
+    }
+  }
+  return Array.from(map.values()).sort(
+    (a, b) =>
+      (CATEGORY_ORDER[a.category] ?? 99) - (CATEGORY_ORDER[b.category] ?? 99) ||
+      (a.combo_items?.name ?? '').localeCompare(b.combo_items?.name ?? '')
+  );
 };
 
 // Formatea la cantidad agregada de un ítem para la vista "por plato":
