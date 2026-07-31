@@ -14,7 +14,7 @@ const COMBO_WEEK_HISTORY_SELECT = `
   combo_orders (
     id_combo_order, delivery_date, price, status, payment_id,
     clients ( id_client, name ),
-    combo_order_selections ( id_combo_order_selection, category, combo_items ( name, portion_size_g ) )
+    combo_order_selections ( id_combo_order_selection, category, is_extra, extra_charge, combo_items ( name, portion_size_g ) )
   )
 `;
 

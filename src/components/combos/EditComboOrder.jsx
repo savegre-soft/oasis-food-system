@@ -2,10 +2,13 @@ import { useState, useMemo } from 'react';
 import { Check } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { sileo } from 'sileo';
-import { COMBO_CATEGORIES, isGramCategory, isPooledCategory, computeComboPrice } from '../comboUtils';
+import { computeComboPrice } from '../comboUtils';
 import { toDateString } from '../orderUtils';
+import { useComboSelections } from '../../hooks/useComboSelections';
+import ComboCategorySelector from './ComboCategorySelector';
+import ComboExtraChargeModal from './ComboExtraChargeModal';
 
-// order: fila de combo_orders con combo_order_selections(combo_item_id, category)
+// order: fila de combo_orders con combo_order_selections(combo_item_id, category, is_extra, extra_charge)
 // y payments(status, payment_date) anidados (misma forma que usa ComboOrdersTab).
 // comboWeek: la semana a la que pertenece el pedido, con combo_week_categories
 // (misma forma que usa AddComboOrder) — define qué ítems se pueden elegir.
@@ -16,68 +19,100 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
 
   const categories = comboWeek?.combo_week_categories ?? [];
 
-  const initialSelections = () => {
-    const sel = {};
+  // Cada fila guardada es una unidad (ver comboUtils): se reconstruyen tanto
+  // las cantidades por ítem como el historial de precios de las unidades
+  // extra, en el mismo orden en que fueron guardadas.
+  const buildInitial = () => {
+    const quantities = {};
+    const extraCharges = {};
     for (const s of order.combo_order_selections ?? []) {
-      if (!sel[s.category]) sel[s.category] = new Set();
-      sel[s.category].add(s.combo_item_id);
+      quantities[s.category] = quantities[s.category] ?? {};
+      quantities[s.category][s.combo_item_id] = (quantities[s.category][s.combo_item_id] ?? 0) + 1;
+      if (s.is_extra) {
+        const key = `${s.category}:${s.combo_item_id}`;
+        extraCharges[key] = [...(extraCharges[key] ?? []), s.extra_charge];
+      }
     }
-    return sel;
+    return { quantities, extraCharges };
   };
 
   const [deliveryDate, setDeliveryDate] = useState(order.delivery_date);
-  const [selections, setSelections] = useState(initialSelections);
   const [status, setStatus] = useState(order.payments?.status ?? 'pending');
-  const [paymentDate, setPaymentDate] = useState(order.payments?.payment_date ?? toDateString(new Date()));
+  const [paymentDate, setPaymentDate] = useState(
+    order.payments?.payment_date ?? toDateString(new Date())
+  );
   const [notes, setNotes] = useState(order.notes ?? '');
   const [loading, setLoading] = useState(false);
+  const [pendingExtra, setPendingExtra] = useState(null);
 
-  // Mismo modelo de pool que AddComboOrder: Arroz/Proteína/Acompañamiento/Extra
-  // comparten unidades; Plato Extra mantiene su propio tope (costo aparte).
-  const poolTotal = categories
-    .filter((c) => isPooledCategory(c.category))
-    .reduce((sum, c) => sum + c.max_selections, 0);
+  const {
+    quantities,
+    extraCharges,
+    poolTotal,
+    pooledUsed,
+    wouldExceedLimit,
+    qtyOf,
+    extraCountOf,
+    extraTotalOf,
+    lastExtraCharge,
+    addUnit,
+    addExtraUnit,
+    removeUnit,
+  } = useComboSelections(categories, buildInitial());
 
-  const pooledUsed = categories
-    .filter((c) => isPooledCategory(c.category))
-    .reduce((sum, c) => sum + (selections[c.category]?.size ?? 0), 0);
+  const handleIncrement = (category, itemId, maxSelections, itemName) => {
+    if (wouldExceedLimit(category, maxSelections)) {
+      setPendingExtra({
+        category,
+        itemId,
+        itemName,
+        unitNumber: extraCountOf(category, itemId) + 1,
+        defaultAmount: lastExtraCharge(category, itemId),
+      });
+      return;
+    }
+    addUnit(category, itemId);
+  };
 
-  const toggleSelection = (category, itemId, maxSelections) => {
-    setSelections((prev) => {
-      const current = new Set(prev[category] ?? []);
-      if (current.has(itemId)) {
-        current.delete(itemId);
-      } else if (isPooledCategory(category)) {
-        const pooledUsedNow = categories
-          .filter((c) => isPooledCategory(c.category))
-          .reduce((sum, c) => sum + (prev[c.category]?.size ?? 0), 0);
-        if (pooledUsedNow >= poolTotal) return prev;
-        current.add(itemId);
-      } else {
-        if (current.size >= maxSelections) return prev;
-        current.add(itemId);
-      }
-      return { ...prev, [category]: current };
-    });
+  const confirmExtra = (amount) => {
+    if (!pendingExtra) return;
+    addExtraUnit(pendingExtra.category, pendingExtra.itemId, amount);
+    setPendingExtra(null);
   };
 
   const flatSelections = useMemo(() => {
     const rows = [];
     for (const cat of categories) {
-      const chosen = selections[cat.category] ?? new Set();
       for (const cwci of cat.combo_week_category_items ?? []) {
-        if (chosen.has(cwci.combo_item_id)) {
+        const itemId = cwci.combo_item_id;
+        const qty = quantities[cat.category]?.[itemId] ?? 0;
+        if (qty === 0) continue;
+        const extraList = extraCharges[`${cat.category}:${itemId}`] ?? [];
+        const normalQty = qty - extraList.length;
+        for (let i = 0; i < normalQty; i++) {
           rows.push({
             category: cat.category,
-            combo_item_id: cwci.combo_item_id,
+            combo_item_id: itemId,
             extra_price: cwci.extra_price,
-            item: cwci.combo_items,
+            is_extra: false,
+            extra_charge: null,
+            combo_items: cwci.combo_items,
+          });
+        }
+        for (const charge of extraList) {
+          rows.push({
+            category: cat.category,
+            combo_item_id: itemId,
+            extra_price: cwci.extra_price,
+            is_extra: true,
+            extra_charge: charge,
+            combo_items: cwci.combo_items,
           });
         }
       }
     }
     return rows;
-  }, [selections, categories]);
+  }, [categories, quantities, extraCharges]);
 
   const totalPrice = computeComboPrice(comboWeek?.base_price, flatSelections);
 
@@ -151,6 +186,8 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
             combo_order_id: order.id_combo_order,
             combo_item_id: s.combo_item_id,
             category: s.category,
+            is_extra: s.is_extra,
+            extra_charge: s.is_extra ? s.extra_charge : null,
           }))
         );
       if (selError) {
@@ -167,81 +204,33 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-2 max-w-2xl mx-auto dark:bg-slate-950 transition-colors space-y-5">
+    <form
+      onSubmit={handleSubmit}
+      className="p-2 max-w-2xl mx-auto dark:bg-slate-950 transition-colors space-y-5"
+    >
       <div>
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Editar pedido de combo</h2>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+          Editar pedido de combo
+        </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{order.clients?.name}</p>
       </div>
 
       <div className="space-y-4">
-        {poolTotal > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900">
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              Unidades usadas (Arroz/Proteína/Acompañamiento/Extra)
-            </span>
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {pooledUsed} / {poolTotal}
-            </span>
-          </div>
-        )}
-        {categories.map((cat) => {
-          const meta = COMBO_CATEGORIES.find((c) => c.key === cat.category);
-          const chosen = selections[cat.category] ?? new Set();
-          const pooled = isPooledCategory(cat.category);
-          return (
-            <div
-              key={cat.id_combo_week_category}
-              className="border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-4"
-            >
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">
-                {meta?.label ?? cat.category}{' '}
-                <span className="text-slate-400 dark:text-slate-500 font-normal">
-                  {pooled
-                    ? `(sugerido: ${cat.max_selections}, según unidades disponibles)`
-                    : `(elige hasta ${cat.max_selections})`}
-                </span>
-              </p>
-              <div className="space-y-2">
-                {(cat.combo_week_category_items ?? []).map((cwci) => {
-                  const item = cwci.combo_items;
-                  const checked = chosen.has(cwci.combo_item_id);
-                  const atLimit = pooled
-                    ? pooledUsed >= poolTotal && !checked
-                    : chosen.size >= cat.max_selections && !checked;
-                  return (
-                    <label
-                      key={cwci.id_combo_week_category_item}
-                      className={`flex items-center gap-2 text-sm ${atLimit ? 'text-slate-300 dark:text-slate-700' : 'text-slate-700 dark:text-slate-300'}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={atLimit}
-                        onChange={() =>
-                          toggleSelection(cat.category, cwci.combo_item_id, cat.max_selections)
-                        }
-                      />
-                      {item?.name}
-                      {isGramCategory(cat.category) && (
-                        <span className="text-xs text-slate-400 dark:text-slate-500">
-                          ({item?.portion_size_g} g)
-                        </span>
-                      )}
-                      {cat.category === 'plato_extra' && (
-                        <span className="text-xs text-amber-600 dark:text-amber-400">
-                          +₡{Number(cwci.extra_price ?? 0).toLocaleString()}
-                        </span>
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        <ComboCategorySelector
+          categories={categories}
+          poolTotal={poolTotal}
+          pooledUsed={pooledUsed}
+          qtyOf={qtyOf}
+          extraCountOf={extraCountOf}
+          extraTotalOf={extraTotalOf}
+          onIncrement={handleIncrement}
+          onDecrement={removeUnit}
+        />
 
         <div className="flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Precio total</span>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            Precio total
+          </span>
           <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
             ₡{totalPrice.toLocaleString('es-CR')}
           </span>
@@ -330,6 +319,12 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
           <Check size={16} /> {loading ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </div>
+
+      <ComboExtraChargeModal
+        pending={pendingExtra}
+        onConfirm={confirmExtra}
+        onCancel={() => setPendingExtra(null)}
+      />
     </form>
   );
 };
