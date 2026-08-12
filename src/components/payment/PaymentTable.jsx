@@ -3,18 +3,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pencil, Check, X, Eye, Lock } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
-import { PAYMENT_STATUS_LABEL } from '../../utils/chartUtils';
+import { PAYMENT_STATUS_LABEL, PAYMENT_TYPE_LABEL } from '../../utils/chartUtils';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
 
-const TYPE_LABEL = {
-  monthly: 'Mensual',
-  weekly: 'Semanal',
-  express: 'Express',
-  combo: 'Combo',
-  bulk: 'Venta masiva',
-  other: 'Otro',
-};
+const TYPE_LABEL = PAYMENT_TYPE_LABEL;
 const TYPE_COLOR  = {
   monthly: 'bg-violet-100 text-violet-700',
   weekly:  'bg-blue-100 text-blue-700',

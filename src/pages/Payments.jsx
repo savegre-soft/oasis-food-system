@@ -11,7 +11,7 @@ import OrderDetailModal from '../components/OrderDetailModal';
 import PaymentTable from '../components/payment/PaymentTable';
 import PaymentStats from '../components/payment/PaymentStats';
 import ManualIncomeModal from '../components/payment/ManualIncomeModal';
-import { buildIncomeStats, PAYMENT_STATUS_LABEL } from '../utils/chartUtils';
+import { buildIncomeStats, PAYMENT_STATUS_LABEL, PAYMENT_TYPE_LABEL } from '../utils/chartUtils';
 import { getThisMonth } from '../hooks/useDashboardData';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -56,6 +56,8 @@ const Payments = () => {
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
   const [editingStatus, setEditingStatus] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [clientFilter, setClientFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [chartRange, setChartRange] = useState(getThisMonth);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -100,7 +102,24 @@ const Payments = () => {
 
   useEffect(() => {
     setSelectedIds([]);
-  }, [tab, statusFilter, search, dateRange]);
+  }, [tab, statusFilter, clientFilter, typeFilter, search, dateRange]);
+
+  // ── Derived data — filter options ───────────────────────────────────────────
+
+  const clientOptions = useMemo(() => {
+    const map = new Map();
+    payments.forEach((p) => {
+      const key = p.client_id ?? 'manual';
+      const name = p.clients?.name ?? (p.client_id ? `Cliente ${p.client_id}` : 'Ingreso manual');
+      if (!map.has(key)) map.set(key, name);
+    });
+    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
+  }, [payments]);
+
+  const typeOptions = useMemo(() => {
+    const present = new Set(payments.map((p) => p.payment_type).filter(Boolean));
+    return Array.from(present).sort((a, b) => (PAYMENT_TYPE_LABEL[a] ?? a).localeCompare(PAYMENT_TYPE_LABEL[b] ?? b));
+  }, [payments]);
 
   // ── Derived data — table ────────────────────────────────────────────────────
 
@@ -134,9 +153,10 @@ const Payments = () => {
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
-  const displayList = (tab === 'week' ? weekPayments : historyPayments).filter(
-    (p) => statusFilter === 'all' || p.status === statusFilter
-  );
+  const displayList = (tab === 'week' ? weekPayments : historyPayments)
+    .filter((p) => statusFilter === 'all' || p.status === statusFilter)
+    .filter((p) => clientFilter === 'all' || String(p.client_id ?? 'manual') === clientFilter)
+    .filter((p) => typeFilter === 'all' || p.payment_type === typeFilter);
 
   const totalWeek = weekPayments
     .filter((p) => p.status === 'paid')
@@ -390,6 +410,49 @@ const Payments = () => {
             </div>
           )}
         </div>
+
+        {/* Client + Type filters */}
+        {tab !== 'stats' && (
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+            >
+              <option value="all">Todos los clientes</option>
+              {clientOptions.map(([key, name]) => (
+                <option key={key} value={String(key)}>
+                  {name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+            >
+              <option value="all">Todos los tipos</option>
+              {typeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {PAYMENT_TYPE_LABEL[type] ?? type}
+                </option>
+              ))}
+            </select>
+
+            {(clientFilter !== 'all' || typeFilter !== 'all') && (
+              <button
+                onClick={() => {
+                  setClientFilter('all');
+                  setTypeFilter('all');
+                }}
+                className="text-xs font-medium text-slate-500 hover:text-slate-700 transition px-2"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        )}
 
         {/* History filters */}
         <AnimatePresence>
