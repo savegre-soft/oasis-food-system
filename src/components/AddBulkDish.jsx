@@ -15,24 +15,37 @@ const AddBulkDish = ({ initialData, onSuccess }) => {
     if (!name.trim()) return;
     setLoading(true);
 
+    const newPrice = suggestedPrice === '' ? null : Number(suggestedPrice);
+    const priceChanged = isEdit ? newPrice !== (initialData?.suggested_price ?? null) : newPrice != null;
+
     const payload = {
       name: name.trim(),
-      suggested_price: suggestedPrice === '' ? null : Number(suggestedPrice),
+      suggested_price: newPrice,
     };
 
-    const { error } = isEdit
+    const { data: dishData, error } = isEdit
       ? await supabase
           .schema('operations')
           .from('bulk_dishes')
           .update(payload)
           .eq('id_bulk_dish', initialData.id_bulk_dish)
-      : await supabase.schema('operations').from('bulk_dishes').insert([payload]);
+          .select('id_bulk_dish')
+          .single()
+      : await supabase.schema('operations').from('bulk_dishes').insert([payload]).select('id_bulk_dish').single();
 
     if (error) {
       sileo.error(isEdit ? 'Error al actualizar el plato' : 'Error al guardar el plato');
       console.error(error);
       setLoading(false);
       return;
+    }
+
+    if (priceChanged && newPrice != null) {
+      const { error: historyError } = await supabase
+        .schema('operations')
+        .from('bulk_dish_price_history')
+        .insert([{ bulk_dish_id: dishData.id_bulk_dish, price: newPrice }]);
+      if (historyError) console.error(historyError);
     }
 
     sileo.success(isEdit ? 'Plato actualizado' : 'Plato guardado');
