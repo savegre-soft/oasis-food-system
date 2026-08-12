@@ -58,6 +58,8 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [clientFilter, setClientFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [onlyAvailableMonthly, setOnlyAvailableMonthly] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState(null);
   const [chartRange, setChartRange] = useState(getThisMonth);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -76,7 +78,7 @@ const Payments = () => {
         payment_orders(
           id_payment_order, order_id,
           orders(
-            id_order, week_start_date, week_end_date, classification, status,
+            id_order, week_start_date, week_end_date, classification, status, created_at,
             clients(id_client, name, client_type),
             routes(id_route, name, route_delivery_days(day_of_week)),
             order_days(
@@ -153,10 +155,22 @@ const Payments = () => {
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Mismo criterio de "espacio disponible" que usa AddOrder.jsx para ofrecer
+  // un pago mensual como reutilizable: no cancelado, no cerrado manualmente,
+  // menos de 4 órdenes vinculadas, y período todavía vigente.
+  const hasAvailableSpace = (p) =>
+    p.status !== 'cancelled' &&
+    !p.closed_at &&
+    (p.payment_orders?.length ?? 0) < 4 &&
+    (!p.period_end_date || p.period_end_date >= todayStr);
+
   const displayList = (tab === 'week' ? weekPayments : historyPayments)
     .filter((p) => statusFilter === 'all' || p.status === statusFilter)
     .filter((p) => clientFilter === 'all' || String(p.client_id ?? 'manual') === clientFilter)
-    .filter((p) => typeFilter === 'all' || p.payment_type === typeFilter);
+    .filter((p) => typeFilter === 'all' || p.payment_type === typeFilter)
+    .filter((p) => typeFilter !== 'monthly' || !onlyAvailableMonthly || hasAvailableSpace(p));
 
   const totalWeek = weekPayments
     .filter((p) => p.status === 'paid')
@@ -294,6 +308,39 @@ const Payments = () => {
     await fetchPayments();
   };
 
+  // Elimina un pago de forma permanente. Si todavía tiene órdenes vinculadas,
+  // primero se desvinculan (no se borran las órdenes, solo dejan de tener
+  // un pago asociado) para no depender de si la FK tiene cascada configurada.
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+
+    if ((deletingPayment.payment_orders?.length ?? 0) > 0) {
+      const { error: unlinkError } = await supabase
+        .schema('operations')
+        .from('payment_orders')
+        .delete()
+        .eq('payment_id', deletingPayment.id_payment);
+      if (unlinkError) {
+        sileo.error('No se pudo desvincular las órdenes de este pago');
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .schema('operations')
+      .from('payments')
+      .delete()
+      .eq('id_payment', deletingPayment.id_payment);
+
+    if (error) {
+      sileo.error('No se pudo eliminar el pago');
+      return;
+    }
+    sileo.success('Pago eliminado');
+    setDeletingPayment(null);
+    await fetchPayments();
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -330,6 +377,24 @@ const Payments = () => {
           confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition"
           onConfirm={handleClosePayment}
           onCancel={() => setClosingPayment(null)}
+        />
+
+        <ConfirmDialog
+          open={!!deletingPayment}
+          title="¿Eliminar este pago?"
+          message={
+            deletingPayment
+              ? `Esta acción es permanente y no se puede deshacer.${
+                  (deletingPayment.payment_orders?.length ?? 0) > 0
+                    ? ` Tiene ${deletingPayment.payment_orders.length} orden${deletingPayment.payment_orders.length !== 1 ? 'es' : ''} vinculada${deletingPayment.payment_orders.length !== 1 ? 's' : ''} que va${deletingPayment.payment_orders.length !== 1 ? 'n' : ''} a quedar sin pago asociado.`
+                    : ''
+                }`
+              : ''
+          }
+          confirmLabel="Eliminar"
+          confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition"
+          onConfirm={handleDeletePayment}
+          onCancel={() => setDeletingPayment(null)}
         />
 
         {/* Header */}
@@ -429,7 +494,10 @@ const Payments = () => {
 
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                if (e.target.value !== 'monthly') setOnlyAvailableMonthly(false);
+              }}
               className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
             >
               <option value="all">Todos los tipos</option>
@@ -440,11 +508,24 @@ const Payments = () => {
               ))}
             </select>
 
+            {typeFilter === 'monthly' && (
+              <label className="flex items-center gap-2 text-sm text-slate-600 select-none cursor-pointer px-1">
+                <input
+                  type="checkbox"
+                  checked={onlyAvailableMonthly}
+                  onChange={(e) => setOnlyAvailableMonthly(e.target.checked)}
+                  className="w-4 h-4 rounded cursor-pointer accent-slate-800"
+                />
+                Solo con espacio disponible
+              </label>
+            )}
+
             {(clientFilter !== 'all' || typeFilter !== 'all') && (
               <button
                 onClick={() => {
                   setClientFilter('all');
                   setTypeFilter('all');
+                  setOnlyAvailableMonthly(false);
                 }}
                 className="text-xs font-medium text-slate-500 hover:text-slate-700 transition px-2"
               >
@@ -493,6 +574,7 @@ const Payments = () => {
             onBulkStatusSave={handleBulkStatusSave}
             onAmountSave={handleAmountSave}
             onClosePayment={setClosingPayment}
+            onDeletePayment={setDeletingPayment}
             emptyMessage={
               tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
             }

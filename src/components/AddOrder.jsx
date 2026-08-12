@@ -70,6 +70,13 @@ const AddOrder = ({ onSuccess }) => {
   // (Monto/Fecha) from being filled in by mistake alongside an existing
   // monthly payment, which was creating a duplicate payment per order.
   const [explicitNewPayment, setExplicitNewPayment] = useState(false);
+  // True while checking for a reusable monthly payment. Mientras está en
+  // true, StepPayment no debe mostrar el formulario de "pago nuevo" — si se
+  // completaba el monto antes de que esta consulta resolviera, se enviaba con
+  // associatePaymentId todavía en null y se creaba un pago duplicado aunque
+  // el cliente ya tuviera uno abierto con espacio (bug confirmado con datos
+  // reales el 2026-08-11).
+  const [paymentLookupLoading, setPaymentLookupLoading] = useState(false);
 
   // Express
   const [isExpress, setIsExpress] = useState(false);
@@ -332,10 +339,12 @@ const AddOrder = ({ onSuccess }) => {
     // mensual con espacio disponible (señal más confiable que el menú).
     const menuSuggestsMonthly = familyClient || menuType === 'both';
     setPaymentType(isExpress ? 'express' : menuSuggestsMonthly ? 'monthly' : 'weekly');
+    setPaymentAmount('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setAssociatePaymentId(null);
     setExplicitNewPayment(false);
     if (!selectedClient) return;
+    setPaymentLookupLoading(true);
     (async () => {
       // Un pago mensual solo se ofrece para reutilizar mientras su período
       // siga vigente (period_end_date >= hoy). payment_date ya no sirve para
@@ -352,7 +361,10 @@ const AddOrder = ({ onSuccess }) => {
         .in('status', ['pending', 'paid'])
         .gte('period_end_date', todayStr)
         .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
-      if (error || !data) return;
+      if (error || !data) {
+        setPaymentLookupLoading(false);
+        return;
+      }
       const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
       setAvailableMonthly(available);
       // Si el cliente ya tiene un pago mensual con espacio, se prioriza sobre
@@ -365,6 +377,7 @@ const AddOrder = ({ onSuccess }) => {
         setPaymentType('monthly');
         setAssociatePaymentId(available[0].id_payment);
       }
+      setPaymentLookupLoading(false);
     })();
   }, [step]);
 
@@ -400,8 +413,10 @@ const AddOrder = ({ onSuccess }) => {
       if (menuType === 'Dinner') return !!selectedDinnerTemplate;
       return !!selectedLunchTemplate && !!selectedDinnerTemplate;
     }
-    if (step === 4)
+    if (step === 4) {
+      if (paymentLookupLoading) return false; // esperar a saber si hay un pago mensual reutilizable
       return associatePaymentId !== null || (!!paymentAmount && Number(paymentAmount) >= 0);
+    }
     return true;
   };
 
@@ -858,6 +873,7 @@ const AddOrder = ({ onSuccess }) => {
             setAssociatePaymentId={setAssociatePaymentId}
             explicitNewPayment={explicitNewPayment}
             setExplicitNewPayment={setExplicitNewPayment}
+            paymentLookupLoading={paymentLookupLoading}
           />
         )}
 
