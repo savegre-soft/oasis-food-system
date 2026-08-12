@@ -118,7 +118,6 @@ const BulkSales = () => {
   };
 
   const totalCooked = batches.reduce((s, b) => s + Number(b.quantity_cooked || 0), 0);
-  const totalIncome = batches.reduce((s, b) => s + summarizeBatch(b).totalIncome, 0);
 
   return (
     <>
@@ -176,7 +175,7 @@ const BulkSales = () => {
         </div>
 
         {!loading && batches.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8 max-w-xl">
+          <div className="grid grid-cols-2 gap-4 mb-8 max-w-sm">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 border border-slate-100 dark:border-slate-800">
               <p className="text-xs text-slate-500 dark:text-slate-400">Lotes</p>
               <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{batches.length}</p>
@@ -184,12 +183,6 @@ const BulkSales = () => {
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 border border-slate-100 dark:border-slate-800">
               <p className="text-xs text-slate-500 dark:text-slate-400">Cocinado</p>
               <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{totalCooked}</p>
-            </div>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm p-4 border border-slate-100 dark:border-slate-800">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Ingresos</p>
-              <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">
-                ₡{totalIncome.toLocaleString('es-CR')}
-              </p>
             </div>
           </div>
         )}
