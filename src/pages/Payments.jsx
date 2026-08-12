@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { DollarSign, TrendingUp, Clock, Search, BarChart2 } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Search, BarChart2, AlertTriangle } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 import AuthRoles from '../components/auth/AuthRoles';
@@ -165,6 +165,26 @@ const Payments = () => {
     !p.closed_at &&
     (p.payment_orders?.length ?? 0) < 4 &&
     (!p.period_end_date || p.period_end_date >= todayStr);
+
+  // RF-DASH-02 — pagos mensuales con espacio disponible a 3 días o menos del
+  // fin de su período (mismo criterio de "próximo a vencer" acordado con el usuario).
+  const daysUntil = (dateStr) =>
+    Math.ceil((new Date(dateStr + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
+
+  const expiringMonthlyPayments = payments
+    .filter((p) => p.payment_type === 'monthly' && p.period_end_date && hasAvailableSpace(p))
+    .filter((p) => daysUntil(p.period_end_date) <= 3)
+    .sort((a, b) => daysUntil(a.period_end_date) - daysUntil(b.period_end_date));
+
+  const jumpToExpiringPayment = (payment) => {
+    setTab('history');
+    setStatusFilter('all');
+    setClientFilter(String(payment.client_id ?? 'manual'));
+    setTypeFilter('monthly');
+    setOnlyAvailableMonthly(false);
+    setDateRange({ startDate: null, endDate: null });
+    setSearch('');
+  };
 
   const displayList = (tab === 'week' ? weekPayments : historyPayments)
     .filter((p) => statusFilter === 'all' || p.status === statusFilter)
@@ -436,6 +456,42 @@ const Payments = () => {
             colorClass="bg-yellow-50 text-yellow-600"
           />
         </div>
+
+        {/* RF-DASH-02: pagos mensuales próximos a vencer */}
+        {expiringMonthlyPayments.length > 0 && (
+          <motion.div
+            initial={{ y: -15, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={18} className="text-amber-600" />
+              <h2 className="text-sm font-semibold text-amber-800">
+                Pagos mensuales próximos a vencer ({expiringMonthlyPayments.length})
+              </h2>
+            </div>
+            <div className="space-y-2">
+              {expiringMonthlyPayments.map((p) => {
+                const remaining = daysUntil(p.period_end_date);
+                const used = p.payment_orders?.length ?? 0;
+                return (
+                  <button
+                    key={p.id_payment}
+                    onClick={() => jumpToExpiringPayment(p)}
+                    className="w-full flex items-center justify-between bg-white border border-amber-100 rounded-xl px-4 py-2.5 text-left hover:border-amber-300 transition"
+                  >
+                    <span className="text-sm font-medium text-slate-800">
+                      {p.clients?.name ?? `Cliente ${p.client_id}`}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {used}/4 órdenes · vence {remaining === 0 ? 'hoy' : `en ${remaining} día${remaining !== 1 ? 's' : ''}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* Tab + Status filter */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">

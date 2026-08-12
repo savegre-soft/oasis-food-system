@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 
 import ProductionPrintReport from '../components/ProductionPrintReport';
 import KitchenPipeline from '../components/KitchenPipeline';
+import ProductionStatusPanel from '../components/ProductionStatusPanel';
 import { useOrderDayActions } from '../hooks/useOrderDayActions';
 
 import { DAYS_ORDER as DAY_ORDER, DAY_LABELS, cycleIdx, getAbsoluteDate, toDateString } from '../components/orderUtils';
@@ -242,6 +243,16 @@ const Production = () => {
     getData();
   }, [selectedSlot]);
 
+  // RNF-DASH-01: refresco periódico simple del panel operativo (30-60s),
+  // sin Supabase Realtime.
+  useEffect(() => {
+    if (!selectedSlot) return;
+    const interval = setInterval(() => {
+      getData();
+    }, 45000);
+    return () => clearInterval(interval);
+  }, [selectedSlot]);
+
   const refresh = async () => {
     const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
     await getAvailableDays(ws, we);
@@ -379,6 +390,12 @@ const Production = () => {
           {loading ? (
             <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
           ) : (
+            <>
+            <ProductionStatusPanel
+              pendingDays={normalPending}
+              packedDays={normalPacked}
+              deliveredDays={normalDelivered}
+            />
             <KitchenPipeline
               pendingDays={normalPending}
               packedDays={normalPacked}
@@ -392,6 +409,7 @@ const Production = () => {
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             />
+            </>
           )}
         </>
       )}
