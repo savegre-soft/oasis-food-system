@@ -33,6 +33,8 @@ import ComboItems from './pages/ComboItems';
 import Combos from './pages/Combos';
 import BulkDishes from './pages/BulkDishes';
 import BulkSales from './pages/BulkSales';
+import Prospects from './pages/Prospects';
+import PromotionsAdmin from './pages/PromotionsAdmin';
 import { Toaster } from 'sileo';
 
 export default function App() {
@@ -59,6 +61,8 @@ export default function App() {
 
             <Route path="/orders" element={<Orders />} />
             <Route path="/combos" element={<Combos />} />
+            <Route path="/prospectos" element={<Prospects />} />
+            <Route path="/promociones-admin" element={<PromotionsAdmin />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />
             <Route path="/empleados" element={<Navigate to="/planilla" replace />} />

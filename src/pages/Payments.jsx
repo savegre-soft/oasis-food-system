@@ -99,12 +99,19 @@ const Payments = () => {
   };
 
   useEffect(() => {
-    fetchPayments();
+    const timer = setTimeout(() => fetchPayments(), 0);
+    return () => clearTimeout(timer);
   }, [supabase]);
 
-  useEffect(() => {
+  // Deselecciona al cambiar de filtro/pestaña. Ajuste de estado durante el
+  // render (no en un efecto) — patrón recomendado por React para resetear
+  // estado cuando cambia una dependencia, en vez de un efecto síncrono.
+  const filtersKey = JSON.stringify([tab, statusFilter, clientFilter, typeFilter, search, dateRange]);
+  const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey);
+  if (filtersKey !== prevFiltersKey) {
+    setPrevFiltersKey(filtersKey);
     setSelectedIds([]);
-  }, [tab, statusFilter, clientFilter, typeFilter, search, dateRange]);
+  }
 
   // ── Derived data — filter options ───────────────────────────────────────────
 

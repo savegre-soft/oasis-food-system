@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext';
 
 import ProductionPrintReport from '../components/ProductionPrintReport';
 import KitchenPipeline from '../components/KitchenPipeline';
-import ProductionStatusPanel from '../components/ProductionStatusPanel';
 import { useOrderDayActions } from '../hooks/useOrderDayActions';
 
 import { DAYS_ORDER as DAY_ORDER, DAY_LABELS, cycleIdx, getAbsoluteDate, toDateString } from '../components/orderUtils';
@@ -229,22 +228,36 @@ const Production = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
-    // Clear stale data immediately so old week's orders don't linger
+  // Clear stale data immediately when the week changes, so old week's orders
+  // don't linger while the new slots load. Ajuste de estado durante el render
+  // (no en un efecto) siguiendo el patrón recomendado por React para "resetear
+  // estado cuando cambia una dependencia" — evita el disparo síncrono de
+  // setState dentro de un efecto.
+  const [prevWeekOffset, setPrevWeekOffset] = useState(weekOffset);
+  if (weekOffset !== prevWeekOffset) {
+    setPrevWeekOffset(weekOffset);
     setSelectedSlot(null);
     setPendingDays([]);
     setPackedDays([]);
     setDeliveredDays([]);
-    getAvailableDays(ws, we);
+  }
+
+  useEffect(() => {
+    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
+    // setTimeout desacopla la llamada del cuerpo síncrono del efecto — getAvailableDays
+    // sincroniza con Supabase (fuente externa), el uso de efecto es intencional.
+    const timer = setTimeout(() => getAvailableDays(ws, we), 0);
+    return () => clearTimeout(timer);
   }, [weekOffset]);
 
   useEffect(() => {
-    getData();
+    const timer = setTimeout(() => getData(), 0);
+    return () => clearTimeout(timer);
   }, [selectedSlot]);
 
-  // RNF-DASH-01: refresco periódico simple del panel operativo (30-60s),
-  // sin Supabase Realtime.
+  // Refresco periódico simple de los datos de producción (30-60s), sin
+  // Supabase Realtime, para que las pantallas de cocina/empaque/entrega
+  // se mantengan al día si hay varios equipos trabajando a la vez.
   useEffect(() => {
     if (!selectedSlot) return;
     const interval = setInterval(() => {
@@ -390,12 +403,6 @@ const Production = () => {
           {loading ? (
             <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
           ) : (
-            <>
-            <ProductionStatusPanel
-              pendingDays={normalPending}
-              packedDays={normalPacked}
-              deliveredDays={normalDelivered}
-            />
             <KitchenPipeline
               pendingDays={normalPending}
               packedDays={normalPacked}
@@ -409,7 +416,6 @@ const Production = () => {
               activeTab={activeTab}
               setActiveTab={setActiveTab}
             />
-            </>
           )}
         </>
       )}
