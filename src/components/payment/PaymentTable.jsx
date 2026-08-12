@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { motion } from 'framer-motion';
-import { Pencil, Check, X, Eye, Lock } from 'lucide-react';
+import { Pencil, Check, X, Eye, Lock, Trash2 } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
 import { PAYMENT_STATUS_LABEL, PAYMENT_TYPE_LABEL } from '../../utils/chartUtils';
 
@@ -85,6 +85,7 @@ const PaymentTable = ({
   onBulkStatusSave,
   onAmountSave,
   onClosePayment,
+  onDeletePayment,
   emptyMessage,
 }) => {
   const [expandedPayment, setExpandedPayment] = useState(null);
@@ -162,7 +163,8 @@ const PaymentTable = ({
               <th className="px-5 py-4 text-left font-semibold">Fecha</th>
               <th className="px-5 py-4 text-right font-semibold">Monto</th>
               <th className="px-5 py-4 text-center font-semibold">Órdenes</th>
-              <th className="px-5 py-4 text-center font-semibold">Estado</th>
+              <th className="px-5 py-4 text-center font-semibold">Última orden agregada</th>
+              <th className="px-5 py-4 text-center font-semibold min-w-[190px]">Estado</th>
               <th className="px-5 py-4 text-center font-semibold w-20"></th>
             </tr>
           </thead>
@@ -171,6 +173,10 @@ const PaymentTable = ({
               const isEditing = editingStatus?.id === p.id_payment;
               const isMonthly = p.payment_type === 'monthly';
               const orders = (p.payment_orders ?? []).map((po) => po.orders).filter(Boolean);
+              const lastOrderAddedAt = orders.reduce(
+                (latest, o) => (o.created_at && (!latest || o.created_at > latest) ? o.created_at : latest),
+                null
+              );
               const isExpanded = expandedPayment === p.id_payment;
               const isSelected = selectedIds.includes(p.id_payment);
 
@@ -285,30 +291,40 @@ const PaymentTable = ({
                       </div>
                     </td>
 
+                    <td className="px-5 py-3.5 text-center text-slate-600 whitespace-nowrap">
+                      {isMonthly && lastOrderAddedAt ? formatDate(lastOrderAddedAt.split('T')[0]) : '—'}
+                    </td>
+
                     <td className="px-5 py-3.5 text-center">
-                      {isEditing ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <select
-                            value={editingStatus.status}
-                            onChange={(e) => onStatusEdit({ id: p.id_payment, status: e.target.value })}
-                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
-                          >
-                            <option value="pending">Pendiente</option>
-                            <option value="paid">Pagado</option>
-                            <option value="cancelled">Cancelado</option>
-                          </select>
-                          <button onClick={() => onStatusSave(p.id_payment, editingStatus.status)} className="p-1 text-green-600 hover:text-green-700 transition">
-                            <Check size={14} />
-                          </button>
-                          <button onClick={onStatusCancel} className="p-1 text-red-400 hover:text-red-600 transition">
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                          {STATUS_LABEL[p.status] ?? p.status}
-                        </span>
-                      )}
+                      {/* Ancho fijo en ambos estados (editando o no) para que la columna nunca
+                          se ensanche al entrar en edición — si el ancho cambia, la tabla se
+                          reacomoda y las acciones de las demás filas quedan fuera del área
+                          visible del contenedor con scroll horizontal. */}
+                      <div className="w-[190px] mx-auto">
+                        {isEditing ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <select
+                              value={editingStatus.status}
+                              onChange={(e) => onStatusEdit({ id: p.id_payment, status: e.target.value })}
+                              className="flex-1 min-w-0 text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
+                            >
+                              <option value="pending">Pendiente</option>
+                              <option value="paid">Pagado</option>
+                              <option value="cancelled">Cancelado</option>
+                            </select>
+                            <button onClick={() => onStatusSave(p.id_payment, editingStatus.status)} className="p-1 text-green-600 hover:text-green-700 transition shrink-0">
+                              <Check size={14} />
+                            </button>
+                            <button onClick={onStatusCancel} className="p-1 text-red-400 hover:text-red-600 transition shrink-0">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                            {STATUS_LABEL[p.status] ?? p.status}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-center">
@@ -340,13 +356,22 @@ const PaymentTable = ({
                             <Lock size={14} />
                           </button>
                         )}
+                        {onDeletePayment && !isEditing && (
+                          <button
+                            onClick={() => onDeletePayment(p)}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Eliminar pago"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
 
                   {isMonthly && isExpanded && (
                     <tr key={`${p.id_payment}-orders`} className="bg-violet-50">
-                      <td colSpan={bulkEnabled ? 8 : 7} className="px-5 py-3">
+                      <td colSpan={bulkEnabled ? 9 : 8} className="px-5 py-3">
                         <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
                           Órdenes asociadas ({orders.length}/4)
                         </p>
@@ -369,7 +394,7 @@ const PaymentTable = ({
                 {payments.length} registro{payments.length !== 1 ? 's' : ''}
               </td>
               <td className="px-5 py-3 text-right font-bold text-slate-800">₡{total.toLocaleString()}</td>
-              <td colSpan={3} />
+              <td colSpan={4} />
             </tr>
           </tfoot>
         </table>
