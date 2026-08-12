@@ -58,6 +58,14 @@ export const STATUS_PIE_COLORS = ['#f59e0b', '#10b981', '#ef4444']; // Pendiente
 // both for display (badges, dropdowns) and for user-facing confirmation/error
 // messages so they say "Pagado", not the raw 'paid' DB value.
 export const PAYMENT_STATUS_LABEL = { pending: 'Pendiente', paid: 'Pagado', cancelled: 'Cancelado' };
+export const PAYMENT_TYPE_LABEL = {
+  monthly: 'Mensual',
+  weekly: 'Semanal',
+  express: 'Express',
+  combo: 'Combo',
+  bulk: 'Venta masiva',
+  other: 'Otro',
+};
 export const CLIENT_BAR_COLORS = [
   '#10b981', '#3b82f6', '#6366f1', '#f59e0b',
   '#f97316', '#a855f7', '#14b8a6', '#64748b',
