@@ -26,8 +26,8 @@ import {
   Monitor,
   Boxes,
   Layers,
-  UserPlus,
-  Megaphone,
+  // UserPlus, Megaphone — solo usados por los links de Prospectos/Promociones,
+  // ocultos temporalmente más abajo.
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
@@ -35,7 +35,8 @@ import LogoUrl from '../assets/Oasis-logo.png';
 
 const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
-  { to: '/prospectos', label: 'Prospectos', icon: UserPlus },
+  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
+  // { to: '/prospectos', label: 'Prospectos', icon: UserPlus },
 ];
 
 const ordersLinks = [
@@ -57,7 +58,8 @@ const gestionLinks = [
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
   { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
   { to: '/platos-venta-masiva', label: 'Platos de Venta', icon: Layers },
-  { to: '/promociones-admin', label: 'Promociones', icon: Megaphone },
+  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
+  // { to: '/promociones-admin', label: 'Promociones', icon: Megaphone },
 ];
 
 const financialLinks = [
