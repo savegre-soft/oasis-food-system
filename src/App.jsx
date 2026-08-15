@@ -35,6 +35,8 @@ import BulkDishes from './pages/BulkDishes';
 import BulkSales from './pages/BulkSales';
 import Prospects from './pages/Prospects';
 import PromotionsAdmin from './pages/PromotionsAdmin';
+import PortalLayout from './layout/PortalLayout';
+import CustomerPortal from './pages/CustomerPortal';
 import { Toaster } from 'sileo';
 
 export default function App() {
@@ -76,6 +78,9 @@ export default function App() {
             <Route path="/contacto" element={<Contact />} />
             <Route path="/promociones" element={<Promotions />} />
             <Route path="/ordenar" element={<Order />} />
+          </Route>
+          <Route element={<PortalLayout />}>
+            <Route path="/portal/:token" element={<CustomerPortal />} />
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

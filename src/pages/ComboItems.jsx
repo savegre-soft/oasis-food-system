@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UtensilsCrossed, Plus, Pencil, Trash2 } from 'lucide-react';
+import { UtensilsCrossed, Plus, Pencil, Trash2, History } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
@@ -19,13 +19,16 @@ const ComboItems = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
+  const [historyItem, setHistoryItem] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const getData = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .schema('operations')
       .from('combo_items')
-      .select('id_combo_item, category, name, portion_size_g, recipe_id, is_active')
+      .select('id_combo_item, category, name, portion_size_g, recipe_id, price, is_active')
       .eq('is_active', true)
       .order('name');
     if (error) console.error(error);
@@ -33,8 +36,22 @@ const ComboItems = () => {
     setLoading(false);
   };
 
+  const openHistory = async (item) => {
+    setHistoryItem(item);
+    setLoadingHistory(true);
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('combo_item_price_history')
+      .select('id, old_price, new_price, changed_at')
+      .eq('combo_item_id', item.id_combo_item)
+      .order('changed_at', { ascending: false });
+    if (error) console.error(error);
+    setHistory(data ?? []);
+    setLoadingHistory(false);
+  };
+
   useEffect(() => {
-    getData();
+    setTimeout(getData, 0);
   }, []);
 
   const openAdd = () => {
@@ -80,6 +97,46 @@ const ComboItems = () => {
               initialData={editingItem}
               onSuccess={closeModal}
             />
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {historyItem && (
+          <Modal isOpen={!!historyItem} onClose={() => setHistoryItem(null)}>
+            <div className="p-2 max-w-md mx-auto">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-1">
+                Historial de precios
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                {historyItem.name}
+              </p>
+              {loadingHistory ? (
+                <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando...</p>
+              ) : history.length === 0 ? (
+                <p className="text-slate-400 dark:text-slate-500 text-sm">
+                  Sin cambios de precio registrados.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {history.map((h) => (
+                    <div
+                      key={h.id}
+                      className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm"
+                    >
+                      <span className="text-slate-600 dark:text-slate-300">
+                        {h.old_price == null
+                          ? `Inicial: ₡${h.new_price}`
+                          : `₡${h.old_price} → ₡${h.new_price}`}
+                      </span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                        {new Date(h.changed_at).toLocaleString('es-CR')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </Modal>
         )}
       </AnimatePresence>
@@ -162,8 +219,18 @@ const ComboItems = () => {
                       Porción: {item.portion_size_g} g
                     </p>
                   )}
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                    {item.price != null ? `₡${item.price} fuera de cupo` : 'Sin precio asignado'}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => openHistory(item)}
+                    className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition"
+                    title="Ver historial de precios"
+                  >
+                    <History size={14} />
+                  </button>
                   <button
                     onClick={() => openEdit(item)}
                     className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition"

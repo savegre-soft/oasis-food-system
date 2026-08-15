@@ -11,6 +11,7 @@ const AddComboItem = ({ category, initialData, onSuccess }) => {
   const [name, setName] = useState(initialData?.name ?? '');
   const [portionSizeG, setPortionSizeG] = useState(initialData?.portion_size_g ?? '');
   const [recipeId, setRecipeId] = useState(initialData?.recipe_id ?? '');
+  const [price, setPrice] = useState(initialData?.price ?? '');
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -41,6 +42,7 @@ const AddComboItem = ({ category, initialData, onSuccess }) => {
       name: name.trim(),
       portion_size_g: usesGrams ? Number(portionSizeG) : null,
       recipe_id: recipeId || null,
+      price: price === '' ? null : Number(price),
     };
 
     const { error } = isEdit
@@ -117,6 +119,25 @@ const AddComboItem = ({ category, initialData, onSuccess }) => {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-600 mb-1">
+            Precio por unidad fuera de cupo (₡)
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Ej: 1500"
+            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-800 text-sm"
+          />
+          <p className="text-xs text-slate-400 mt-1">
+            Se cobra automáticamente cuando el cliente selecciona este ítem por encima del cupo
+            incluido en el combo.
+          </p>
         </div>
 
         <button

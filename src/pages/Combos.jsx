@@ -75,7 +75,7 @@ const Combos = () => {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
           >
-            <ComboWeekConfigHistory />
+            <ComboWeekConfigHistory onApplied={() => setActiveTab('week')} />
           </motion.div>
         )}
       </AnimatePresence>

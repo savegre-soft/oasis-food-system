@@ -16,8 +16,8 @@ const COMBO_WEEK_SELECT = `
   combo_week_categories (
     id_combo_week_category, category, max_selections,
     combo_week_category_items (
-      id_combo_week_category_item, combo_item_id, extra_price,
-      combo_items ( id_combo_item, name, portion_size_g, category )
+      id_combo_week_category_item, combo_item_id,
+      combo_items ( id_combo_item, name, portion_size_g, category, price )
     )
   )
 `;
@@ -60,10 +60,10 @@ const ComboOrdersTab = () => {
         .schema('operations')
         .from('combo_orders')
         .select(
-          `id_combo_order, delivery_date, price, status, notes, payment_id,
+          `id_combo_order, price, status, notes, payment_id,
          clients ( id_client, name ),
          payments ( status, payment_date ),
-         combo_order_selections ( id_combo_order_selection, category, combo_item_id, is_extra, extra_charge, combo_items ( name, portion_size_g ) )`
+         combo_order_selections ( id_combo_order_selection, category, combo_item_id, is_extra, unit_price, extra_charge, combo_items ( name, portion_size_g ) )`
         )
         .eq('combo_week_id', weekId)
         .order('id_combo_order', { ascending: false });

@@ -6,7 +6,6 @@ import { computeComboPrice, groupSelectionsByItem } from '../comboUtils';
 import { toDateString } from '../orderUtils';
 import { useComboSelections } from '../../hooks/useComboSelections';
 import ComboCategorySelector from './ComboCategorySelector';
-import ComboExtraChargeModal from './ComboExtraChargeModal';
 
 const STEPS = ['Cliente', 'Combo', 'Pago', 'Confirmar'];
 
@@ -18,14 +17,10 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
 
   const [clientSearch, setClientSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
-  const [deliveryDate, setDeliveryDate] = useState(toDateString(new Date()));
   const [status, setStatus] = useState('pending');
   const [paymentDate, setPaymentDate] = useState(toDateString(new Date()));
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
-  // Unidad que superó el máximo de su categoría y espera que se confirme el
-  // monto del extra (ver ComboExtraChargeModal). null = modal cerrado.
-  const [pendingExtra, setPendingExtra] = useState(null);
 
   const categories = comboWeek?.combo_week_categories ?? [];
 
@@ -38,31 +33,21 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
     qtyOf,
     extraCountOf,
     extraTotalOf,
-    lastExtraCharge,
     addUnit,
     addExtraUnit,
     removeUnit,
     resetSelections,
   } = useComboSelections(categories);
 
-  const handleIncrement = (category, itemId, maxSelections, itemName) => {
+  // Cada unidad que excede el cupo de su categoría se cobra automáticamente
+  // al precio propio del ítem (combo_items.price) — ya no se le pregunta el
+  // monto al staff.
+  const handleIncrement = (category, itemId, maxSelections, itemName, itemPrice) => {
     if (wouldExceedLimit(category, maxSelections)) {
-      setPendingExtra({
-        category,
-        itemId,
-        itemName,
-        unitNumber: extraCountOf(category, itemId) + 1,
-        defaultAmount: lastExtraCharge(category, itemId),
-      });
+      addExtraUnit(category, itemId, Number(itemPrice) || 0);
       return;
     }
     addUnit(category, itemId);
-  };
-
-  const confirmExtra = (amount) => {
-    if (!pendingExtra) return;
-    addExtraUnit(pendingExtra.category, pendingExtra.itemId, amount);
-    setPendingExtra(null);
   };
 
   // Una fila por unidad elegida (un ítem con cantidad 3 aparece 3 veces) —
@@ -75,15 +60,15 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
         const itemId = cwci.combo_item_id;
         const qty = quantities[cat.category]?.[itemId] ?? 0;
         if (qty === 0) continue;
+        const itemPrice = cwci.combo_items?.price ?? 0;
         const extraList = extraCharges[`${cat.category}:${itemId}`] ?? [];
         const normalQty = qty - extraList.length;
         for (let i = 0; i < normalQty; i++) {
           rows.push({
             category: cat.category,
             combo_item_id: itemId,
-            extra_price: cwci.extra_price,
+            unit_price: cat.category === 'plato_extra' ? itemPrice : null,
             is_extra: false,
-            extra_charge: null,
             combo_items: cwci.combo_items,
           });
         }
@@ -91,9 +76,8 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
           rows.push({
             category: cat.category,
             combo_item_id: itemId,
-            extra_price: cwci.extra_price,
+            unit_price: charge,
             is_extra: true,
-            extra_charge: charge,
             combo_items: cwci.combo_items,
           });
         }
@@ -108,7 +92,7 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
 
   const canGoNext = () => {
     if (step === 1) return !!selectedClient;
-    if (step === 3) return !!deliveryDate && (status !== 'paid' || !!paymentDate);
+    if (step === 3) return status !== 'paid' || !!paymentDate;
     return true;
   };
 
@@ -119,7 +103,6 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
     setStep(1);
     setClientSearch('');
     setSelectedClient(null);
-    setDeliveryDate(toDateString(new Date()));
     resetSelections();
     setStatus('pending');
     setPaymentDate(toDateString(new Date()));
@@ -165,7 +148,6 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
         {
           combo_week_id: comboWeek.id_combo_week,
           client_id: selectedClient.id_client,
-          delivery_date: deliveryDate,
           price: totalPrice,
           status: 'PENDING',
           payment_id: paymentData.id_payment,
@@ -192,7 +174,7 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
             combo_item_id: s.combo_item_id,
             category: s.category,
             is_extra: s.is_extra,
-            extra_charge: s.is_extra ? s.extra_charge : null,
+            unit_price: s.unit_price,
           }))
         );
       if (selError) {
@@ -317,22 +299,9 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
           </div>
         )}
 
-        {/* Paso 3 — Entrega y pago */}
+        {/* Paso 3 — Pago */}
         {step === 3 && (
           <div className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Fecha de entrega
-              </label>
-              <input
-                type="date"
-                value={deliveryDate}
-                onChange={(e) => setDeliveryDate(e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm bg-white dark:bg-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
-              />
-            </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 Estado
@@ -406,12 +375,6 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
                   {selectedClient?.name}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 dark:text-slate-400">Entrega</span>
-                <span className="font-medium text-slate-800 dark:text-slate-100">
-                  {deliveryDate}
-                </span>
-              </div>
               {groupedSelections.length > 0 && (
                 <div className="text-sm">
                   <span className="text-slate-500 dark:text-slate-400 block mb-1">Selecciones</span>
@@ -433,7 +396,7 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
                         ) : (
                           s.category === 'plato_extra' && (
                             <span className="text-amber-600 dark:text-amber-400 shrink-0">
-                              +₡{(Number(s.extra_price ?? 0) * s.qty).toLocaleString()}
+                              +₡{(Number(s.unitPrice ?? 0) * s.qty).toLocaleString()}
                             </span>
                           )
                         )}
@@ -501,12 +464,6 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
           </button>
         )}
       </div>
-
-      <ComboExtraChargeModal
-        pending={pendingExtra}
-        onConfirm={confirmExtra}
-        onCancel={() => setPendingExtra(null)}
-      />
     </div>
   );
 };

@@ -77,16 +77,16 @@ export const groupByCategory = (aggregatedRows) => {
 
 // selections: array de filas, UNA POR UNIDAD elegida (un ítem con cantidad 3
 // aparece como 3 filas — mismo criterio que ya usa aggregateComboSelections
-// para contar producción), cada una con { category, extra_price, is_extra,
-// extra_charge }. extra_price viene de combo_week_category_items (solo
-// relevante en plato_extra, se cobra por cada unidad normal); extra_charge es
-// el monto ingresado a mano por unidad que excede el máximo configurado de su
-// categoría (ver useComboSelections) — en ese caso reemplaza a extra_price
-// para esa fila, no se suman.
+// para contar producción), cada una con { category, is_extra, unit_price }.
+// unit_price viene del precio propio del ítem (combo_items.price) y se cobra
+// en dos casos: cada unidad de Plato Extra (siempre tiene costo aparte del
+// combo), o cada unidad que excede el cupo configurado de su categoría
+// (marcada is_extra — ver useComboSelections). El resto de unidades (dentro
+// del cupo normal, categorías que no son Plato Extra) no suman nada, ya
+// están incluidas en basePrice.
 export const computeComboPrice = (basePrice, selections) => {
   const extrasTotal = (selections ?? []).reduce((sum, s) => {
-    if (s.is_extra) return sum + (Number(s.extra_charge) || 0);
-    if (s.category === 'plato_extra') return sum + (Number(s.extra_price) || 0);
+    if (s.is_extra || s.category === 'plato_extra') return sum + (Number(s.unit_price) || 0);
     return sum;
   }, 0);
   return (Number(basePrice) || 0) + extrasTotal;
@@ -95,16 +95,19 @@ export const computeComboPrice = (basePrice, selections) => {
 // Agrupa filas por-unidad (ver computeComboPrice) de vuelta por ítem de
 // catálogo, para mostrarlas como "Ensalada ×3" en vez de 3 líneas repetidas.
 // Usado en el resumen de confirmación del pedido y en ComboOrderCard.
+// `row.extra_charge` se acepta como respaldo de `row.unit_price` para leer
+// pedidos guardados antes de que existiera el precio por ítem.
 export const groupSelectionsByItem = (rows) => {
   const map = new Map();
   for (const row of rows ?? []) {
     const key = row.combo_item_id;
+    const unitPrice = row.unit_price ?? row.extra_charge ?? null;
     if (!map.has(key)) {
       map.set(key, {
         combo_item_id: key,
         category: row.category,
         combo_items: row.combo_items,
-        extra_price: row.extra_price,
+        unitPrice,
         qty: 0,
         extraQty: 0,
         extraTotal: 0,
@@ -112,9 +115,10 @@ export const groupSelectionsByItem = (rows) => {
     }
     const g = map.get(key);
     g.qty += 1;
+    if (unitPrice != null && g.unitPrice == null) g.unitPrice = unitPrice;
     if (row.is_extra) {
       g.extraQty += 1;
-      g.extraTotal += Number(row.extra_charge) || 0;
+      g.extraTotal += Number(unitPrice) || 0;
     }
   }
   return Array.from(map.values()).sort(

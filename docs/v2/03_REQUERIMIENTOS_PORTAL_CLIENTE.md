@@ -78,3 +78,13 @@ Un token por cliente **no es suficiente por sí solo** si el acceso a los datos 
 
 ### Pendiente técnico que queda abierto
 - **Proveedor de mensajería** para el envío automatizado del enlace (RF-PC-10): a definir (WhatsApp Business API, Twilio, u otro) según costo y lo que ya tengan disponible. No bloquea seguir documentando otros módulos, pero sí bloquea implementar esa parte puntual.
+
+## 7. Estado de implementación (2026-08-12)
+
+**Implementado y probado de punta a punta** (backend real, cliente de prueba desechable vía Playwright, personal y familiar): RF-PC-01 a RF-PC-05, RF-PC-07, RF-PC-08, RF-PC-09, RF-PC-11, RF-PC-12, RNF-PC-01 a RNF-PC-04. Ver `docs/v2/08_DISEÑO_RLS.md` para el detalle técnico de las 4 funciones `SECURITY DEFINER` (`portal_get_client`, `portal_get_current_order`, `portal_get_menu_options`, `portal_submit_order`) y `supabase/migrations/20260813_customer_portal.sql`.
+
+**Simplificaciones deliberadas de esta v1** (documentadas en el propio encabezado de la migración, no son bugs): no se reproducen los overrides avanzados que hoy solo usa el staff — macro por día distinto al base, override de composición de ingredientes por receta, ni el toggle Almuerzo/Cena por receta "extra" en pedidos `both`. El cliente ve sus macros pero no los edita (por diseño, RF-PC-02). Tampoco se ofrece el selector de "plantilla" que usa el asistente interno — el cliente arma su semana receta por receta, igual que ya hace el staff con clientes `family` hoy.
+
+**Actualización 2026-08-12**: RF-PC-06 (regenerar enlace) y RF-PC-09 (copiar enlace) ya se probaron en vivo con una cuenta de staff real (ver `[[reference-staff-test-account]]`) — ambos botones funcionan correctamente contra `customer.jsx`. Ya no quedan pendientes de prueba.
+
+**Pendiente final del proyecto (a propósito, no bloquea nada más)**: RF-PC-10 (envío automatizado del enlace por SMS/WhatsApp) sigue sin proveedor de mensajería elegido. El usuario decidió dejarlo, junto con la integración de correo del portal público de combos (`07_REQUERIMIENTOS_COMBOS_VENTAS.md §6, Bloque 3`), como el **último pendiente a resolver del roadmap de v2** — ambos dependen de que el usuario elija/contrate un proveedor externo (mensajería y/o correo transaccional), así que tiene sentido resolverlos juntos al final en vez de bloquear el resto del trabajo.

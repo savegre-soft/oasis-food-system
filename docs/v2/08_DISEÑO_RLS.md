@@ -50,13 +50,15 @@ REVOKE ALL ON operations.clients, operations.orders, operations.order_days,
 -- esa policy puntual, ver abajo; el resto de esta lista nunca debe ser
 -- accesible directo por anon una vez exista el portal)
 
-GRANT EXECUTE ON FUNCTION operations.portal_get_client(uuid) TO anon;
-GRANT EXECUTE ON FUNCTION operations.portal_get_current_order(uuid) TO anon;
-GRANT EXECUTE ON FUNCTION operations.portal_get_menu_options(uuid) TO anon;
-GRANT EXECUTE ON FUNCTION operations.portal_submit_order(uuid, jsonb) TO anon;
+GRANT EXECUTE ON FUNCTION operations.portal_get_client(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION operations.portal_get_current_order(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION operations.portal_get_menu_options(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION operations.portal_submit_order(uuid, jsonb) TO anon, authenticated;
 ```
 
 Nota: el `REVOKE` de arriba es conceptual — hoy `anon` ya no tiene acceso directo a estas tablas salvo `recipes` (política `recipes_anon_select`, necesaria para `/menu` del sitio público, **no se toca**) y las agregadas en la Fase 3 (`leads` insert-only, `promotions`/`combo_weeks`/`bulk_dishes` select). El `REVOKE` explícito es solo para dejarlo a prueba de que alguna migración futura abra una de estas tablas a `anon` por error sin pasar por este documento.
+
+**Corrección 2026-08-12 (implementación real, `20260813_customer_portal_authenticated_grant.sql`)**: el diseño original solo otorgaba `EXECUTE` a `anon`. En la práctica, el cliente `supabase-js` adjunta automáticamente el JWT de sesión a cualquier request cuando hay una sesión activa — así que el staff, probando el portal desde el mismo navegador donde tiene sesión iniciada, hace la llamada como `authenticated`, no `anon`, y quedaba rechazado con 403. Se agregó `TO authenticated` también en las 4 funciones. No cambia el modelo de seguridad: la función sigue resolviendo únicamente por token (nunca por sesión), nunca expone más de un cliente por llamada, y el staff ya tiene acceso completo a los datos de cualquier cliente por las tablas directamente — dejarlo ejecutar estas funciones no es una superficie nueva.
 
 ## 5. Qué NO cambia
 
