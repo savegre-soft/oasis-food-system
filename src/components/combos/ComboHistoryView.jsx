@@ -12,9 +12,9 @@ const fmtDate = (str, opts) => new Date(str + 'T00:00:00').toLocaleDateString('e
 const COMBO_WEEK_HISTORY_SELECT = `
   id_combo_week, week_start_date, week_end_date, base_price, image_url,
   combo_orders (
-    id_combo_order, delivery_date, price, status, payment_id,
+    id_combo_order, price, status, payment_id,
     clients ( id_client, name ),
-    combo_order_selections ( id_combo_order_selection, category, is_extra, extra_charge, combo_items ( name, portion_size_g ) )
+    combo_order_selections ( id_combo_order_selection, category, is_extra, unit_price, extra_charge, combo_items ( name, portion_size_g ) )
   )
 `;
 

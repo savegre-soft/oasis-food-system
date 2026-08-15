@@ -32,8 +32,8 @@ const ComboCategorySelector = ({
     )}
     <p className="text-xs text-slate-400 dark:text-slate-500">
       Un mismo ítem se puede elegir varias veces. Si el cliente quiere más de lo que permite el
-      combo, se puede agregar igual: se pedirá el monto a cobrar por cada unidad que exceda el
-      máximo.
+      combo, se puede agregar igual: cada unidad que exceda el máximo se cobra automáticamente al
+      precio individual del ítem.
     </p>
     {categories.map((cat) => {
       const meta = COMBO_CATEGORIES.find((c) => c.key === cat.category);
@@ -81,7 +81,8 @@ const ComboCategorySelector = ({
                           cat.category,
                           cwci.combo_item_id,
                           cat.max_selections,
-                          item?.name
+                          item?.name,
+                          item?.price
                         )
                       }
                       className="w-6 h-6 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
@@ -100,7 +101,7 @@ const ComboCategorySelector = ({
                   </span>
                   {cat.category === 'plato_extra' && qty - extraQty > 0 && (
                     <span className="text-xs text-amber-600 dark:text-amber-400 shrink-0">
-                      +₡{Number(cwci.extra_price ?? 0).toLocaleString()} c/u
+                      +₡{Number(item?.price ?? 0).toLocaleString()} c/u
                     </span>
                   )}
                   {extraQty > 0 && (

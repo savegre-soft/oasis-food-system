@@ -20,6 +20,7 @@ const DayRecipeBlock = ({
   recipeIngredients = {},
   ingredientOverrides = {},
   onOverrideChange,
+  showIngredientEditor = true,
   // macro overrides
   getEffectiveMacros,
   isDayOverridden,
@@ -28,6 +29,9 @@ const DayRecipeBlock = ({
   // extras (personal orders)
   extraMealTypes = {},
   onExtraMealTypeChange,
+  // solo lectura (ej. portal de clientes, día ya fuera del corte de edición)
+  readOnly = false,
+  hideMacroEditor = false,
 }) => {
   const hasRecipes = recipes.some((r) => r.recipe_id);
   const macroClasses =
@@ -48,6 +52,11 @@ const DayRecipeBlock = ({
           {day === 'Friday' && isFamilyClient && (
             <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full font-medium">
               Día de entrega
+            </span>
+          )}
+          {readOnly && (
+            <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-medium">
+              Cerrado
             </span>
           )}
           {hasRecipes && (
@@ -78,11 +87,15 @@ const DayRecipeBlock = ({
               <div key={`${day}-${index}`} className="space-y-1">
                 <div className="flex gap-2 items-center p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
                   {/* Recipe selector or static label */}
-                  {isFamilyClient || item.isExtra || !item.recipe_name ? (
+                  {readOnly ? (
+                    <span className="flex-1 min-w-0 truncate text-sm text-slate-700 dark:text-slate-300 px-3 py-2">
+                      {item.recipe_name || 'Receta'}
+                    </span>
+                  ) : isFamilyClient || item.isExtra || !item.recipe_name ? (
                     <select
                       value={item.recipe_id || ''}
                       onChange={(e) => onUpdateRecipe(day, index, 'recipe_id', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
+                      className="flex-1 min-w-0 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
                     >
                       <option value="">Seleccionar receta</option>
                       {allRecipes.map((r) => (
@@ -92,13 +105,14 @@ const DayRecipeBlock = ({
                       ))}
                     </select>
                   ) : (
-                    <span className="flex-1 text-sm text-slate-700 dark:text-slate-300 px-3 py-2">
+                    <span className="flex-1 min-w-0 truncate text-sm text-slate-700 dark:text-slate-300 px-3 py-2">
                       {item.recipe_name}
                     </span>
                   )}
 
                   {/* Lunch/Dinner toggle for extras on 'both' menu */}
-                  {!isFamilyClient &&
+                  {!readOnly &&
+                    !isFamilyClient &&
                     item.isExtra &&
                     menuType === 'both' &&
                     onExtraMealTypeChange && (
@@ -126,26 +140,34 @@ const DayRecipeBlock = ({
                     )}
 
                   {/* Quantity */}
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => onUpdateRecipe(day, index, 'quantity', e.target.value)}
-                    className="w-16 px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
-                  />
+                  {readOnly ? (
+                    <span className="w-16 shrink-0 text-sm text-center text-slate-500 dark:text-slate-400">
+                      ×{item.quantity}
+                    </span>
+                  ) : (
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => onUpdateRecipe(day, index, 'quantity', e.target.value)}
+                      className="w-16 shrink-0 px-2 py-1.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-center bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
+                    />
+                  )}
 
                   {/* Remove */}
-                  <button
-                    type="button"
-                    onClick={() => onRemoveRecipe(day, index)}
-                    className="text-red-400 hover:text-red-600 dark:hover:text-red-300 transition p-1"
-                  >
-                    ✕
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveRecipe(day, index)}
+                      className="shrink-0 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition p-1"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 {/* Ingredient override editor */}
-                {item.recipe_id && (
+                {!readOnly && showIngredientEditor && item.recipe_id && (
                   <RecipeIngredientEditor
                     recipeName={item.recipe_name}
                     baseIngredients={
@@ -158,17 +180,19 @@ const DayRecipeBlock = ({
               </div>
             ))}
 
-            <button
-              type="button"
-              onClick={() => onAddRecipe(day)}
-              className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition mt-1"
-            >
-              + {isFamilyClient ? 'Agregar receta' : 'Agregar receta extra'}
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => onAddRecipe(day)}
+                className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition mt-1"
+              >
+                + {isFamilyClient ? 'Agregar receta' : 'Agregar receta extra'}
+              </button>
+            )}
           </div>
 
           {/* Per-day macro overrides (personal only) */}
-          {!isFamilyClient && macroClasses.length > 0 && (
+          {!hideMacroEditor && !readOnly && !isFamilyClient && macroClasses.length > 0 && (
             <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
               <div
                 className={`grid gap-3 ${macroClasses.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}

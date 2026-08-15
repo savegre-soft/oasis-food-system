@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   ClipboardList,
+  // ClipboardCheck — solo usado por la pestaña "Checklist envío", oculta
+  // temporalmente más abajo.
   Calendar,
   History,
   ChevronLeft,
@@ -20,6 +22,7 @@ import Modal from '../components/Modal';
 import AddOrder from '../components/AddOrder';
 import EditOrder from '../components/EditOrder';
 import ConfirmDialog from '../components/ConfirmDialog';
+import OrderChecklistTab from '../components/OrderChecklistTab';
 import { MACRO_UNIT } from '../components/orderUtils';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -53,6 +56,8 @@ const STATUS_STYLES = {
 
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
+  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
+  // { id: 'checklist', label: 'Checklist envío', Icon: ClipboardCheck },
   { id: 'history', label: 'Historico', Icon: History },
 ];
 
@@ -842,7 +847,7 @@ const Orders = () => {
         {/* Tabs Principales */}
         <div className="flex items-center gap-1 mb-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm">
           {TABS.map(({ id, label, Icon }) => {
-            const count = id === 'week' ? filteredWeek.length : filteredHistory.length;
+            const count = id === 'week' ? filteredWeek.length : id === 'history' ? filteredHistory.length : 0;
             const active = activeTab === id;
             const cls =
               'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
@@ -948,6 +953,33 @@ const Orders = () => {
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {activeTab === 'checklist' && (
+              <motion.div
+                key="checklist"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+              >
+                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-1 shadow-sm mb-4 w-fit">
+                  {WEEK_OPTIONS.map(({ offset, label }) => (
+                    <button
+                      key={offset}
+                      onClick={() => setWeekOffset(offset)}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-medium transition ${
+                        weekOffset === offset
+                          ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <OrderChecklistTab weekStart={selectedWeek.weekStart} weekLabel={weekLabel} />
               </motion.div>
             )}
 

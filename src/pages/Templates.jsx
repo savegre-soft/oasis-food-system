@@ -7,6 +7,7 @@ import Modal from './../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddTemplate from '../components/AddTemplate';
 import TemplateCard from '../components/TemplateCard';
+import WeeklyTemplateOverride from '../components/WeeklyTemplateOverride';
 
 const Templates = () => {
   const { supabase } = useApp();
@@ -145,6 +146,8 @@ const Templates = () => {
             Nuevo Menú
           </button>
         </div>
+
+        <WeeklyTemplateOverride />
 
         {/* Lista */}
         {loading ? (

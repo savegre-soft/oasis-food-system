@@ -58,9 +58,6 @@ const ComboOrderCard = ({ order, onEdit, onDelete }) => {
           </div>
         )}
       </div>
-      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-        Entrega: {order.delivery_date}
-      </p>
       {groupedSelections.length > 0 && (
         <div className="flex gap-1.5 flex-wrap mt-2">
           {groupedSelections.map((s) => (

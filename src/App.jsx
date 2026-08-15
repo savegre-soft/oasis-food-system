@@ -33,6 +33,10 @@ import ComboItems from './pages/ComboItems';
 import Combos from './pages/Combos';
 import BulkDishes from './pages/BulkDishes';
 import BulkSales from './pages/BulkSales';
+import Prospects from './pages/Prospects';
+import PromotionsAdmin from './pages/PromotionsAdmin';
+import PortalLayout from './layout/PortalLayout';
+import CustomerPortal from './pages/CustomerPortal';
 import { Toaster } from 'sileo';
 
 export default function App() {
@@ -59,6 +63,8 @@ export default function App() {
 
             <Route path="/orders" element={<Orders />} />
             <Route path="/combos" element={<Combos />} />
+            <Route path="/prospectos" element={<Prospects />} />
+            <Route path="/promociones-admin" element={<PromotionsAdmin />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />
             <Route path="/empleados" element={<Navigate to="/planilla" replace />} />
@@ -72,6 +78,9 @@ export default function App() {
             <Route path="/contacto" element={<Contact />} />
             <Route path="/promociones" element={<Promotions />} />
             <Route path="/ordenar" element={<Order />} />
+          </Route>
+          <Route element={<PortalLayout />}>
+            <Route path="/portal/:token" element={<CustomerPortal />} />
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

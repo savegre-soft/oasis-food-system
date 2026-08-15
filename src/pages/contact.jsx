@@ -1,16 +1,65 @@
+import { useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { motion } from 'framer-motion';
+import { useApp } from '../context/AppContext';
 
+// Antes era un componente puramente presentacional que dependía de un
+// `onSubmit` por props — en App.jsx se renderiza sin esa prop, así que el
+// formulario nunca persistía nada. Ahora guarda cada mensaje en `operations
+// .leads` (source='contacto'), visible desde la bandeja interna "Prospectos"
+// (RF-PUB-03, docs/v2/02_REQUERIMIENTOS_SITIO_PUBLICO.md).
 const Contact = ({
-  title = '',
-  description,
+  title = 'Contáctanos',
+  description = '¿Tenés alguna duda? Escribinos y te respondemos a la brevedad.',
   location = '',
   phone = '',
   schedule = '',
-  onSubmit,
 }) => {
-  const handleSubmit = (e) => {
+  const { supabase } = useApp();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(false);
+
+  const canSubmit = name.trim() !== '' && message.trim() !== '';
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit(e);
+    if (!canSubmit || loading) return;
+
+    if (honeypot) {
+      setDone(true);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const { error: insertError } = await supabase
+      .schema('operations')
+      .from('leads')
+      .insert([
+        {
+          name: name.trim(),
+          email: email.trim() || null,
+          message: message.trim(),
+          source: 'contacto',
+        },
+      ]);
+
+    setLoading(false);
+
+    if (insertError) {
+      console.error(insertError);
+      setError('No se pudo enviar tu mensaje. Intentá de nuevo en un momento.');
+      return;
+    }
+
+    setDone(true);
   };
 
   return (
@@ -35,43 +84,73 @@ const Contact = ({
           transition={{ duration: 0.8 }}
           className="bg-white shadow-xl rounded-3xl p-8 md:p-12"
         >
-          <form className="grid gap-6" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Nombre</label>
-              <input
-                type="text"
-                placeholder="Tu nombre"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-              />
+          {done ? (
+            <div className="text-center py-6">
+              <h3 className="text-xl font-semibold text-emerald-700 mb-2">¡Mensaje enviado!</h3>
+              <p className="text-slate-600">Te vamos a responder a la brevedad.</p>
             </div>
+          ) : (
+            <form className="grid gap-6" onSubmit={handleSubmit}>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Nombre</label>
+                <input
+                  type="text"
+                  placeholder="Tu nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Correo Electrónico
-              </label>
-              <input
-                type="email"
-                placeholder="correo@email.com"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Correo Electrónico <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="correo@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Mensaje</label>
-              <textarea
-                rows="5"
-                placeholder="Escribe tu mensaje aquí..."
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition resize-none"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Mensaje</label>
+                <textarea
+                  rows="5"
+                  placeholder="Escribe tu mensaje aquí..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition resize-none"
+                />
+              </div>
 
-            <button
-              type="submit"
-              className="mt-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition"
-            >
-              Enviar Mensaje
-            </button>
-          </form>
+              {/* Honeypot */}
+              <div className="absolute left-[-9999px]" aria-hidden="true">
+                <label htmlFor="website">Sitio web</label>
+                <input
+                  type="text"
+                  id="website"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={!canSubmit || loading}
+                className="mt-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {loading ? 'Enviando...' : 'Enviar Mensaje'}
+              </button>
+            </form>
+          )}
         </motion.div>
 
         {/* Extra Info */}

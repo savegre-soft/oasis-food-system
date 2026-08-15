@@ -9,7 +9,7 @@ const PublicNavBar = () => {
   const links = [
     { name: 'Inicio', path: '/' },
     { name: 'Menú', path: '/menu' },
-    // { name: 'Promociones', path: '/promociones' },
+    { name: 'Promociones', path: '/promociones' },
     { name: 'Contacto', path: '/contacto' },
     { name: 'Login', path: '/login' },
   ];

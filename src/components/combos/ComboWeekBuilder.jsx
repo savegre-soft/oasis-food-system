@@ -22,21 +22,17 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
   const [weekEnd, setWeekEnd] = useState(comboWeek?.week_end_date ?? toDateString(inSevenDays));
   const [basePrice, setBasePrice] = useState(comboWeek?.base_price ?? '');
 
-  // { [category]: { maxSelections: number, itemIds: Set<number>, extraPrices: {itemId: string} } }
+  // { [category]: { maxSelections: number, itemIds: Set<number> } }
   const emptyConfig = () =>
-    Object.fromEntries(
-      COMBO_CATEGORIES.map((c) => [c.key, { maxSelections: 1, itemIds: new Set(), extraPrices: {} }])
-    );
+    Object.fromEntries(COMBO_CATEGORIES.map((c) => [c.key, { maxSelections: 1, itemIds: new Set() }]));
   const configFromComboWeek = () => {
     const cfg = emptyConfig();
     for (const cat of comboWeek?.combo_week_categories ?? []) {
       const itemIds = new Set();
-      const extraPrices = {};
       for (const cwci of cat.combo_week_category_items ?? []) {
         itemIds.add(cwci.combo_item_id);
-        if (cwci.extra_price != null) extraPrices[cwci.combo_item_id] = String(cwci.extra_price);
       }
-      cfg[cat.category] = { maxSelections: cat.max_selections, itemIds, extraPrices };
+      cfg[cat.category] = { maxSelections: cat.max_selections, itemIds };
     }
     return cfg;
   };
@@ -48,7 +44,7 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
       const { data, error } = await supabase
         .schema('operations')
         .from('combo_items')
-        .select('id_combo_item, category, name, portion_size_g')
+        .select('id_combo_item, category, name, portion_size_g, price')
         .eq('is_active', true)
         .order('name');
       if (error) console.error(error);
@@ -66,10 +62,7 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
         for (const key of Object.keys(prev)) {
           const cat = prev[key];
           const itemIds = new Set([...cat.itemIds].filter((id) => validIds.has(id)));
-          const extraPrices = Object.fromEntries(
-            Object.entries(cat.extraPrices).filter(([id]) => itemIds.has(Number(id)) || itemIds.has(id))
-          );
-          next[key] = { ...cat, itemIds, extraPrices };
+          next[key] = { ...cat, itemIds };
         }
         return next;
       });
@@ -94,16 +87,6 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
     }));
   };
 
-  const setExtraPrice = (category, itemId, value) => {
-    setConfig((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        extraPrices: { ...prev[category].extraPrices, [itemId]: value },
-      },
-    }));
-  };
-
   const hasAnySelection = COMBO_CATEGORIES.some((c) => config[c.key].itemIds.size > 0);
 
   const handleSubmit = async (e) => {
@@ -118,13 +101,14 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
     }
     // El Plato Extra siempre debe tener un costo asociado — sin esto,
     // AddComboOrder.jsx no podría calcular el precio final del combo
-    // automáticamente cuando el cliente elige un plato extra.
+    // automáticamente cuando el cliente elige un plato extra. El precio ahora
+    // se define por ítem en el catálogo (src/pages/ComboItems.jsx), no acá.
     const platoExtra = config.plato_extra;
     for (const itemId of platoExtra.itemIds) {
-      const price = Number(platoExtra.extraPrices[itemId]);
-      if (!price || price <= 0) {
+      const price = catalog.find((i) => i.id_combo_item === itemId)?.price;
+      if (!price || Number(price) <= 0) {
         const itemName = catalog.find((i) => i.id_combo_item === itemId)?.name ?? 'un ítem';
-        sileo.error(`Ingresa el costo del Plato Extra "${itemName}"`);
+        sileo.error(`El ítem "${itemName}" no tiene precio asignado — configúralo en Ítems de Combo`);
         return;
       }
     }
@@ -217,8 +201,6 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
       const rows = [...cat.itemIds].map((itemId) => ({
         combo_week_category_id: catData.id_combo_week_category,
         combo_item_id: itemId,
-        extra_price:
-          category === 'plato_extra' ? Number(cat.extraPrices[itemId]) || 0 : null,
       }));
 
       const { error: itemsError } = await supabase
@@ -337,17 +319,14 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
                             )}
                           </label>
                           {key === 'plato_extra' && checked && (
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              placeholder="Costo extra"
-                              value={cat.extraPrices[item.id_combo_item] ?? ''}
-                              onChange={(e) =>
-                                setExtraPrice(key, item.id_combo_item, e.target.value)
+                            <span
+                              className={
+                                'text-xs shrink-0 ' +
+                                (item.price ? 'text-slate-500' : 'text-red-600 font-medium')
                               }
-                              className="w-28 px-2 py-1 border border-slate-200 rounded-lg text-sm"
-                            />
+                            >
+                              {item.price ? `₡${Number(item.price).toLocaleString()} c/u` : 'Sin precio'}
+                            </span>
                           )}
                         </div>
                       );

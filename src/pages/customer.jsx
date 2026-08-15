@@ -2,12 +2,14 @@ import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { sileo } from 'sileo';
 import { supabase } from '../lib/supabase';
-import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle, Link2, Copy, RefreshCw } from 'lucide-react';
 import OrdersSection from '../components/orders/OrdersSection';
 import MacroPanel from '../components/MacroPanel';
 import PaymentSection from '../components/PaymentsSection';
 import AuthRoles from '../components/auth/AuthRoles';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -27,35 +29,64 @@ const Customer = () => {
   const { id } = useParams();
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
+  const [confirmingRegen, setConfirmingRegen] = useState(false);
+
+  const fetchData = async () => {
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('clients')
+      .select(
+        `
+        *,
+        lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey (
+          id_macro_profile, name, protein_value, carb_value
+        ),
+        dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
+          id_macro_profile, name, protein_value, carb_value
+        )
+      `
+      )
+      .eq('id_client', Number(id))
+      .single();
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+    setCustomer(data);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('clients')
-        .select(
-          `
-          *,
-          lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey (
-            id_macro_profile, name, protein_value, carb_value
-          ),
-          dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
-            id_macro_profile, name, protein_value, carb_value
-          )
-        `
-        )
-        .eq('id_client', Number(id))
-        .single();
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-      setCustomer(data);
-      setLoading(false);
-    };
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/portal/${customer.portal_token}`;
+    navigator.clipboard.writeText(url);
+    sileo.success('Enlace copiado');
+  };
+
+  const handleRegenerateLink = async () => {
+    setRegenerating(true);
+    const { error } = await supabase
+      .schema('operations')
+      .from('clients')
+      .update({ portal_token: crypto.randomUUID(), portal_token_regenerated_at: new Date().toISOString() })
+      .eq('id_client', Number(id));
+
+    setRegenerating(false);
+    setConfirmingRegen(false);
+
+    if (error) {
+      sileo.error('No se pudo regenerar el enlace');
+      return;
+    }
+    sileo.success('Enlace regenerado');
+    await fetchData();
+  };
 
   if (loading) return <p className="p-8 text-slate-400">Cargando cliente...</p>;
   if (!customer) return <p className="p-8 text-slate-400">Cliente no encontrado</p>;
@@ -69,6 +100,15 @@ const Customer = () => {
 
   return (
     <AuthRoles rolesNames={['Administrador', 'Clientes']}>
+      <ConfirmDialog
+        open={confirmingRegen}
+        title="¿Regenerar el enlace del portal?"
+        message="El enlace anterior deja de funcionar de inmediato. Vas a tener que compartirle el nuevo enlace al cliente."
+        confirmLabel={regenerating ? 'Regenerando...' : 'Regenerar enlace'}
+        confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition disabled:opacity-50"
+        onConfirm={handleRegenerateLink}
+        onCancel={() => setConfirmingRegen(false)}
+      />
       <div className="p-8 max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
@@ -110,6 +150,32 @@ const Customer = () => {
               })}
             </p>
           )}
+        </div>
+
+        {/* Portal de cliente */}
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <p className="text-xs font-semibold text-slate-500 uppercase mb-3 flex items-center gap-1.5">
+            <Link2 size={13} /> Portal de cliente
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="flex-1 text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 truncate">
+              {window.location.origin}/portal/{customer.portal_token}
+            </p>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 bg-white px-3 py-2.5 rounded-xl hover:border-slate-400 transition"
+              >
+                <Copy size={13} /> Copiar enlace
+              </button>
+              <button
+                onClick={() => setConfirmingRegen(true)}
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 bg-white px-3 py-2.5 rounded-xl hover:border-amber-400 hover:text-amber-700 transition"
+              >
+                <RefreshCw size={13} /> Regenerar
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Macros */}

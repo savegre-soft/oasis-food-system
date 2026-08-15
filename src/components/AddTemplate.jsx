@@ -36,6 +36,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
   const [name, setName] = useState(initialData?.name ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
   const [mealType, setMealType] = useState(initialData?.meal_type ?? 'Lunch');
+  const [weekOfMonth, setWeekOfMonth] = useState(initialData?.week_of_month ?? null);
   const [dayRecipes, setDayRecipes] = useState(buildInitialDayRecipes());
   const [recipes, setRecipes] = useState([]);
 
@@ -96,7 +97,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
       const { error } = await supabase
         .schema('operations')
         .from('order_templates')
-        .update({ name, description, meal_type: mealType })
+        .update({ name, description, meal_type: mealType, week_of_month: weekOfMonth })
         .eq('id_template', initialData.id_template);
       if (error) {
         sileo.error('Error al actualizar la plantilla');
@@ -115,7 +116,7 @@ const AddTemplate = ({ onSuccess, initialData }) => {
       const { data, error } = await supabase
         .schema('operations')
         .from('order_templates')
-        .insert([{ name, description, meal_type: mealType, is_active: true }])
+        .insert([{ name, description, meal_type: mealType, week_of_month: weekOfMonth, is_active: true }])
         .select('id_template')
         .single();
       if (error) {
@@ -257,6 +258,39 @@ const AddTemplate = ({ onSuccess, initialData }) => {
                     onClick={() => setMealType(opt.value)}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${
                       mealType === opt.value
+                        ? 'bg-slate-800 text-white border-slate-800'
+                        : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                Semana del mes <span className="text-slate-400 font-normal">(para el portal de clientes)</span>
+              </label>
+              <p className="text-xs text-slate-400 mb-2">
+                Si se asigna, el portal de clientes aplica esta plantilla automáticamente durante esa
+                semana del mes (día 1-7 = Semana 1, 8-14 = Semana 2, 15-21 = Semana 3, 22 en adelante =
+                Semana 4).
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { value: null, label: 'Sin asignar' },
+                  { value: 1, label: 'Semana 1' },
+                  { value: 2, label: 'Semana 2' },
+                  { value: 3, label: 'Semana 3' },
+                  { value: 4, label: 'Semana 4' },
+                ].map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => setWeekOfMonth(opt.value)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition ${
+                      weekOfMonth === opt.value
                         ? 'bg-slate-800 text-white border-slate-800'
                         : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
                     }`}

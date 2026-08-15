@@ -1,4 +1,5 @@
 import { Calendar, Tag, Pencil, Trash2, ReceiptText } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '—';
@@ -77,22 +78,24 @@ const ExpenseTable = ({
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-center gap-1.5">
                       {onEdit && (
-                        <button
-                          onClick={() => onEdit(gasto)}
-                          title="Editar"
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition"
-                        >
-                          <Pencil size={14} />
-                        </button>
+                        <Tooltip label="Editar">
+                          <button
+                            onClick={() => onEdit(gasto)}
+                            className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </Tooltip>
                       )}
                       {onDelete && (
-                        <button
-                          onClick={() => onDelete(gasto.id)}
-                          title="Eliminar"
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <Tooltip label="Eliminar">
+                          <button
+                            onClick={() => onDelete(gasto.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </Tooltip>
                       )}
                     </div>
                   </td>

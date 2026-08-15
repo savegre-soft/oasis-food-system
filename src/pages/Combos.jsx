@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Calendar, History } from 'lucide-react';
+import { Calendar, History, ListChecks } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import ComboOrdersTab from '../components/combos/ComboOrdersTab';
 import ComboHistoryView from '../components/combos/ComboHistoryView';
+import ComboWeekConfigHistory from '../components/combos/ComboWeekConfigHistory';
 
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
   { id: 'history', label: 'Historico', Icon: History },
+  { id: 'config-history', label: 'Semanas anteriores', Icon: ListChecks },
 ];
 
 const Combos = () => {
@@ -62,6 +64,18 @@ const Combos = () => {
             transition={{ duration: 0.18 }}
           >
             <ComboHistoryView />
+          </motion.div>
+        )}
+
+        {activeTab === 'config-history' && (
+          <motion.div
+            key="config-history"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+          >
+            <ComboWeekConfigHistory onApplied={() => setActiveTab('week')} />
           </motion.div>
         )}
       </AnimatePresence>
