@@ -70,6 +70,12 @@ const AddOrder = ({ onSuccess }) => {
   // (Monto/Fecha) from being filled in by mistake alongside an existing
   // monthly payment, which was creating a duplicate payment per order.
   const [explicitNewPayment, setExplicitNewPayment] = useState(false);
+  // True while checking for a reusable monthly payment. Mientras está en
+  // true, StepPayment no debe mostrar el formulario de "pago nuevo" ni dejar
+  // avanzar — si se completaba el monto o se hacía clic en "Siguiente" antes
+  // de que esta consulta resolviera, el pedido se guardaba con
+  // associatePaymentId todavía en null y sin ningún pago asociado.
+  const [paymentLookupLoading, setPaymentLookupLoading] = useState(false);
 
   // Express
   const [isExpress, setIsExpress] = useState(false);
@@ -332,17 +338,19 @@ const AddOrder = ({ onSuccess }) => {
     // mensual con espacio disponible (señal más confiable que el menú).
     const menuSuggestsMonthly = familyClient || menuType === 'both';
     setPaymentType(isExpress ? 'express' : menuSuggestsMonthly ? 'monthly' : 'weekly');
+    setPaymentAmount('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
     setAssociatePaymentId(null);
     setExplicitNewPayment(false);
     if (!selectedClient) return;
+    setPaymentLookupLoading(true);
     (async () => {
-      // Un pago mensual solo se ofrece para reutilizar mientras su período
-      // siga vigente (period_end_date >= hoy). payment_date ya no sirve para
-      // esto: queda en blanco hasta que el pago se marca 'paid', así que
-      // filtrar por payment_date excluiría por error a los pagos pending.
-      const todayStr = toDateString(new Date());
-
+      // Un pago mensual sigue siendo reutilizable hasta llenar sus 4 órdenes
+      // o hasta cerrarse manualmente (closed_at) — period_end_date es solo
+      // informativo (cuándo vence "nominalmente" el período) y nunca debe
+      // usarse para dejar de ofrecer un pago con cupo: si el cliente tarda
+      // más de esas ~4 semanas en completarlo, el pago debe seguir
+      // disponible en vez de quedar huérfano y forzar uno nuevo.
       const { data, error } = await supabase
         .schema('operations')
         .from('payments')
@@ -350,9 +358,12 @@ const AddOrder = ({ onSuccess }) => {
         .eq('client_id', selectedClient.id_client)
         .eq('payment_type', 'monthly')
         .in('status', ['pending', 'paid'])
-        .gte('period_end_date', todayStr)
-        .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
-      if (error || !data) return;
+        .is('closed_at', null) // pagos cerrados manualmente desde Ingresos no se reutilizan
+        .order('period_start_date', { ascending: true }); // completar siempre el más antiguo primero
+      if (error || !data) {
+        setPaymentLookupLoading(false);
+        return;
+      }
       const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
       setAvailableMonthly(available);
       // Si el cliente ya tiene un pago mensual con espacio, se prioriza sobre
@@ -365,6 +376,7 @@ const AddOrder = ({ onSuccess }) => {
         setPaymentType('monthly');
         setAssociatePaymentId(available[0].id_payment);
       }
+      setPaymentLookupLoading(false);
     })();
   }, [step]);
 
@@ -400,8 +412,10 @@ const AddOrder = ({ onSuccess }) => {
       if (menuType === 'Dinner') return !!selectedDinnerTemplate;
       return !!selectedLunchTemplate && !!selectedDinnerTemplate;
     }
-    if (step === 4)
+    if (step === 4) {
+      if (paymentLookupLoading) return false; // esperar a saber si hay un pago mensual reutilizable
       return associatePaymentId !== null || (!!paymentAmount && Number(paymentAmount) >= 0);
+    }
     return true;
   };
 
@@ -858,6 +872,7 @@ const AddOrder = ({ onSuccess }) => {
             setAssociatePaymentId={setAssociatePaymentId}
             explicitNewPayment={explicitNewPayment}
             setExplicitNewPayment={setExplicitNewPayment}
+            paymentLookupLoading={paymentLookupLoading}
           />
         )}
 

@@ -421,4 +421,14 @@ A petición del usuario, tras revisar visualmente la sección de Combos con Play
 
 ---
 
+## 16. Cambios aplicados — 2026-08-16 (pago mensual: reutilización ya no expira por calendario)
+
+Cuarta y quinta causa raíz de la fragmentación de pagos mensuales (ver §8 punto 7, distintas de 7bis/7ter/las de agosto), encontradas tras una nueva captura del usuario mostrando los pagos mensuales activos y aclarando la regla: un pago mensual solo se cierra al llegar a 4/4 o al cerrarse a mano, nunca por vencer su `period_end_date` (que es puramente informativo).
+
+- **Bug A**: la consulta de "pago mensual reutilizable" en `AddOrder.jsx` (bloque que arma `availableMonthly`, ~línea 339) filtraba `.gte('period_end_date', hoy)`, así que un pago con cupo dejaba de ofrecerse en cuanto pasaban ~30 días desde su creación, aunque el cliente no hubiera completado sus 4 órdenes — quedaba huérfano para siempre y la siguiente orden creaba un pago nuevo. **Quitado por completo.**
+- **Bug B**: la misma consulta no tenía `.order(...)`, así que si un cliente llegaba a tener dos pagos mensuales simultáneamente elegibles, se tomaba uno arbitrario (`available[0]`) en vez de completar siempre el más antiguo. **Corregido** con `.order('period_start_date', { ascending: true })`.
+- **Limpieza de datos**: se cerraron manualmente (`closed_at`, mismo mecanismo del candado de Ingresos) 5 pagos `paid` ya imposibles de completar por el Bug A: Cristiam Acuña #6 (3/4), Daniela Gonzales #20 (2/4) y #96 (3/4), Karen Rojas #13 (3/4), Maria José Ruiz #72 (3/4). Se verificó que los 9 pagos mensuales activos en ese momento no se tocaron.
+
+---
+
 *Generado automáticamente por Claude a partir de una revisión exhaustiva del código fuente. Mantener actualizado cuando cambien rutas, esquema de BD o reglas de negocio importantes.*
