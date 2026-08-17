@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { UtensilsCrossed, Plus, Pencil, Trash2 } from 'lucide-react';
+import { UtensilsCrossed, Plus, Pencil, Trash2, History } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
@@ -7,6 +7,7 @@ import { sileo } from 'sileo';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AddBulkDish from '../components/AddBulkDish';
+import BulkDishPriceHistory from '../components/BulkDishPriceHistory';
 
 const BulkDishes = () => {
   const { supabase } = useApp();
@@ -17,6 +18,7 @@ const BulkDishes = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState(null);
+  const [historyItem, setHistoryItem] = useState(null);
 
   const getData = useCallback(async () => {
     setLoading(true);
@@ -79,6 +81,14 @@ const BulkDishes = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {historyItem && (
+          <Modal isOpen={!!historyItem} onClose={() => setHistoryItem(null)}>
+            <BulkDishPriceHistory dish={historyItem} />
+          </Modal>
+        )}
+      </AnimatePresence>
+
       <ConfirmDialog
         open={!!deletingItem}
         title="¿Eliminar plato?"
@@ -126,6 +136,13 @@ const BulkDishes = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => setHistoryItem(item)}
+                    className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition"
+                    title="Historial de precios"
+                  >
+                    <History size={14} />
+                  </button>
                   <button
                     onClick={() => openEdit(item)}
                     className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition"

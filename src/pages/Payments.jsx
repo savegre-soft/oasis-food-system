@@ -51,7 +51,7 @@ const Payments = () => {
   const { supabase } = useApp();
 
   const [payments, setPayments] = useState([]);
-  const [tab, setTab] = useState('week');
+  const [tab, setTab] = useState('today');
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
   const [editingStatus, setEditingStatus] = useState(null);
@@ -139,6 +139,9 @@ const Payments = () => {
   const effectiveDate = (p) => p.payment_date || p.period_start_date || p.created_at?.split('T')[0];
 
   const { start: weekStart, end: weekEnd } = getWeekRange();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const todayPayments = payments.filter((p) => effectiveDate(p) === todayStr);
 
   const weekPayments = payments.filter((p) => {
     const raw = effectiveDate(p);
@@ -162,16 +165,14 @@ const Payments = () => {
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
-  const todayStr = new Date().toISOString().split('T')[0];
-
   // Mismo criterio de "espacio disponible" que usa AddOrder.jsx para ofrecer
   // un pago mensual como reutilizable: no cancelado, no cerrado manualmente,
-  // menos de 4 órdenes vinculadas, y período todavía vigente.
+  // menos de 4 órdenes vinculadas. period_end_date es solo informativo — no
+  // se exige que siga vigente, un pago sigue siendo reutilizable aunque pase
+  // su "período nominal" hasta llenar sus 4 órdenes o cerrarse a mano (bug
+  // corregido 2026-08-16, ver docs/MAPA_DEL_SISTEMA.md §16).
   const hasAvailableSpace = (p) =>
-    p.status !== 'cancelled' &&
-    !p.closed_at &&
-    (p.payment_orders?.length ?? 0) < 4 &&
-    (!p.period_end_date || p.period_end_date >= todayStr);
+    p.status !== 'cancelled' && !p.closed_at && (p.payment_orders?.length ?? 0) < 4;
 
   // RF-DASH-02 — pagos mensuales con espacio disponible a 3 días o menos del
   // fin de su período (mismo criterio de "próximo a vencer" acordado con el usuario).
@@ -193,7 +194,9 @@ const Payments = () => {
     setSearch('');
   };
 
-  const displayList = (tab === 'week' ? weekPayments : historyPayments)
+  const baseList = tab === 'today' ? todayPayments : tab === 'week' ? weekPayments : historyPayments;
+
+  const displayList = baseList
     .filter((p) => statusFilter === 'all' || p.status === statusFilter)
     .filter((p) => clientFilter === 'all' || String(p.client_id ?? 'manual') === clientFilter)
     .filter((p) => typeFilter === 'all' || p.payment_type === typeFilter)
@@ -500,48 +503,11 @@ const Payments = () => {
           </motion.div>
         )}
 
-        {/* Tab + Status filter */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-            {[
-              ['week', 'Esta Semana'],
-              ['history', 'Historial'],
-              ['stats', 'Estadísticas'],
-            ].map(([val, lbl]) => (
-              <button
-                key={val}
-                onClick={() => setTab(val)}
-                className={`px-5 py-2.5 text-sm font-medium transition flex items-center gap-1.5 ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-              >
-                {val === 'stats' && <BarChart2 size={14} />}
-                {lbl}
-              </button>
-            ))}
-          </div>
-
-          {tab !== 'stats' && (
-            <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
-              {[
-                ['all', 'Todos'],
-                ['pending', 'Pendientes'],
-                ['paid', 'Pagados'],
-                ['cancelled', 'Cancelados'],
-              ].map(([val, lbl]) => (
-                <button
-                  key={val}
-                  onClick={() => setStatusFilter(val)}
-                  className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  {lbl}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Client + Type filters */}
+        {/* Client + Type filters — por encima de las pestañas de fecha:
+            son el filtro principal (a quién / qué tipo de pago), las
+            pestañas de fecha solo acotan el rango de tiempo dentro de eso. */}
         {tab !== 'stats' && (
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <select
               value={clientFilter}
               onChange={(e) => setClientFilter(e.target.value)}
@@ -598,6 +564,46 @@ const Payments = () => {
           </div>
         )}
 
+        {/* Tab (fecha) + Status filter */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+            {[
+              ['today', 'Hoy'],
+              ['week', 'Esta Semana'],
+              ['history', 'Historial'],
+              ['stats', 'Estadísticas'],
+            ].map(([val, lbl]) => (
+              <button
+                key={val}
+                onClick={() => setTab(val)}
+                className={`px-5 py-2.5 text-sm font-medium transition flex items-center gap-1.5 ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                {val === 'stats' && <BarChart2 size={14} />}
+                {lbl}
+              </button>
+            ))}
+          </div>
+
+          {tab !== 'stats' && (
+            <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+              {[
+                ['all', 'Todos'],
+                ['pending', 'Pendientes'],
+                ['paid', 'Pagados'],
+                ['cancelled', 'Cancelados'],
+              ].map(([val, lbl]) => (
+                <button
+                  key={val}
+                  onClick={() => setStatusFilter(val)}
+                  className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* History filters */}
         <AnimatePresence>
           {tab === 'history' && (
@@ -639,7 +645,11 @@ const Payments = () => {
             onClosePayment={setClosingPayment}
             onDeletePayment={setDeletingPayment}
             emptyMessage={
-              tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
+              tab === 'today'
+                ? 'No hay pagos registrados hoy.'
+                : tab === 'week'
+                  ? 'No hay pagos registrados esta semana.'
+                  : 'No se encontraron pagos.'
             }
           />
         )}

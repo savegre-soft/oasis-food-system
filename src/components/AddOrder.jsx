@@ -76,11 +76,10 @@ const AddOrder = ({ onSuccess }) => {
   // monthly payment, which was creating a duplicate payment per order.
   const [explicitNewPayment, setExplicitNewPayment] = useState(false);
   // True while checking for a reusable monthly payment. Mientras está en
-  // true, StepPayment no debe mostrar el formulario de "pago nuevo" — si se
-  // completaba el monto antes de que esta consulta resolviera, se enviaba con
-  // associatePaymentId todavía en null y se creaba un pago duplicado aunque
-  // el cliente ya tuviera uno abierto con espacio (bug confirmado con datos
-  // reales el 2026-08-11).
+  // true, StepPayment no debe mostrar el formulario de "pago nuevo" ni dejar
+  // avanzar — si se completaba el monto o se hacía clic en "Siguiente" antes
+  // de que esta consulta resolviera, el pedido se guardaba con
+  // associatePaymentId todavía en null y sin ningún pago asociado.
   const [paymentLookupLoading, setPaymentLookupLoading] = useState(false);
 
   // Express
@@ -380,12 +379,12 @@ const AddOrder = ({ onSuccess }) => {
     if (!selectedClient) return;
     setPaymentLookupLoading(true);
     (async () => {
-      // Un pago mensual solo se ofrece para reutilizar mientras su período
-      // siga vigente (period_end_date >= hoy). payment_date ya no sirve para
-      // esto: queda en blanco hasta que el pago se marca 'paid', así que
-      // filtrar por payment_date excluiría por error a los pagos pending.
-      const todayStr = toDateString(new Date());
-
+      // Un pago mensual sigue siendo reutilizable hasta llenar sus 4 órdenes
+      // o hasta cerrarse manualmente (closed_at) — period_end_date es solo
+      // informativo (cuándo vence "nominalmente" el período) y nunca debe
+      // usarse para dejar de ofrecer un pago con cupo: si el cliente tarda
+      // más de esas ~4 semanas en completarlo, el pago debe seguir
+      // disponible en vez de quedar huérfano y forzar uno nuevo.
       const { data, error } = await supabase
         .schema('operations')
         .from('payments')
@@ -393,8 +392,8 @@ const AddOrder = ({ onSuccess }) => {
         .eq('client_id', selectedClient.id_client)
         .eq('payment_type', 'monthly')
         .in('status', ['pending', 'paid'])
-        .gte('period_end_date', todayStr)
-        .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
+        .is('closed_at', null) // pagos cerrados manualmente desde Ingresos no se reutilizan
+        .order('period_start_date', { ascending: true }); // completar siempre el más antiguo primero
       if (error || !data) {
         setPaymentLookupLoading(false);
         return;

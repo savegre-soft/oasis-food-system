@@ -4,7 +4,7 @@ import { summarizeBatch } from '../bulkSalesUtils';
 // batch: bulk_sale_batches con bulk_dishes(name, suggested_price) y
 // bulk_sale_entries(clients(name)) anidados.
 const BulkSaleBatchCard = ({ batch, onAddSale, onDeleteEntry, onDeleteBatch }) => {
-  const { quantitySold, totalIncome, leftover } = summarizeBatch(batch);
+  const { quantitySold, leftover } = summarizeBatch(batch);
   const entries = batch.bulk_sale_entries ?? [];
 
   return (
@@ -40,11 +40,10 @@ const BulkSaleBatchCard = ({ batch, onAddSale, onDeleteEntry, onDeleteBatch }) =
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <Stat label="Cocinado" value={batch.quantity_cooked} />
         <Stat label="Vendido" value={quantitySold} />
         <Stat label="Sobrante" value={leftover} accent={leftover < 0 ? 'text-red-600' : undefined} />
-        <Stat label="Ingresos" value={`₡${totalIncome.toLocaleString('es-CR')}`} />
       </div>
 
       {entries.length === 0 ? (
