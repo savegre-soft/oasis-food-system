@@ -380,12 +380,12 @@ const AddOrder = ({ onSuccess }) => {
     if (!selectedClient) return;
     setPaymentLookupLoading(true);
     (async () => {
-      // Un pago mensual solo se ofrece para reutilizar mientras su período
-      // siga vigente (period_end_date >= hoy). payment_date ya no sirve para
-      // esto: queda en blanco hasta que el pago se marca 'paid', así que
-      // filtrar por payment_date excluiría por error a los pagos pending.
-      const todayStr = toDateString(new Date());
-
+      // Un pago mensual sigue siendo reutilizable hasta llenar sus 4 órdenes
+      // o hasta cerrarse manualmente (closed_at) — period_end_date es solo
+      // informativo (cuándo vence "nominalmente" el período) y nunca debe
+      // usarse para dejar de ofrecer un pago con cupo: si el cliente tarda
+      // más de esas ~4 semanas en completarlo, el pago debe seguir
+      // disponible en vez de quedar huérfano y forzar uno nuevo.
       const { data, error } = await supabase
         .schema('operations')
         .from('payments')

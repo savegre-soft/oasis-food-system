@@ -421,4 +421,27 @@ A petición del usuario, tras revisar visualmente la sección de Combos con Play
 
 ---
 
+## 16. Cambios aplicados — 2026-08-16 (pago mensual: reutilización ya no expira por calendario)
+
+Cuarta y quinta causa raíz de la fragmentación de pagos mensuales (ver §8 punto 7, distintas de 7bis/7ter/las de agosto), encontradas tras una nueva captura del usuario mostrando los pagos mensuales activos y aclarando la regla: un pago mensual solo se cierra al llegar a 4/4 o al cerrarse a mano, nunca por vencer su `period_end_date` (que es puramente informativo).
+
+- **Bug A**: la consulta de "pago mensual reutilizable" en `AddOrder.jsx` (bloque que arma `availableMonthly`, ~línea 339) filtraba `.gte('period_end_date', hoy)`, así que un pago con cupo dejaba de ofrecerse en cuanto pasaban ~30 días desde su creación, aunque el cliente no hubiera completado sus 4 órdenes — quedaba huérfano para siempre y la siguiente orden creaba un pago nuevo. **Quitado por completo.**
+- **Bug B**: la misma consulta no tenía `.order(...)`, así que si un cliente llegaba a tener dos pagos mensuales simultáneamente elegibles, se tomaba uno arbitrario (`available[0]`) en vez de completar siempre el más antiguo. **Corregido** con `.order('period_start_date', { ascending: true })`.
+- **Limpieza de datos**: se cerraron manualmente (`closed_at`, mismo mecanismo del candado de Ingresos) 5 pagos `paid` ya imposibles de completar por el Bug A: Cristiam Acuña #6 (3/4), Daniela Gonzales #20 (2/4) y #96 (3/4), Karen Rojas #13 (3/4), Maria José Ruiz #72 (3/4). Se verificó que los 9 pagos mensuales activos en ese momento no se tocaron.
+
+---
+
+## 17. Cambios aplicados — 2026-08-16/17 (continuación: carrera de `paymentLookupLoading` + filtros de Ingresos)
+
+**Guarda de carrera portada desde la rama `Fase_2` (RF-22)**: se encontró que el fix del 2026-08-11 para la condición de carrera del paso "Pago" (bloquear "Siguiente" y ocultar el formulario mientras se busca el pago mensual reutilizable, estado `paymentLookupLoading`) se había hecho en la rama `Fase_2` (commit `e7e65d9`) y nunca se trajo a `Cambios-Revision` — la rama que corresponde a producción real (sin `.env.local`, apunta directo a producción). Se portó solo esa parte (sin las funciones de v2 que venían mezcladas en el mismo commit) a `AddOrder.jsx`/`StepPayment.jsx`. Verificado con Playwright reproduciendo el escenario exacto que fallaba: antes del fix, 2 de 4 pedidos creados con clics rápidos (~1s) quedaban sin ningún pago vinculado; después, las 4 se asociaron correctamente. **Nota para el futuro**: antes de asumir que el comportamiento actual de un archivo compartido entre ambas ramas es el más reciente, correr `git diff Cambios-Revision Fase_2 -- <archivo>`.
+
+**Reordenamiento de filtros en Ingresos + pestaña "Hoy" + filtro de mensuales vigentes (RF-44, RF-67)**: a pedido del usuario, en `Payments.jsx`:
+- Los filtros de Cliente y Tipo de pago pasaron a mostrarse **por encima** de las pestañas de fecha (antes al revés).
+- Se agregó una pestaña **"Hoy"** (nueva `todayPayments`, comparando `effectiveDate(p)` contra la fecha de hoy), quedando Hoy / Esta Semana / Historial / Estadísticas — "Hoy" es ahora la pestaña por defecto al entrar a la página.
+- Al filtrar Tipo de pago = "Mensual", la lista ahora se acota a pagos **vigentes con cupo disponible** (`status` pending/paid, `closed_at` null, órdenes vinculadas < 4) en vez de mostrar también los completos/cerrados/cancelados — mismo criterio de elegibilidad que usa el asistente de pedidos para ofrecer un pago reutilizable. Badge visible confirmando el filtro activo.
+- El resto de los filtros existentes (rango de fechas y buscador en Historial, filtro de estado) se mantuvo intacto.
+- Verificado con Playwright contra producción: con este filtro + Historial se confirmaron 11 pagos mensuales vigentes (uno por cliente, sin duplicados) — el filtro destapó de paso un pago suelto real (Erick Vásquez #19, 2/4, de junio) que se había quedado sin cerrar en la limpieza de datos del punto anterior; se cerró en el momento.
+
+---
+
 *Generado automáticamente por Claude a partir de una revisión exhaustiva del código fuente. Mantener actualizado cuando cambien rutas, esquema de BD o reglas de negocio importantes.*
