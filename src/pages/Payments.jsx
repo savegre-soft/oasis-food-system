@@ -165,8 +165,6 @@ const Payments = () => {
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
-  const todayStr = new Date().toISOString().split('T')[0];
-
   // Mismo criterio de "espacio disponible" que usa AddOrder.jsx para ofrecer
   // un pago mensual como reutilizable: no cancelado, no cerrado manualmente,
   // menos de 4 órdenes vinculadas, y período todavía vigente.
