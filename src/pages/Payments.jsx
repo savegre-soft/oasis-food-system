@@ -51,7 +51,7 @@ const Payments = () => {
   const { supabase } = useApp();
 
   const [payments, setPayments] = useState([]);
-  const [tab, setTab] = useState('week');
+  const [tab, setTab] = useState('today');
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState({ startDate: null, endDate: null });
   const [editingStatus, setEditingStatus] = useState(null);
@@ -130,6 +130,9 @@ const Payments = () => {
   const effectiveDate = (p) => p.payment_date || p.period_start_date || p.created_at?.split('T')[0];
 
   const { start: weekStart, end: weekEnd } = getWeekRange();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const todayPayments = payments.filter((p) => effectiveDate(p) === todayStr);
 
   const weekPayments = payments.filter((p) => {
     const raw = effectiveDate(p);
@@ -153,10 +156,28 @@ const Payments = () => {
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
-  const displayList = (tab === 'week' ? weekPayments : historyPayments)
+  // Un pago mensual "vigente con espacio disponible" es el mismo criterio que
+  // usa el asistente de pedidos para ofrecerlo como reutilizable: no cerrado
+  // a mano, no cancelado, y todavía con cupo (<4 órdenes vinculadas).
+  const isMonthlyAvailable = (p) =>
+    (p.status === 'pending' || p.status === 'paid') &&
+    !p.closed_at &&
+    (p.payment_orders?.length ?? 0) < 4;
+
+  const baseList = tab === 'today' ? todayPayments : tab === 'week' ? weekPayments : historyPayments;
+
+  const displayList = baseList
     .filter((p) => statusFilter === 'all' || p.status === statusFilter)
     .filter((p) => clientFilter === 'all' || String(p.client_id ?? 'manual') === clientFilter)
-    .filter((p) => typeFilter === 'all' || p.payment_type === typeFilter);
+    .filter((p) => {
+      if (typeFilter === 'all') return true;
+      if (typeFilter !== 'monthly') return p.payment_type === typeFilter;
+      // Al filtrar específicamente por "Mensual" se muestran solo los pagos
+      // vigentes con órdenes disponibles, no el historial completo de
+      // mensuales (cerrados/llenos/cancelados) — así se puede auditar de un
+      // vistazo cuál es el pago mensual activo de cada cliente ahora mismo.
+      return p.payment_type === 'monthly' && isMonthlyAvailable(p);
+    });
 
   const totalWeek = weekPayments
     .filter((p) => p.status === 'paid')
@@ -372,10 +393,61 @@ const Payments = () => {
           />
         </div>
 
-        {/* Tab + Status filter */}
+        {/* Client + Type filters — por encima de las pestañas de fecha:
+            son el filtro principal (a quién / qué tipo de pago), las
+            pestañas de fecha solo acotan el rango de tiempo dentro de eso. */}
+        {tab !== 'stats' && (
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <select
+              value={clientFilter}
+              onChange={(e) => setClientFilter(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+            >
+              <option value="all">Todos los clientes</option>
+              {clientOptions.map(([key, name]) => (
+                <option key={key} value={String(key)}>
+                  {name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+            >
+              <option value="all">Todos los tipos</option>
+              {typeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {PAYMENT_TYPE_LABEL[type] ?? type}
+                </option>
+              ))}
+            </select>
+            {typeFilter === 'monthly' && (
+              <span className="text-xs text-violet-600 bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-1">
+                Mostrando solo mensuales vigentes con órdenes disponibles
+              </span>
+            )}
+
+            {(clientFilter !== 'all' || typeFilter !== 'all') && (
+              <button
+                onClick={() => {
+                  setClientFilter('all');
+                  setTypeFilter('all');
+                }}
+                className="text-xs font-medium text-slate-500 hover:text-slate-700 transition px-2"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Tab (fecha) + Status filter */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
             {[
+              ['today', 'Hoy'],
               ['week', 'Esta Semana'],
               ['history', 'Historial'],
               ['stats', 'Estadísticas'],
@@ -410,49 +482,6 @@ const Payments = () => {
             </div>
           )}
         </div>
-
-        {/* Client + Type filters */}
-        {tab !== 'stats' && (
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <select
-              value={clientFilter}
-              onChange={(e) => setClientFilter(e.target.value)}
-              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
-            >
-              <option value="all">Todos los clientes</option>
-              {clientOptions.map(([key, name]) => (
-                <option key={key} value={String(key)}>
-                  {name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
-            >
-              <option value="all">Todos los tipos</option>
-              {typeOptions.map((type) => (
-                <option key={type} value={type}>
-                  {PAYMENT_TYPE_LABEL[type] ?? type}
-                </option>
-              ))}
-            </select>
-
-            {(clientFilter !== 'all' || typeFilter !== 'all') && (
-              <button
-                onClick={() => {
-                  setClientFilter('all');
-                  setTypeFilter('all');
-                }}
-                className="text-xs font-medium text-slate-500 hover:text-slate-700 transition px-2"
-              >
-                Limpiar filtros
-              </button>
-            )}
-          </div>
-        )}
 
         {/* History filters */}
         <AnimatePresence>
@@ -494,7 +523,11 @@ const Payments = () => {
             onAmountSave={handleAmountSave}
             onClosePayment={setClosingPayment}
             emptyMessage={
-              tab === 'week' ? 'No hay pagos registrados esta semana.' : 'No se encontraron pagos.'
+              tab === 'today'
+                ? 'No hay pagos registrados hoy.'
+                : tab === 'week'
+                  ? 'No hay pagos registrados esta semana.'
+                  : 'No se encontraron pagos.'
             }
           />
         )}
