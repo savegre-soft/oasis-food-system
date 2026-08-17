@@ -8,6 +8,7 @@ import GastosPanel from '../components/stats/GastosPanel';
 import IngresosPanel from '../components/stats/IngresosPanel';
 import ComparativaPanel from '../components/stats/ComparativaPanel';
 import PlanillaPanel from '../components/stats/PlanillaPanel';
+import ComboBulkPanel from '../components/stats/ComboBulkPanel';
 import AuthRoles from '../components/auth/AuthRoles';
 
 const TABS = [
@@ -15,6 +16,7 @@ const TABS = [
   { key: 'ingresos',    label: 'Ingresos',           accent: 'emerald' },
   { key: 'comparativa', label: 'Gastos vs Ingresos', accent: 'blue'    },
   { key: 'planilla',    label: 'Planilla',            accent: 'blue'    },
+  { key: 'combos',      label: 'Combos y Ventas Masivas', accent: 'violet' },
 ];
 
 const Estadisticas = () => {
@@ -56,6 +58,7 @@ const Estadisticas = () => {
       {tab === 'ingresos'    && <IngresosPanel    payments={payments} dateRange={dateRange} loading={loading} />}
       {tab === 'comparativa' && <ComparativaPanel expenses={expenses} empCosts={empCosts} payments={payments} dateRange={dateRange} loading={loading} />}
       {tab === 'planilla'    && <PlanillaPanel    empCosts={empCosts} dateRange={dateRange} loading={loading} />}
+      {tab === 'combos'      && <ComboBulkPanel   payments={payments} dateRange={dateRange} loading={loading} />}
     </div>
     </AuthRoles>
   );

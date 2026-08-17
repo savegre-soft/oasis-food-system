@@ -1,55 +1,69 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Printer } from 'lucide-react';
+import { Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
+import { toDateString } from '../components/orderUtils';
 
 import ComboDeliveryView from '../components/combos/ComboDeliveryView';
 import ComboPrintReport from '../components/combos/ComboPrintReport';
 
-// offset: -1 = previous week, 0 = current week, 1 = next week
-const computeWeekRange = (offset = 0) => {
-  const today = new Date();
-  const day = today.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(today);
-  monday.setDate(today.getDate() + diff + offset * 7);
-  monday.setHours(0, 0, 0, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return {
-    weekStart: monday.toISOString().split('T')[0],
-    weekEnd: sunday.toISOString().split('T')[0],
-  };
-};
+const fmtDate = (str, opts) => new Date(str + 'T00:00:00').toLocaleDateString('es-CR', opts);
 
-const WEEK_SEGMENTS = [
-  { offset: -1, label: 'Sem. anterior' },
-  { offset: 0, label: 'Sem. actual' },
-  { offset: 1, label: 'Sem. siguiente' },
-];
-
+// Los combos ya no tienen fecha de entrega individual — se organizan solo
+// por combo_week (rango de semana configurado por el staff en
+// ComboWeekBuilder). Acá se navega entre semanas por índice en vez de por
+// rango calendario.
 const DeliveriesCombos = () => {
   const { supabase } = useApp();
-  const [weekOffset, setWeekOffset] = useState(0);
-  const { weekStart, weekEnd } = computeWeekRange(weekOffset);
+  const [weeks, setWeeks] = useState([]);
+  const [weekIndex, setWeekIndex] = useState(0);
+  const [loadingWeeks, setLoadingWeeks] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [comboOrders, setComboOrders] = useState([]);
   const [showPrint, setShowPrint] = useState(false);
 
+  useEffect(() => {
+    const fetchWeeks = async () => {
+      setLoadingWeeks(true);
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('combo_weeks')
+        .select('id_combo_week, week_start_date, week_end_date, status')
+        .order('week_start_date', { ascending: true });
+      if (error) console.error(error);
+      const list = data ?? [];
+      setWeeks(list);
+
+      const todayStr = toDateString(new Date());
+      let idx = list.findIndex((w) => w.status === 'open');
+      if (idx === -1) {
+        idx = list.reduce((best, w, i) => (w.week_start_date <= todayStr ? i : best), -1);
+      }
+      setWeekIndex(idx === -1 ? list.length - 1 : idx);
+      setLoadingWeeks(false);
+    };
+    fetchWeeks();
+  }, [supabase]);
+
+  const currentWeek = weeks[weekIndex] ?? null;
+
   const getComboData = useCallback(
-    async (wsStr, weStr) => {
+    async (weekId) => {
+      if (!weekId) {
+        setComboOrders([]);
+        return;
+      }
       setLoading(true);
       const { data, error } = await supabase
         .schema('operations')
         .from('combo_orders')
         .select(
-          `id_combo_order, delivery_date, price, status,
+          `id_combo_order, price, status,
          clients ( id_client, name ),
          combo_order_selections ( id_combo_order_selection, category, combo_item_id, combo_items ( name, portion_size_g ) )`
         )
-        .gte('delivery_date', wsStr)
-        .lte('delivery_date', weStr)
+        .eq('combo_week_id', weekId)
         .order('id_combo_order', { ascending: false });
       if (error) console.error(error);
       setComboOrders(data ?? []);
@@ -59,17 +73,10 @@ const DeliveriesCombos = () => {
   );
 
   useEffect(() => {
-    const run = async () => {
-      const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
-      await getComboData(ws, we);
-    };
-    run();
-  }, [weekOffset, getComboData]);
+    setTimeout(() => getComboData(currentWeek?.id_combo_week), 0);
+  }, [currentWeek, getComboData]);
 
-  const refresh = async () => {
-    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
-    await getComboData(ws, we);
-  };
+  const refresh = async () => getComboData(currentWeek?.id_combo_week);
 
   const updateComboOrderStatus = async (id, newStatus, successMsg) => {
     const { error } = await supabase
@@ -90,11 +97,12 @@ const DeliveriesCombos = () => {
   const markComboDelivered = (id) => updateComboOrderStatus(id, 'DELIVERED', '🚚 Combo entregado');
   const markComboPending = (id) => updateComboOrderStatus(id, 'PENDING', 'Combo devuelto a pendiente');
 
-  const weekLabel =
-    'Semana del ' +
-    new Date(weekStart + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long' }) +
-    ' al ' +
-    new Date(weekEnd + 'T00:00:00').toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const weekLabel = currentWeek
+    ? 'Semana del ' +
+      fmtDate(currentWeek.week_start_date, { day: '2-digit', month: 'long' }) +
+      ' al ' +
+      fmtDate(currentWeek.week_end_date, { day: '2-digit', month: 'long', year: 'numeric' })
+    : 'Sin semanas de combo configuradas';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
@@ -107,30 +115,39 @@ const DeliveriesCombos = () => {
         </div>
         <button
           onClick={() => setShowPrint(true)}
-          className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+          disabled={!currentWeek}
+          className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Printer size={15} /> Imprimir resumen
         </button>
       </div>
 
-      <div className="flex gap-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-8">
-        {WEEK_SEGMENTS.map(({ offset, label }) => (
-          <button
-            key={offset}
-            onClick={() => setWeekOffset(offset)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-              weekOffset === offset
-                ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 mb-8">
+        <button
+          onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
+          disabled={weekIndex <= 0}
+          className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="text-sm text-slate-500 dark:text-slate-400 font-medium min-w-[8rem] text-center">
+          {weeks.length > 0 ? `Semana ${weekIndex + 1} de ${weeks.length}` : ''}
+        </span>
+        <button
+          onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))}
+          disabled={weekIndex >= weeks.length - 1}
+          className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition shadow-sm"
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
 
-      {loading ? (
+      {loadingWeeks || loading ? (
         <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando...</p>
+      ) : !currentWeek ? (
+        <p className="text-slate-400 dark:text-slate-600 text-sm">
+          No hay ninguna semana de combo configurada todavía.
+        </p>
       ) : (
         <ComboDeliveryView
           orders={comboOrders}

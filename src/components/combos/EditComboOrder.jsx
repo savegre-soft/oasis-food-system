@@ -6,22 +6,22 @@ import { computeComboPrice } from '../comboUtils';
 import { toDateString } from '../orderUtils';
 import { useComboSelections } from '../../hooks/useComboSelections';
 import ComboCategorySelector from './ComboCategorySelector';
-import ComboExtraChargeModal from './ComboExtraChargeModal';
 
-// order: fila de combo_orders con combo_order_selections(combo_item_id, category, is_extra, extra_charge)
+// order: fila de combo_orders con combo_order_selections(combo_item_id, category, is_extra, unit_price)
 // y payments(status, payment_date) anidados (misma forma que usa ComboOrdersTab).
 // comboWeek: la semana a la que pertenece el pedido, con combo_week_categories
 // (misma forma que usa AddComboOrder) — define qué ítems se pueden elegir.
 // A diferencia de AddComboOrder, esto es una sola pantalla (no wizard): el
-// cliente no cambia al editar, solo selecciones/entrega/pago/notas.
+// cliente no cambia al editar, solo selecciones/pago/notas.
 const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
   const { supabase } = useApp();
 
   const categories = comboWeek?.combo_week_categories ?? [];
 
   // Cada fila guardada es una unidad (ver comboUtils): se reconstruyen tanto
-  // las cantidades por ítem como el historial de precios de las unidades
-  // extra, en el mismo orden en que fueron guardadas.
+  // las cantidades por ítem como el precio de las unidades extra, en el mismo
+  // orden en que fueron guardadas. `unit_price ?? extra_charge` cubre pedidos
+  // guardados antes de que existiera el precio por ítem.
   const buildInitial = () => {
     const quantities = {};
     const extraCharges = {};
@@ -30,20 +30,18 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
       quantities[s.category][s.combo_item_id] = (quantities[s.category][s.combo_item_id] ?? 0) + 1;
       if (s.is_extra) {
         const key = `${s.category}:${s.combo_item_id}`;
-        extraCharges[key] = [...(extraCharges[key] ?? []), s.extra_charge];
+        extraCharges[key] = [...(extraCharges[key] ?? []), s.unit_price ?? s.extra_charge];
       }
     }
     return { quantities, extraCharges };
   };
 
-  const [deliveryDate, setDeliveryDate] = useState(order.delivery_date);
   const [status, setStatus] = useState(order.payments?.status ?? 'pending');
   const [paymentDate, setPaymentDate] = useState(
     order.payments?.payment_date ?? toDateString(new Date())
   );
   const [notes, setNotes] = useState(order.notes ?? '');
   const [loading, setLoading] = useState(false);
-  const [pendingExtra, setPendingExtra] = useState(null);
 
   const {
     quantities,
@@ -54,30 +52,20 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
     qtyOf,
     extraCountOf,
     extraTotalOf,
-    lastExtraCharge,
     addUnit,
     addExtraUnit,
     removeUnit,
   } = useComboSelections(categories, buildInitial());
 
-  const handleIncrement = (category, itemId, maxSelections, itemName) => {
+  // Cada unidad que excede el cupo de su categoría se cobra automáticamente
+  // al precio propio del ítem (combo_items.price) — ya no se le pregunta el
+  // monto al staff.
+  const handleIncrement = (category, itemId, maxSelections, itemName, itemPrice) => {
     if (wouldExceedLimit(category, maxSelections)) {
-      setPendingExtra({
-        category,
-        itemId,
-        itemName,
-        unitNumber: extraCountOf(category, itemId) + 1,
-        defaultAmount: lastExtraCharge(category, itemId),
-      });
+      addExtraUnit(category, itemId, Number(itemPrice) || 0);
       return;
     }
     addUnit(category, itemId);
-  };
-
-  const confirmExtra = (amount) => {
-    if (!pendingExtra) return;
-    addExtraUnit(pendingExtra.category, pendingExtra.itemId, amount);
-    setPendingExtra(null);
   };
 
   const flatSelections = useMemo(() => {
@@ -87,15 +75,15 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
         const itemId = cwci.combo_item_id;
         const qty = quantities[cat.category]?.[itemId] ?? 0;
         if (qty === 0) continue;
+        const itemPrice = cwci.combo_items?.price ?? 0;
         const extraList = extraCharges[`${cat.category}:${itemId}`] ?? [];
         const normalQty = qty - extraList.length;
         for (let i = 0; i < normalQty; i++) {
           rows.push({
             category: cat.category,
             combo_item_id: itemId,
-            extra_price: cwci.extra_price,
+            unit_price: cat.category === 'plato_extra' ? itemPrice : null,
             is_extra: false,
-            extra_charge: null,
             combo_items: cwci.combo_items,
           });
         }
@@ -103,9 +91,8 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
           rows.push({
             category: cat.category,
             combo_item_id: itemId,
-            extra_price: cwci.extra_price,
+            unit_price: charge,
             is_extra: true,
-            extra_charge: charge,
             combo_items: cwci.combo_items,
           });
         }
@@ -118,10 +105,6 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!deliveryDate) {
-      sileo.error('Ingresa la fecha de entrega');
-      return;
-    }
     if (status === 'paid' && !paymentDate) {
       sileo.error('Ingresa la fecha de pago');
       return;
@@ -152,7 +135,7 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
     const { error: orderError } = await supabase
       .schema('operations')
       .from('combo_orders')
-      .update({ delivery_date: deliveryDate, price: totalPrice, notes: notes || null })
+      .update({ price: totalPrice, notes: notes || null })
       .eq('id_combo_order', order.id_combo_order);
 
     if (orderError) {
@@ -187,7 +170,7 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
             combo_item_id: s.combo_item_id,
             category: s.category,
             is_extra: s.is_extra,
-            extra_charge: s.is_extra ? s.extra_charge : null,
+            unit_price: s.unit_price,
           }))
         );
       if (selError) {
@@ -235,19 +218,6 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
             ₡{totalPrice.toLocaleString('es-CR')}
           </span>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
-          Fecha de entrega
-        </label>
-        <input
-          type="date"
-          value={deliveryDate}
-          onChange={(e) => setDeliveryDate(e.target.value)}
-          required
-          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm bg-white dark:bg-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-800 dark:focus:ring-green-600"
-        />
       </div>
 
       <div className="flex flex-col gap-1">
@@ -319,12 +289,6 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
           <Check size={16} /> {loading ? 'Guardando…' : 'Guardar cambios'}
         </button>
       </div>
-
-      <ComboExtraChargeModal
-        pending={pendingExtra}
-        onConfirm={confirmExtra}
-        onCancel={() => setPendingExtra(null)}
-      />
     </form>
   );
 };

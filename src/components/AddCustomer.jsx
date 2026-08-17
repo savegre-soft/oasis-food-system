@@ -58,7 +58,9 @@ L.Icon.Default.mergeOptions({
 
 const AddCustomer = ({ onAdd, initialData }) => {
   const { supabase } = useApp();
-  const isEdit = !!initialData;
+  // `initialData` sin `id_client` significa "prellenar pero crear" (ej. al
+  // convertir un prospecto en cliente desde Prospectos), no "editar".
+  const isEdit = !!initialData?.id_client;
 
   const lm = initialData?.lunch_macro;
   const dm = initialData?.dinner_macro;

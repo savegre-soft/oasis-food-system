@@ -57,6 +57,13 @@ const OrderAdjustments = ({
   // Extras (AddOrder-specific)
   extraMealTypes = {},
   onExtraMealTypeChange,
+
+  // Portal de clientes: días que ya pasaron el corte de edición (solo lectura),
+  // si se muestra el editor de composición de ingredientes, y si se permite
+  // editar macros (el cliente ve sus macros pero no los edita, RF-PC-02).
+  closedDays,
+  showIngredientEditor = true,
+  hideMacroEditor = false,
 }) => {
   return (
     <div className="space-y-5">
@@ -91,7 +98,7 @@ const OrderAdjustments = ({
       )}
 
       {/* Base macros */}
-      {!isFamilyClient && (lunchMacros || dinnerMacros) && (
+      {!hideMacroEditor && !isFamilyClient && (lunchMacros || dinnerMacros) && (
         <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
@@ -215,12 +222,15 @@ const OrderAdjustments = ({
             recipeIngredients={recipeIngredients}
             ingredientOverrides={ingredientOverrides}
             onOverrideChange={onOverrideChange}
+            showIngredientEditor={showIngredientEditor}
             getEffectiveMacros={getEffectiveMacros}
             isDayOverridden={isDayOverridden}
             onUpdateDayMacro={onUpdateDayMacro}
             onResetDayMacro={onResetDayMacro}
             extraMealTypes={extraMealTypes}
             onExtraMealTypeChange={onExtraMealTypeChange}
+            readOnly={closedDays?.has(day) ?? false}
+            hideMacroEditor={hideMacroEditor}
           />
         ))}
       </div>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
-import Contact from './contact';
+import LeadForm from '../components/LeadForm';
 
 const PAGE_SIZE = 6;
 
@@ -125,7 +126,7 @@ const Menu = () => {
       {/* Modal */}
       {openModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full relative">
+          <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full relative p-8 md:p-10">
             {/* Close */}
             <button
               onClick={() => setOpenModal(false)}
@@ -134,9 +135,18 @@ const Menu = () => {
               ✕
             </button>
 
-            <Contact
-              title={`Ordenar: ${selectedDish?.name || ''}`}
-              description="Déjanos tu información y te contactaremos para confirmar tu pedido."
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-emerald-800">
+                {selectedDish ? `Interesado en: ${selectedDish.name}` : 'Quiero ser cliente'}
+              </h2>
+              <p className="mt-2 text-slate-600">
+                Dejanos tu información y te contactamos para armar tu plan semanal.
+              </p>
+            </div>
+
+            <LeadForm
+              initialComment={selectedDish ? `Interesado en: ${selectedDish.name}` : ''}
+              onSuccess={() => setOpenModal(false)}
             />
           </div>
         </div>
@@ -144,17 +154,20 @@ const Menu = () => {
 
       {/* CTA */}
       <div className="mt-20 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-emerald-800">¿Listo para disfrutar?</h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-emerald-800">¿Listo para empezar?</h2>
 
         <p className="mt-3 text-slate-600">
-          Haz tu pedido ahora y recibe tu comida fresca en minutos.
+          Dejanos tus datos y armamos juntos tu suscripción semanal.
         </p>
 
         <button
-          onClick={() => setOpenModal(true)}
+          onClick={() => {
+            setSelectedDish(null);
+            setOpenModal(true);
+          }}
           className="inline-block mt-6 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 transition"
         >
-          Ordenar Ahora
+          Quiero ser cliente
         </button>
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   DAY_LABELS,
   isFamily,
   getWeekRange,
+  getWeekOfMonth,
   toDateString,
   getDateForDay,
   STANDARD_MACRO,
@@ -46,6 +47,10 @@ const AddOrder = ({ onSuccess }) => {
   const [dinnerTemplates, setDinnerTemplates] = useState([]);
   const [selectedLunchTemplate, setSelectedLunchTemplate] = useState(null);
   const [selectedDinnerTemplate, setSelectedDinnerTemplate] = useState(null);
+  // Plantilla que corresponde a la semana en curso (auto u override del
+  // staff, misma resolución que usa el portal de clientes) — se usa para
+  // preseleccionar y para marcar el badge "Semana actual" en StepMenu.
+  const [weekTemplateIds, setWeekTemplateIds] = useState({ lunch: null, dinner: null });
   const [selectedFamilyTemplate, setSelectedFamilyTemplate] = useState(null);
 
   // Step 3 — Route / adjustments
@@ -71,10 +76,11 @@ const AddOrder = ({ onSuccess }) => {
   // monthly payment, which was creating a duplicate payment per order.
   const [explicitNewPayment, setExplicitNewPayment] = useState(false);
   // True while checking for a reusable monthly payment. Mientras está en
-  // true, StepPayment no debe mostrar el formulario de "pago nuevo" ni dejar
-  // avanzar — si se completaba el monto o se hacía clic en "Siguiente" antes
-  // de que esta consulta resolviera, el pedido se guardaba con
-  // associatePaymentId todavía en null y sin ningún pago asociado.
+  // true, StepPayment no debe mostrar el formulario de "pago nuevo" — si se
+  // completaba el monto antes de que esta consulta resolviera, se enviaba con
+  // associatePaymentId todavía en null y se creaba un pago duplicado aunque
+  // el cliente ya tuviera uno abierto con espacio (bug confirmado con datos
+  // reales el 2026-08-11).
   const [paymentLookupLoading, setPaymentLookupLoading] = useState(false);
 
   // Express
@@ -221,7 +227,10 @@ const AddOrder = ({ onSuccess }) => {
     );
   }, [selectedClient, expressType, isExpress]);
 
-  // Load personal templates
+  // Load personal templates — preselecciona la plantilla de la semana en
+  // curso (con override del staff si existe, misma resolución que usa el
+  // portal de clientes) para no obligar a elegir a mano cada vez; el staff
+  // igual puede elegir otra de la lista para este pedido puntual.
   useEffect(() => {
     if (!menuType || familyClient) return;
     (async () => {
@@ -230,7 +239,7 @@ const AddOrder = ({ onSuccess }) => {
         .schema('operations')
         .from('order_templates')
         .select(
-          'id_template, name, meal_type, order_template_days(day_of_week, order_template_details(recipe_id, quantity, recipes(id_recipe, name)))'
+          'id_template, name, meal_type, week_of_month, order_template_days(day_of_week, order_template_details(recipe_id, quantity, recipes(id_recipe, name)))'
         )
         .in('meal_type', types)
         .eq('is_active', true);
@@ -238,8 +247,34 @@ const AddOrder = ({ onSuccess }) => {
       const dinner = data?.filter((t) => t.meal_type === 'Dinner') ?? [];
       setLunchTemplates(lunch);
       setDinnerTemplates(dinner);
-      if (menuType === 'Lunch' && lunch.length === 1) setSelectedLunchTemplate(lunch[0]);
-      if (menuType === 'Dinner' && dinner.length === 1) setSelectedDinnerTemplate(dinner[0]);
+
+      const { weekStart } = getWeekRange();
+      const weekOfMonth = getWeekOfMonth(weekStart);
+      const weekStartStr = toDateString(weekStart);
+      const { data: overrides } = await supabase
+        .schema('operations')
+        .from('portal_template_overrides')
+        .select('meal_type, template_id')
+        .eq('week_start_date', weekStartStr);
+      const overrideLunchId = overrides?.find((o) => o.meal_type === 'Lunch')?.template_id;
+      const overrideDinnerId = overrides?.find((o) => o.meal_type === 'Dinner')?.template_id;
+
+      const resolvedLunch =
+        lunch.find((t) => t.id_template === overrideLunchId) ??
+        lunch.find((t) => t.week_of_month === weekOfMonth) ??
+        (lunch.length === 1 ? lunch[0] : null);
+      const resolvedDinner =
+        dinner.find((t) => t.id_template === overrideDinnerId) ??
+        dinner.find((t) => t.week_of_month === weekOfMonth) ??
+        (dinner.length === 1 ? dinner[0] : null);
+
+      setWeekTemplateIds({
+        lunch: resolvedLunch?.id_template ?? null,
+        dinner: resolvedDinner?.id_template ?? null,
+      });
+
+      if ((menuType === 'Lunch' || menuType === 'both') && resolvedLunch) setSelectedLunchTemplate(resolvedLunch);
+      if ((menuType === 'Dinner' || menuType === 'both') && resolvedDinner) setSelectedDinnerTemplate(resolvedDinner);
     })();
   }, [menuType, selectedClient]);
 
@@ -358,8 +393,8 @@ const AddOrder = ({ onSuccess }) => {
         .eq('client_id', selectedClient.id_client)
         .eq('payment_type', 'monthly')
         .in('status', ['pending', 'paid'])
-        .is('closed_at', null) // pagos cerrados manualmente desde Ingresos no se reutilizan
-        .order('period_start_date', { ascending: true }); // completar siempre el más antiguo primero
+        .gte('period_end_date', todayStr)
+        .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
       if (error || !data) {
         setPaymentLookupLoading(false);
         return;
@@ -786,6 +821,7 @@ const AddOrder = ({ onSuccess }) => {
             setSelectedLunchTemplate={setSelectedLunchTemplate}
             selectedDinnerTemplate={selectedDinnerTemplate}
             setSelectedDinnerTemplate={setSelectedDinnerTemplate}
+            weekTemplateIds={weekTemplateIds}
           />
         )}
 

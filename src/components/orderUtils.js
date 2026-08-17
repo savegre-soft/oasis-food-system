@@ -43,6 +43,21 @@ export const isFamily = (client) => client?.client_type === 'family';
 
 export const toDateString = (date) => date.toISOString().split('T')[0];
 
+// Semana del mes (1-4) a la que corresponde el lunes de una semana de pedido
+// — mismo bucket calendario que usa operations.portal_get_menu_options en
+// Supabase (día 1-7 = Semana 1, 8-14 = Semana 2, 15-21 = Semana 3, 22-28 =
+// Semana 4, 29-31 = 5to lunes del mes, vuelve a la Semana 1). Única fuente
+// de verdad en el frontend, usada tanto por el portal de clientes como por
+// el asistente interno (AddOrder.jsx) para preseleccionar la plantilla.
+export const getWeekOfMonth = (monday) => {
+  const day = monday.getDate();
+  if (day <= 7) return 1;
+  if (day <= 14) return 2;
+  if (day <= 21) return 3;
+  if (day <= 28) return 4;
+  return 1;
+};
+
 // Returns the active week range for a new order.
 // Mon / Tue → current week (delivery forced to Tuesday of that week).
 // Any other day → next week (existing behaviour).

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { DollarSign, TrendingUp, Clock, Search, BarChart2 } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Search, BarChart2, AlertTriangle } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 import AuthRoles from '../components/auth/AuthRoles';
@@ -58,6 +58,8 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [clientFilter, setClientFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [onlyAvailableMonthly, setOnlyAvailableMonthly] = useState(false);
+  const [deletingPayment, setDeletingPayment] = useState(null);
   const [chartRange, setChartRange] = useState(getThisMonth);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -76,7 +78,7 @@ const Payments = () => {
         payment_orders(
           id_payment_order, order_id,
           orders(
-            id_order, week_start_date, week_end_date, classification, status,
+            id_order, week_start_date, week_end_date, classification, status, created_at,
             clients(id_client, name, client_type),
             routes(id_route, name, route_delivery_days(day_of_week)),
             order_days(
@@ -97,12 +99,19 @@ const Payments = () => {
   };
 
   useEffect(() => {
-    fetchPayments();
+    const timer = setTimeout(() => fetchPayments(), 0);
+    return () => clearTimeout(timer);
   }, [supabase]);
 
-  useEffect(() => {
+  // Deselecciona al cambiar de filtro/pestaña. Ajuste de estado durante el
+  // render (no en un efecto) — patrón recomendado por React para resetear
+  // estado cuando cambia una dependencia, en vez de un efecto síncrono.
+  const filtersKey = JSON.stringify([tab, statusFilter, clientFilter, typeFilter, search, dateRange]);
+  const [prevFiltersKey, setPrevFiltersKey] = useState(filtersKey);
+  if (filtersKey !== prevFiltersKey) {
+    setPrevFiltersKey(filtersKey);
     setSelectedIds([]);
-  }, [tab, statusFilter, clientFilter, typeFilter, search, dateRange]);
+  }
 
   // ── Derived data — filter options ───────────────────────────────────────────
 
@@ -156,28 +165,42 @@ const Payments = () => {
       return d >= new Date(dateRange.startDate) && d <= new Date(dateRange.endDate);
     });
 
-  // Un pago mensual "vigente con espacio disponible" es el mismo criterio que
-  // usa el asistente de pedidos para ofrecerlo como reutilizable: no cerrado
-  // a mano, no cancelado, y todavía con cupo (<4 órdenes vinculadas).
-  const isMonthlyAvailable = (p) =>
-    (p.status === 'pending' || p.status === 'paid') &&
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Mismo criterio de "espacio disponible" que usa AddOrder.jsx para ofrecer
+  // un pago mensual como reutilizable: no cancelado, no cerrado manualmente,
+  // menos de 4 órdenes vinculadas, y período todavía vigente.
+  const hasAvailableSpace = (p) =>
+    p.status !== 'cancelled' &&
     !p.closed_at &&
-    (p.payment_orders?.length ?? 0) < 4;
+    (p.payment_orders?.length ?? 0) < 4 &&
+    (!p.period_end_date || p.period_end_date >= todayStr);
 
-  const baseList = tab === 'today' ? todayPayments : tab === 'week' ? weekPayments : historyPayments;
+  // RF-DASH-02 — pagos mensuales con espacio disponible a 3 días o menos del
+  // fin de su período (mismo criterio de "próximo a vencer" acordado con el usuario).
+  const daysUntil = (dateStr) =>
+    Math.ceil((new Date(dateStr + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
 
-  const displayList = baseList
+  const expiringMonthlyPayments = payments
+    .filter((p) => p.payment_type === 'monthly' && p.period_end_date && hasAvailableSpace(p))
+    .filter((p) => daysUntil(p.period_end_date) <= 3)
+    .sort((a, b) => daysUntil(a.period_end_date) - daysUntil(b.period_end_date));
+
+  const jumpToExpiringPayment = (payment) => {
+    setTab('history');
+    setStatusFilter('all');
+    setClientFilter(String(payment.client_id ?? 'manual'));
+    setTypeFilter('monthly');
+    setOnlyAvailableMonthly(false);
+    setDateRange({ startDate: null, endDate: null });
+    setSearch('');
+  };
+
+  const displayList = (tab === 'week' ? weekPayments : historyPayments)
     .filter((p) => statusFilter === 'all' || p.status === statusFilter)
     .filter((p) => clientFilter === 'all' || String(p.client_id ?? 'manual') === clientFilter)
-    .filter((p) => {
-      if (typeFilter === 'all') return true;
-      if (typeFilter !== 'monthly') return p.payment_type === typeFilter;
-      // Al filtrar específicamente por "Mensual" se muestran solo los pagos
-      // vigentes con órdenes disponibles, no el historial completo de
-      // mensuales (cerrados/llenos/cancelados) — así se puede auditar de un
-      // vistazo cuál es el pago mensual activo de cada cliente ahora mismo.
-      return p.payment_type === 'monthly' && isMonthlyAvailable(p);
-    });
+    .filter((p) => typeFilter === 'all' || p.payment_type === typeFilter)
+    .filter((p) => typeFilter !== 'monthly' || !onlyAvailableMonthly || hasAvailableSpace(p));
 
   const totalWeek = weekPayments
     .filter((p) => p.status === 'paid')
@@ -315,6 +338,39 @@ const Payments = () => {
     await fetchPayments();
   };
 
+  // Elimina un pago de forma permanente. Si todavía tiene órdenes vinculadas,
+  // primero se desvinculan (no se borran las órdenes, solo dejan de tener
+  // un pago asociado) para no depender de si la FK tiene cascada configurada.
+  const handleDeletePayment = async () => {
+    if (!deletingPayment) return;
+
+    if ((deletingPayment.payment_orders?.length ?? 0) > 0) {
+      const { error: unlinkError } = await supabase
+        .schema('operations')
+        .from('payment_orders')
+        .delete()
+        .eq('payment_id', deletingPayment.id_payment);
+      if (unlinkError) {
+        sileo.error('No se pudo desvincular las órdenes de este pago');
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .schema('operations')
+      .from('payments')
+      .delete()
+      .eq('id_payment', deletingPayment.id_payment);
+
+    if (error) {
+      sileo.error('No se pudo eliminar el pago');
+      return;
+    }
+    sileo.success('Pago eliminado');
+    setDeletingPayment(null);
+    await fetchPayments();
+  };
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -351,6 +407,24 @@ const Payments = () => {
           confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition"
           onConfirm={handleClosePayment}
           onCancel={() => setClosingPayment(null)}
+        />
+
+        <ConfirmDialog
+          open={!!deletingPayment}
+          title="¿Eliminar este pago?"
+          message={
+            deletingPayment
+              ? `Esta acción es permanente y no se puede deshacer.${
+                  (deletingPayment.payment_orders?.length ?? 0) > 0
+                    ? ` Tiene ${deletingPayment.payment_orders.length} orden${deletingPayment.payment_orders.length !== 1 ? 'es' : ''} vinculada${deletingPayment.payment_orders.length !== 1 ? 's' : ''} que va${deletingPayment.payment_orders.length !== 1 ? 'n' : ''} a quedar sin pago asociado.`
+                    : ''
+                }`
+              : ''
+          }
+          confirmLabel="Eliminar"
+          confirmClassName="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition"
+          onConfirm={handleDeletePayment}
+          onCancel={() => setDeletingPayment(null)}
         />
 
         {/* Header */}
@@ -393,9 +467,82 @@ const Payments = () => {
           />
         </div>
 
-        {/* Client + Type filters — por encima de las pestañas de fecha:
-            son el filtro principal (a quién / qué tipo de pago), las
-            pestañas de fecha solo acotan el rango de tiempo dentro de eso. */}
+        {/* RF-DASH-02: pagos mensuales próximos a vencer */}
+        {expiringMonthlyPayments.length > 0 && (
+          <motion.div
+            initial={{ y: -15, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={18} className="text-amber-600" />
+              <h2 className="text-sm font-semibold text-amber-800">
+                Pagos mensuales próximos a vencer ({expiringMonthlyPayments.length})
+              </h2>
+            </div>
+            <div className="space-y-2">
+              {expiringMonthlyPayments.map((p) => {
+                const remaining = daysUntil(p.period_end_date);
+                const used = p.payment_orders?.length ?? 0;
+                return (
+                  <button
+                    key={p.id_payment}
+                    onClick={() => jumpToExpiringPayment(p)}
+                    className="w-full flex items-center justify-between bg-white border border-amber-100 rounded-xl px-4 py-2.5 text-left hover:border-amber-300 transition"
+                  >
+                    <span className="text-sm font-medium text-slate-800">
+                      {p.clients?.name ?? `Cliente ${p.client_id}`}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {used}/4 órdenes · vence {remaining === 0 ? 'hoy' : `en ${remaining} día${remaining !== 1 ? 's' : ''}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Tab + Status filter */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+            {[
+              ['week', 'Esta Semana'],
+              ['history', 'Historial'],
+              ['stats', 'Estadísticas'],
+            ].map(([val, lbl]) => (
+              <button
+                key={val}
+                onClick={() => setTab(val)}
+                className={`px-5 py-2.5 text-sm font-medium transition flex items-center gap-1.5 ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                {val === 'stats' && <BarChart2 size={14} />}
+                {lbl}
+              </button>
+            ))}
+          </div>
+
+          {tab !== 'stats' && (
+            <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+              {[
+                ['all', 'Todos'],
+                ['pending', 'Pendientes'],
+                ['paid', 'Pagados'],
+                ['cancelled', 'Cancelados'],
+              ].map(([val, lbl]) => (
+                <button
+                  key={val}
+                  onClick={() => setStatusFilter(val)}
+                  className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Client + Type filters */}
         {tab !== 'stats' && (
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <select
@@ -413,7 +560,10 @@ const Payments = () => {
 
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                if (e.target.value !== 'monthly') setOnlyAvailableMonthly(false);
+              }}
               className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
             >
               <option value="all">Todos los tipos</option>
@@ -429,11 +579,24 @@ const Payments = () => {
               </span>
             )}
 
+            {typeFilter === 'monthly' && (
+              <label className="flex items-center gap-2 text-sm text-slate-600 select-none cursor-pointer px-1">
+                <input
+                  type="checkbox"
+                  checked={onlyAvailableMonthly}
+                  onChange={(e) => setOnlyAvailableMonthly(e.target.checked)}
+                  className="w-4 h-4 rounded cursor-pointer accent-slate-800"
+                />
+                Solo con espacio disponible
+              </label>
+            )}
+
             {(clientFilter !== 'all' || typeFilter !== 'all') && (
               <button
                 onClick={() => {
                   setClientFilter('all');
                   setTypeFilter('all');
+                  setOnlyAvailableMonthly(false);
                 }}
                 className="text-xs font-medium text-slate-500 hover:text-slate-700 transition px-2"
               >
@@ -522,6 +685,7 @@ const Payments = () => {
             onBulkStatusSave={handleBulkStatusSave}
             onAmountSave={handleAmountSave}
             onClosePayment={setClosingPayment}
+            onDeletePayment={setDeletingPayment}
             emptyMessage={
               tab === 'today'
                 ? 'No hay pagos registrados hoy.'

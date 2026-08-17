@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { motion } from 'framer-motion';
-import { Pencil, Check, X, Eye, Lock } from 'lucide-react';
+import { Pencil, Check, X, Eye, Lock, Trash2 } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
+import Tooltip from '../Tooltip';
 import { PAYMENT_STATUS_LABEL, PAYMENT_TYPE_LABEL } from '../../utils/chartUtils';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ const PaymentTable = ({
   onBulkStatusSave,
   onAmountSave,
   onClosePayment,
+  onDeletePayment,
   emptyMessage,
 }) => {
   const [expandedPayment, setExpandedPayment] = useState(null);
@@ -162,7 +164,8 @@ const PaymentTable = ({
               <th className="px-5 py-4 text-left font-semibold">Fecha</th>
               <th className="px-5 py-4 text-right font-semibold">Monto</th>
               <th className="px-5 py-4 text-center font-semibold">Órdenes</th>
-              <th className="px-5 py-4 text-center font-semibold">Estado</th>
+              <th className="px-5 py-4 text-center font-semibold">Última orden agregada</th>
+              <th className="px-5 py-4 text-center font-semibold min-w-[190px]">Estado</th>
               <th className="px-5 py-4 text-center font-semibold w-20"></th>
             </tr>
           </thead>
@@ -171,6 +174,10 @@ const PaymentTable = ({
               const isEditing = editingStatus?.id === p.id_payment;
               const isMonthly = p.payment_type === 'monthly';
               const orders = (p.payment_orders ?? []).map((po) => po.orders).filter(Boolean);
+              const lastOrderAddedAt = orders.reduce(
+                (latest, o) => (o.created_at && (!latest || o.created_at > latest) ? o.created_at : latest),
+                null
+              );
               const isExpanded = expandedPayment === p.id_payment;
               const isSelected = selectedIds.includes(p.id_payment);
 
@@ -221,40 +228,48 @@ const PaymentTable = ({
                             onChange={(e) => setEditingAmount({ id: p.id_payment, value: e.target.value })}
                             className="w-28 text-right border border-slate-200 rounded-lg px-2 py-1 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-slate-300"
                           />
-                          <button
-                            onClick={() => {
-                              const newAmount = Number(editingAmount.value);
-                              if (editingAmount.value === '' || Number.isNaN(newAmount) || newAmount < 0) return;
-                              if (newAmount === Number(p.amount)) {
-                                setEditingAmount(null);
-                                return;
-                              }
-                              setConfirmAmountChange({
-                                id: p.id_payment,
-                                oldAmount: Number(p.amount),
-                                newAmount,
-                                clientName: p.clients?.name ?? (p.client_id ? `Cliente ${p.client_id}` : 'Ingreso manual'),
-                              });
-                            }}
-                            className="p-1 text-green-600 hover:text-green-700 transition"
-                          >
-                            <Check size={14} />
-                          </button>
-                          <button onClick={() => setEditingAmount(null)} className="p-1 text-red-400 hover:text-red-600 transition">
-                            <X size={14} />
-                          </button>
+                          <Tooltip label="Guardar monto">
+                            <button
+                              onClick={() => {
+                                const newAmount = Number(editingAmount.value);
+                                if (editingAmount.value === '' || Number.isNaN(newAmount) || newAmount < 0) return;
+                                if (newAmount === Number(p.amount)) {
+                                  setEditingAmount(null);
+                                  return;
+                                }
+                                setConfirmAmountChange({
+                                  id: p.id_payment,
+                                  oldAmount: Number(p.amount),
+                                  newAmount,
+                                  clientName: p.clients?.name ?? (p.client_id ? `Cliente ${p.client_id}` : 'Ingreso manual'),
+                                });
+                              }}
+                              className="p-1 text-green-600 hover:text-green-700 transition"
+                            >
+                              <Check size={14} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip label="Cancelar edición de monto">
+                            <button
+                              onClick={() => setEditingAmount(null)}
+                              className="p-1 text-red-400 hover:text-red-600 transition"
+                            >
+                              <X size={14} />
+                            </button>
+                          </Tooltip>
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1">
                           <span>{p.currency ?? 'CRC'} {Number(p.amount).toLocaleString()}</span>
                           {onAmountSave && (
-                            <button
-                              onClick={() => setEditingAmount({ id: p.id_payment, value: String(p.amount) })}
-                              className="p-1 text-slate-300 hover:text-slate-600 transition"
-                              title="Editar monto"
-                            >
-                              <Pencil size={12} />
-                            </button>
+                            <Tooltip label="Editar monto">
+                              <button
+                                onClick={() => setEditingAmount({ id: p.id_payment, value: String(p.amount) })}
+                                className="p-1 text-slate-300 hover:text-slate-600 transition"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                            </Tooltip>
                           )}
                         </div>
                       )}
@@ -285,60 +300,93 @@ const PaymentTable = ({
                       </div>
                     </td>
 
+                    <td className="px-5 py-3.5 text-center text-slate-600 whitespace-nowrap">
+                      {isMonthly && lastOrderAddedAt ? formatDate(lastOrderAddedAt.split('T')[0]) : '—'}
+                    </td>
+
                     <td className="px-5 py-3.5 text-center">
-                      {isEditing ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <select
-                            value={editingStatus.status}
-                            onChange={(e) => onStatusEdit({ id: p.id_payment, status: e.target.value })}
-                            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
-                          >
-                            <option value="pending">Pendiente</option>
-                            <option value="paid">Pagado</option>
-                            <option value="cancelled">Cancelado</option>
-                          </select>
-                          <button onClick={() => onStatusSave(p.id_payment, editingStatus.status)} className="p-1 text-green-600 hover:text-green-700 transition">
-                            <Check size={14} />
-                          </button>
-                          <button onClick={onStatusCancel} className="p-1 text-red-400 hover:text-red-600 transition">
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
-                          {STATUS_LABEL[p.status] ?? p.status}
-                        </span>
-                      )}
+                      {/* Ancho fijo en ambos estados (editando o no) para que la columna nunca
+                          se ensanche al entrar en edición — si el ancho cambia, la tabla se
+                          reacomoda y las acciones de las demás filas quedan fuera del área
+                          visible del contenedor con scroll horizontal. */}
+                      <div className="w-[190px] mx-auto">
+                        {isEditing ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <select
+                              value={editingStatus.status}
+                              onChange={(e) => onStatusEdit({ id: p.id_payment, status: e.target.value })}
+                              className="flex-1 min-w-0 text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none"
+                            >
+                              <option value="pending">Pendiente</option>
+                              <option value="paid">Pagado</option>
+                              <option value="cancelled">Cancelado</option>
+                            </select>
+                            <Tooltip label="Guardar estado">
+                              <button
+                                onClick={() => onStatusSave(p.id_payment, editingStatus.status)}
+                                className="p-1 text-green-600 hover:text-green-700 transition shrink-0"
+                              >
+                                <Check size={14} />
+                              </button>
+                            </Tooltip>
+                            <Tooltip label="Cancelar edición de estado">
+                              <button
+                                onClick={onStatusCancel}
+                                className="p-1 text-red-400 hover:text-red-600 transition shrink-0"
+                              >
+                                <X size={14} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        ) : (
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_COLOR[p.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                            {STATUS_LABEL[p.status] ?? p.status}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
                         {!isMonthly && orders.length === 1 && !isEditing && (
-                          <button
-                            onClick={() => onViewOrder(orders[0])}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                            title="Ver orden"
-                          >
-                            <Eye size={14} />
-                          </button>
+                          <Tooltip label="Ver orden">
+                            <button
+                              onClick={() => onViewOrder(orders[0])}
+                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            >
+                              <Eye size={14} />
+                            </button>
+                          </Tooltip>
                         )}
                         {!isEditing && (
-                          <button
-                            onClick={() => onStatusEdit({ id: p.id_payment, status: p.status })}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
-                            title="Editar estado"
-                          >
-                            <Pencil size={14} />
-                          </button>
+                          <Tooltip label="Editar estado">
+                            <button
+                              onClick={() => onStatusEdit({ id: p.id_payment, status: p.status })}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                          </Tooltip>
                         )}
                         {onClosePayment && isMonthly && !p.closed_at && orders.length < 4 && (
-                          <button
-                            onClick={() => onClosePayment(p)}
-                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
-                            title="Cerrar pago (no completó las 4 órdenes)"
-                          >
-                            <Lock size={14} />
-                          </button>
+                          <Tooltip label="Cerrar pago (no completó las 4 órdenes)">
+                            <button
+                              onClick={() => onClosePayment(p)}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
+                            >
+                              <Lock size={14} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {onDeletePayment && !isEditing && (
+                          <Tooltip label="Eliminar pago">
+                            <button
+                              onClick={() => onDeletePayment(p)}
+                              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </Tooltip>
                         )}
                       </div>
                     </td>
@@ -346,7 +394,7 @@ const PaymentTable = ({
 
                   {isMonthly && isExpanded && (
                     <tr key={`${p.id_payment}-orders`} className="bg-violet-50">
-                      <td colSpan={bulkEnabled ? 8 : 7} className="px-5 py-3">
+                      <td colSpan={bulkEnabled ? 9 : 8} className="px-5 py-3">
                         <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
                           Órdenes asociadas ({orders.length}/4)
                         </p>
@@ -369,7 +417,7 @@ const PaymentTable = ({
                 {payments.length} registro{payments.length !== 1 ? 's' : ''}
               </td>
               <td className="px-5 py-3 text-right font-bold text-slate-800">₡{total.toLocaleString()}</td>
-              <td colSpan={3} />
+              <td colSpan={4} />
             </tr>
           </tfoot>
         </table>
