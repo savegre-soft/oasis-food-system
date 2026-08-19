@@ -79,11 +79,11 @@ const PaymentSection = ({ clientId }) => {
         )}
       </AnimatePresence>
 
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-4">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Pagos</p>
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Pagos</p>
 
         {loading ? (
-          <p className="text-xs text-slate-400 py-2">Cargando pagos...</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 py-2">Cargando pagos...</p>
         ) : (
           <PaymentTable
             payments={payments}

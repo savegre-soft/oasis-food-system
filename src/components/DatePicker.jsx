@@ -95,14 +95,14 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4 mb-6 shadow-sm">
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex flex-col md:flex-row md:items-end gap-4 mb-6 shadow-sm">
       <div className="flex flex-col">
-        <label className="text-sm text-slate-500 mb-1">Rango de Fecha</label>
+        <label className="text-sm text-slate-500 dark:text-slate-400 mb-1">Rango de Fecha</label>
 
         <select
           value={mode}
           onChange={(e) => handleModeChange(e.target.value)}
-          className="px-3 py-2 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-slate-300"
+          className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
         >
           <option value="day">Hoy</option>
           <option value="week">Esta semana</option>
@@ -117,30 +117,30 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
       {mode === 'custom' && (
         <>
           <div className="flex flex-col">
-            <label className="text-sm text-slate-500 mb-1">Fecha inicio</label>
+            <label className="text-sm text-slate-500 dark:text-slate-400 mb-1">Fecha inicio</label>
 
             <input
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
             />
           </div>
 
           <div className="flex flex-col">
-            <label className="text-sm text-slate-500 mb-1">Fecha fin</label>
+            <label className="text-sm text-slate-500 dark:text-slate-400 mb-1">Fecha fin</label>
 
             <input
               type="date"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
             />
           </div>
 
           <button
             onClick={applyCustom}
-            className="bg-slate-800 text-white px-4 py-2 rounded-xl hover:bg-slate-700 transition active:scale-95 text-sm font-medium"
+            className="bg-slate-800 dark:bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-slate-700 dark:hover:bg-indigo-700 transition active:scale-95 text-sm font-medium"
           >
             Aplicar
           </button>

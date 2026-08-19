@@ -18,9 +18,9 @@ const ExpenseTable = ({
 }) => {
   if (!gastos || gastos.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center py-16 gap-3">
-        <ReceiptText size={40} className="text-slate-300" />
-        <p className="text-slate-400 text-sm">{emptyMessage}</p>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col items-center justify-center py-16 gap-3">
+        <ReceiptText size={40} className="text-slate-300 dark:text-slate-600" />
+        <p className="text-slate-400 dark:text-slate-500 text-sm">{emptyMessage}</p>
       </div>
     );
   }
@@ -28,11 +28,11 @@ const ExpenseTable = ({
   const total = gastos.reduce((acc, g) => acc + Number(g.monto), 0);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="bg-slate-800 text-white text-xs uppercase tracking-wide">
+            <tr className="bg-slate-800 dark:bg-slate-900 text-white text-xs uppercase tracking-wide">
               <th className="px-5 py-4 font-semibold w-12">#</th>
               <th className="px-5 py-4 font-semibold">Descripción</th>
               <th className="px-5 py-4 font-semibold">Categoría</th>
@@ -48,29 +48,29 @@ const ExpenseTable = ({
             {gastos.map((gasto, idx) => (
               <tr
                 key={gasto.id}
-                className={`border-b border-slate-100 hover:bg-blue-50/30 transition-colors ${
-                  idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                className={`border-b border-slate-100 dark:border-slate-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors ${
+                  idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/50 dark:bg-slate-900/40'
                 }`}
               >
-                <td className="px-5 py-3.5 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                <td className="px-5 py-3.5 text-slate-400 dark:text-slate-500 font-mono text-xs">{idx + 1}</td>
 
-                <td className="px-5 py-3.5 font-medium text-slate-800">{gasto.descripcion}</td>
+                <td className="px-5 py-3.5 font-medium text-slate-800 dark:text-slate-100">{gasto.descripcion}</td>
 
                 <td className="px-5 py-3.5">
-                  <span className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-600 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap">
                     <Tag size={11} />
                     {gasto.categoria}
                   </span>
                 </td>
 
-                <td className="px-5 py-3.5 text-slate-500 whitespace-nowrap">
+                <td className="px-5 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                   <span className="inline-flex items-center gap-1.5">
-                    <Calendar size={13} className="text-slate-400" />
+                    <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
                     {formatDate(gasto.fecha)}
                   </span>
                 </td>
 
-                <td className="px-5 py-3.5 text-right font-semibold text-red-500 whitespace-nowrap">
+                <td className="px-5 py-3.5 text-right font-semibold text-red-500 dark:text-red-400 whitespace-nowrap">
                   ₡{Number(gasto.monto).toLocaleString()}
                 </td>
 
@@ -81,7 +81,7 @@ const ExpenseTable = ({
                         <Tooltip label="Editar">
                           <button
                             onClick={() => onEdit(gasto)}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-500 transition"
+                            className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition"
                           >
                             <Pencil size={14} />
                           </button>
@@ -91,7 +91,7 @@ const ExpenseTable = ({
                         <Tooltip label="Eliminar">
                           <button
                             onClick={() => onDelete(gasto.id)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -105,14 +105,14 @@ const ExpenseTable = ({
           </tbody>
 
           <tfoot>
-            <tr className="bg-slate-50 border-t-2 border-slate-200">
+            <tr className="bg-slate-50 dark:bg-slate-900/50 border-t-2 border-slate-200 dark:border-slate-700">
               <td
                 colSpan={onEdit || onDelete ? 4 : 3}
-                className="px-5 py-3.5 text-slate-500 text-xs font-medium"
+                className="px-5 py-3.5 text-slate-500 dark:text-slate-400 text-xs font-medium"
               >
                 {gastos.length} {gastos.length === 1 ? 'registro' : 'registros'}
               </td>
-              <td className="px-5 py-3.5 text-right font-bold text-red-600 whitespace-nowrap">
+              <td className="px-5 py-3.5 text-right font-bold text-red-600 dark:text-red-400 whitespace-nowrap">
                 ₡{total.toLocaleString()}
               </td>
               {(onEdit || onDelete) && <td />}

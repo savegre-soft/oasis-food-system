@@ -7,6 +7,17 @@ const CATEGORY_STYLE = {
   extra: { badge: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' },
 };
 
+// classification aquí es, por plato, detail.meal_type ?? classification de
+// la orden (ver Kitchen.jsx groupByRecipe) — antes esto era un binario
+// `=== 'Lunch' ? Almuerzo : Cena` que mostraba TODO lo que no fuera 'Lunch'
+// (incluido 'both' y 'Family') como si fuera de cena.
+const MEAL_LABEL_CONFIG = {
+  Lunch: { label: '☀️ Almuerzo', badge: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  Dinner: { label: '🌙 Cena', badge: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
+  Family: { label: '👨‍👩‍👧 Familiar', badge: 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
+  both: { label: '☀️🌙 Ambos', badge: 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' },
+};
+
 const IngredientBadges = ({ ingredients }) => {
   const hasAny = ['protein', 'carb', 'extra'].some((c) => (ingredients?.[c] ?? []).length > 0);
   if (!hasAny) return null;
@@ -165,15 +176,14 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                       <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
                         {DAY_LABELS[meal.day_of_week] ?? meal.day_of_week}
                       </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          meal.classification === 'Lunch'
-                            ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                            : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
-                        }`}
-                      >
-                        {meal.classification === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
-                      </span>
+                      {(() => {
+                        const mealConfig = MEAL_LABEL_CONFIG[meal.classification] ?? MEAL_LABEL_CONFIG.both;
+                        return (
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${mealConfig.badge}`}>
+                            {mealConfig.label}
+                          </span>
+                        );
+                      })()}
                       {meal.id_order && (
                         <span className="text-xs font-mono text-slate-400 dark:text-slate-500">
                           #{meal.id_order}

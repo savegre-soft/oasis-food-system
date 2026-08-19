@@ -121,17 +121,17 @@ const Routes = () => {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-slate-50 p-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 transition-colors duration-300">
         {/* Header */}
         <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Gestión de Rutas</h1>
-            <p className="text-slate-500 mt-2">Administra las rutas de entrega del sistema</p>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Gestión de Rutas</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">Administra las rutas de entrega del sistema</p>
           </div>
 
           <button
             onClick={() => setShowModal(true)}
-            className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium"
+            className="bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 dark:hover:bg-indigo-700 transition text-sm font-medium"
           >
             <MapPin size={16} />
             Agregar Ruta
@@ -139,15 +139,15 @@ const Routes = () => {
         </div>
 
         {loading ? (
-          <p className="text-slate-500">Cargando...</p>
+          <p className="text-slate-500 dark:text-slate-400">Cargando...</p>
         ) : (
           <div className="space-y-10">
             {/* ── Rutas del sistema ── */}
             {systemRoutes.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <ShieldCheck size={16} className="text-slate-400" />
-                  <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                  <ShieldCheck size={16} className="text-slate-400 dark:text-slate-500" />
+                  <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     Rutas del sistema
                   </h2>
                 </div>
@@ -162,14 +162,14 @@ const Routes = () => {
             {/* ── Rutas personalizadas ── */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <MapPin size={16} className="text-slate-400" />
-                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+                <MapPin size={16} className="text-slate-400 dark:text-slate-500" />
+                <h2 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                   Rutas personalizadas
                 </h2>
               </div>
 
               {customRoutes.length === 0 ? (
-                <div className="text-center py-16 text-slate-400">
+                <div className="text-center py-16 text-slate-400 dark:text-slate-500">
                   <MapPin size={40} className="mx-auto mb-3 opacity-30" />
                   <p>No hay rutas personalizadas registradas</p>
                 </div>

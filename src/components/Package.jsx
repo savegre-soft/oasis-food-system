@@ -56,7 +56,6 @@ const groupByRecipeForPackage = (allDays) => {
   for (const orderDay of allDays) {
     if (!orderDay.orders?.clients) continue;
     const clientName = orderDay.orders.clients.name;
-    const classification = orderDay.orders.classification;
 
     for (const detail of orderDay.order_day_details ?? []) {
       const recipe = detail.recipes;
@@ -64,6 +63,11 @@ const groupByRecipeForPackage = (allDays) => {
       const recipeName = recipe?.name ?? '(sin nombre)';
       const qty = detail.quantity ?? 1;
       const detailStatus = detail.status ?? orderDay.status;
+      // meal_type es la fuente de verdad por plato (pedidos 'both' pueden
+      // tener un detail de almuerzo y otro de cena el mismo día); se recae
+      // en la clasificación de la orden solo para filas históricas o
+      // pedidos que no son 'both'.
+      const classification = detail.meal_type ?? orderDay.orders.classification;
 
       const { ingredients, isOverridden } = buildEffectiveIngredients(
         detail.order_day_recipe_overrides,
@@ -123,7 +127,6 @@ const groupByOrder = (allDays) => {
 
     const id_order = orderDay.orders.id_order;
     const clientName = orderDay.orders.clients.name;
-    const classification = orderDay.orders.classification;
 
     if (!grouped[id_order]) {
       grouped[id_order] = {
@@ -143,6 +146,7 @@ const groupByOrder = (allDays) => {
       const recipeName = recipe?.name ?? '(sin nombre)';
       const qty = detail.quantity ?? 1;
       const detailStatus = detail.status ?? orderDay.status;
+      const classification = detail.meal_type ?? orderDay.orders.classification;
 
       const { ingredients, isOverridden } = buildEffectiveIngredients(
         detail.order_day_recipe_overrides,

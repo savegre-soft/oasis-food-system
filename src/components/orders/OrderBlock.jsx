@@ -29,6 +29,13 @@ const STATUS_CONFIG = {
   },
 };
 
+const CLASSIFICATION_CONFIG = {
+  Lunch: { label: '☀️ Almuerzo', bg: 'bg-amber-50 text-amber-700' },
+  Dinner: { label: '🌙 Cena', bg: 'bg-indigo-50 text-indigo-700' },
+  both: { label: '☀️🌙 Almuerzo + Cena', bg: 'bg-teal-50 text-teal-700' },
+  Family: { label: '👨‍👩‍👧 Familiar', bg: 'bg-purple-50 text-purple-700' },
+};
+
 const DAY_LABELS = {
   Monday: 'Lunes',
   Tuesday: 'Martes',
@@ -43,19 +50,10 @@ const DAY_LABELS = {
 const OrderBlock = ({ order }) => {
   const [open, setOpen] = useState(false);
 
-  const classLabel =
-    order.classification === 'Lunch'
-      ? '☀️ Almuerzo'
-      : order.classification === 'Dinner'
-        ? '🌙 Cena'
-        : '👨‍👩‍👧 Familiar';
-
-  const classBg =
-    order.classification === 'Lunch'
-      ? 'bg-amber-50 text-amber-700'
-      : order.classification === 'Dinner'
-        ? 'bg-indigo-50 text-indigo-700'
-        : 'bg-purple-50 text-purple-700';
+  const { label: classLabel, bg: classBg } = CLASSIFICATION_CONFIG[order.classification] ?? {
+    label: order.classification || 'Sin clasificar',
+    bg: 'bg-slate-100 text-slate-600',
+  };
 
   const days = (order.order_days ?? []).sort(
     (a, b) => new Date(a.delivery_date) - new Date(b.delivery_date)

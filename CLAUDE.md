@@ -19,20 +19,30 @@
 | `/main` | `Main.jsx` | Dashboard principal |
 | `/Clientes` | `customers.jsx` | Lista de clientes |
 | `/cliente/:id` | `customer.jsx` | Detalle de cliente |
-| `/Pedidos` | `Test.jsx` | Gestión de pedidos (usa `Orders.jsx`) |
-| `/orders` | `Orders.jsx` | Vista alternativa pedidos |
-| `/entregas` | `Deliveries.jsx` | Flujo cocina → empaque → entrega |
-| `/recetas` | `Recipes.jsx` | Catálogo de recetas |
-| `/menus` | `Menus.jsx` | Menús semanales |
-| `/templates` | `Templates.jsx` | Plantillas de pedidos |
-| `/routes` | `Routes.jsx` | Rutas de entrega |
-| `/pagos` | `Payments.jsx` | Pagos de clientes |
+| `/orders` | `Orders.jsx` | Gestión de pedidos (histórico + checklist de envío) |
+| `/entregas` | `Deliveries.jsx` | Flujo cocina → empaque → entrega (pedidos semanales) |
+| `/entregas/express` | `DeliveriesExpress.jsx` | Mismo flujo cocina → empaque → entrega, pedidos Express del día |
+| `/entregas/combos` | `DeliveriesCombos.jsx` | Producción y entrega de Combos (organizado por `combo_week`, sin fecha individual) |
+| `/menus` | `Menus.jsx` | Catálogo de platos/recetas (la página se llama "Platos" en el navbar) |
+| `/templates` | `Templates.jsx` | Plantillas de pedidos semanales |
+| `/routes` | `Routes_page` (`Routes.jsx`) | Rutas de entrega |
+| `/pagos` | `Payments.jsx` | Pagos de clientes (Ingresos) |
 | `/gastos` | `Bills.jsx` | Gastos operativos |
-| `/empleados` | `ExpenseEmployees.jsx` | Costos por empleado |
+| `/empleados` | — | Redirige a `/planilla` |
+| `/planilla` | `Planilla.jsx` | Costos por empleado |
 | `/control-gastos` | `ExpenseStadistic.jsx` | Estadísticas de gastos |
-| `/estadisticas` | `Estadisticas.jsx` | Dashboard estadístico |
-| `/settings` | `Settings.jsx` | Configuración |
+| `/estadisticas` | `Estadisticas.jsx` | Dashboard estadístico (gastos, ingresos, comparativa, planilla, combos/ventas masivas) |
+| `/combos` | `Combos.jsx` | Configuración semanal de Combos |
+| `/combo-items` | `ComboItems.jsx` | Catálogo de ítems de Combo (con precio + historial) |
+| `/ventas-masivas` | `BulkSales.jsx` | Ventas masivas |
+| `/platos-venta-masiva` | `BulkDishes.jsx` | Catálogo de platos de venta masiva |
+| `/prospectos` | `Prospects.jsx` | Bandeja de leads del sitio público, conversión a cliente real |
+| `/promociones-admin` | `PromotionsAdmin.jsx` | Administración de promociones (versión interna de `/promociones`) |
+| `/settings` | `Settings.jsx` | Configuración (incl. Usuarios y roles) |
 | `/perfil` | `Profile.jsx` | Perfil de usuario |
+| `/about` | `About.jsx` | Placeholder interno, no confundir con el "About" del sitio público |
+
+> Nota: no existe ninguna ruta `/Pedidos` ni `/recetas` — son documentación heredada de una versión anterior del código (`Test.jsx` ya no existe). El wizard de creación de pedidos (`AddOrder.jsx`) se abre como modal desde `/orders`, no tiene ruta propia.
 
 ### Públicas (dentro de `PublicLayout`)
 | Ruta | Descripción |
@@ -45,15 +55,18 @@
 
 ---
 
-## Módulo de Entregas (`src/pages/Deliveries.jsx`)
+## Módulo de Entregas (`src/pages/Deliveries.jsx`, `DeliveriesExpress.jsx`, `DeliveriesCombos.jsx`)
 
-La página más compleja. Maneja el flujo operativo diario con **4 tabs**:
+El flujo cocina → empaque → entrega vive en 3 rutas separadas (antes eran tabs dentro de una sola página) que comparten el mismo pipeline de 3 tabs vía `KitchenPipeline.jsx`:
 
-### Tabs normales (pedidos semanales)
+- **`/entregas`** (`Deliveries.jsx`) — pedidos semanales normales
+- **`/entregas/express`** (`DeliveriesExpress.jsx`) — pedidos Express del día
+- **`/entregas/combos`** (`DeliveriesCombos.jsx`) — producción de Combos, organizada por `combo_week` (sin fecha de entrega individual, ver §Combos)
+
+### Tabs del pipeline (`KitchenPipeline.jsx`)
 1. **Cocina** (`cocina`) → `CocinaView` (desde `Kitchen.jsx`) — pedidos PENDING agrupados por receta
 2. **Empaque** (`empaque`) → `EmpaqueView` (desde `Package.jsx`) — pedidos PENDING y PACKED agrupados por receta
 3. **Entrega** (`entrega`) → `EntregaView` (desde `Delivered.jsx`) — pedidos DELIVERED, solo lectura, agrupados por cliente
-4. **Express** (`express`) → `ExpressView` (componente inline en Deliveries) — tiene sus propios sub-tabs cocina/empaque/entrega para pedidos del día
 
 ### Ciclo de estados de `order_days.status`
 ```

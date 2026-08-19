@@ -101,19 +101,19 @@ const Menus = () => {
         )}
       </AnimatePresence>
 
-      <div className="min-h-screen bg-slate-50 p-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 transition-colors duration-300">
         {/* Header */}
 
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Platos</h1>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Platos</h1>
 
-            <p className="text-slate-500 mt-1">Gestión de platos y su composición</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión de platos y su composición</p>
           </div>
 
           <button
             onClick={openAddModal}
-            className="bg-slate-800 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-sm font-medium"
+            className="bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-slate-700 dark:hover:bg-indigo-700 transition text-sm font-medium"
           >
             <UtensilsCrossed size={16} />
             Agregar Plato
@@ -128,16 +128,16 @@ const Menus = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar plato..."
-            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 text-sm bg-white"
+            className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600"
           />
         </div>
 
         {/* Lista */}
 
         {loading ? (
-          <p className="text-slate-500">Cargando...</p>
+          <p className="text-slate-500 dark:text-slate-400">Cargando...</p>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
+          <div className="text-center py-20 text-slate-400 dark:text-slate-500">
             <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
 
             <p>No hay platos registrados</p>

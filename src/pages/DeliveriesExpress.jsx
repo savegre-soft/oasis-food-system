@@ -23,6 +23,7 @@ const ORDER_DAY_SELECT = `
     quantity,
     protein_value_applied,
     carb_value_applied,
+    meal_type,
     recipes (
       id_recipe, name,
       recipe_ingredients ( name, category )

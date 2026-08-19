@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DollarSign, TrendingUp, Clock, Search, BarChart2, AlertTriangle } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
@@ -35,12 +36,12 @@ const SummaryCard = ({ icon, label, value, colorClass }) => (
   <motion.div
     initial={{ y: 15, opacity: 0 }}
     animate={{ y: 0, opacity: 1 }}
-    className="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4"
+    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 flex items-center gap-4"
   >
     <div className={`p-3 rounded-xl ${colorClass}`}>{icon}</div>
     <div>
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="text-lg font-semibold text-slate-800">{value}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="text-lg font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   </motion.div>
 );
@@ -49,6 +50,7 @@ const SummaryCard = ({ icon, label, value, colorClass }) => (
 
 const Payments = () => {
   const { supabase } = useApp();
+  const [searchParams] = useSearchParams();
 
   const [payments, setPayments] = useState([]);
   const [tab, setTab] = useState('today');
@@ -102,6 +104,18 @@ const Payments = () => {
     const timer = setTimeout(() => fetchPayments(), 0);
     return () => clearTimeout(timer);
   }, [supabase]);
+
+  // Llegar desde la campanita de notificaciones (?status=pending) preselecciona
+  // el filtro de estado y salta a Historial — mismo criterio que jumpToExpiringPayment.
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status) {
+      setTab('history');
+      setStatusFilter(status);
+      setDateRange({ startDate: null, endDate: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar
+  }, []);
 
   // Deselecciona al cambiar de filtro/pestaña. Ajuste de estado durante el
   // render (no en un efecto) — patrón recomendado por React para resetear
@@ -376,7 +390,7 @@ const Payments = () => {
   return (
     <AuthRoles rolesNames={['Finanzas', 'Administrador']}>
       <motion.div
-        className="min-h-screen bg-slate-50 p-8"
+        className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 transition-colors duration-300"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
@@ -431,15 +445,15 @@ const Payments = () => {
         <motion.div
           initial={{ y: -25, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-6 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold text-slate-800">Ingresos</h1>
-            <p className="text-slate-500 mt-1">Pagos asociados a órdenes de clientes</p>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Ingresos</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Pagos asociados a órdenes de clientes</p>
           </div>
           <button
             onClick={() => setShowManualIncome(true)}
-            className="shrink-0 bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-700 transition"
+            className="shrink-0 bg-slate-800 dark:bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-700 dark:hover:bg-indigo-700 transition"
           >
             + Registrar ingreso manual
           </button>
@@ -451,19 +465,19 @@ const Payments = () => {
             icon={<TrendingUp size={22} />}
             label="Cobrado esta semana"
             value={`₡${totalWeek.toLocaleString()}`}
-            colorClass="bg-green-50 text-green-600"
+            colorClass="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400"
           />
           <SummaryCard
             icon={<DollarSign size={22} />}
             label="Cobrado histórico"
             value={`₡${totalAll.toLocaleString()}`}
-            colorClass="bg-slate-100 text-slate-600"
+            colorClass="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
           />
           <SummaryCard
             icon={<Clock size={22} />}
             label="Pendientes"
             value={`${pendingCount} pago${pendingCount !== 1 ? 's' : ''} · ₡${pendingAmount.toLocaleString()}`}
-            colorClass="bg-yellow-50 text-yellow-600"
+            colorClass="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
           />
         </div>
 
@@ -472,11 +486,11 @@ const Payments = () => {
           <motion.div
             initial={{ y: -15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8"
+            className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-5 mb-8"
           >
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={18} className="text-amber-600" />
-              <h2 className="text-sm font-semibold text-amber-800">
+              <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400" />
+              <h2 className="text-sm font-semibold text-amber-800 dark:text-amber-400">
                 Pagos mensuales próximos a vencer ({expiringMonthlyPayments.length})
               </h2>
             </div>
@@ -488,12 +502,12 @@ const Payments = () => {
                   <button
                     key={p.id_payment}
                     onClick={() => jumpToExpiringPayment(p)}
-                    className="w-full flex items-center justify-between bg-white border border-amber-100 rounded-xl px-4 py-2.5 text-left hover:border-amber-300 transition"
+                    className="w-full flex items-center justify-between bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-800/50 rounded-xl px-4 py-2.5 text-left hover:border-amber-300 dark:hover:border-amber-600 transition"
                   >
-                    <span className="text-sm font-medium text-slate-800">
+                    <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
                       {p.clients?.name ?? `Cliente ${p.client_id}`}
                     </span>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       {used}/4 órdenes · vence {remaining === 0 ? 'hoy' : `en ${remaining} día${remaining !== 1 ? 's' : ''}`}
                     </span>
                   </button>
@@ -511,7 +525,7 @@ const Payments = () => {
             <select
               value={clientFilter}
               onChange={(e) => setClientFilter(e.target.value)}
-              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+              className="text-sm border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 transition"
             >
               <option value="all">Todos los clientes</option>
               {clientOptions.map(([key, name]) => (
@@ -527,7 +541,7 @@ const Payments = () => {
                 setTypeFilter(e.target.value);
                 if (e.target.value !== 'monthly') setOnlyAvailableMonthly(false);
               }}
-              className="text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+              className="text-sm border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 transition"
             >
               <option value="all">Todos los tipos</option>
               {typeOptions.map((type) => (
@@ -538,12 +552,12 @@ const Payments = () => {
             </select>
 
             {typeFilter === 'monthly' && (
-              <label className="flex items-center gap-2 text-sm text-slate-600 select-none cursor-pointer px-1">
+              <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 select-none cursor-pointer px-1">
                 <input
                   type="checkbox"
                   checked={onlyAvailableMonthly}
                   onChange={(e) => setOnlyAvailableMonthly(e.target.checked)}
-                  className="w-4 h-4 rounded cursor-pointer accent-slate-800"
+                  className="w-4 h-4 rounded cursor-pointer accent-slate-800 dark:accent-indigo-600"
                 />
                 Solo con espacio disponible
               </label>
@@ -556,7 +570,7 @@ const Payments = () => {
                   setTypeFilter('all');
                   setOnlyAvailableMonthly(false);
                 }}
-                className="text-xs font-medium text-slate-500 hover:text-slate-700 transition px-2"
+                className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition px-2"
               >
                 Limpiar filtros
               </button>
@@ -566,7 +580,7 @@ const Payments = () => {
 
         {/* Tab (fecha) + Status filter */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div className="flex bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             {[
               ['today', 'Hoy'],
               ['week', 'Esta Semana'],
@@ -576,7 +590,7 @@ const Payments = () => {
               <button
                 key={val}
                 onClick={() => setTab(val)}
-                className={`px-5 py-2.5 text-sm font-medium transition flex items-center gap-1.5 ${tab === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`px-5 py-2.5 text-sm font-medium transition flex items-center gap-1.5 ${tab === val ? 'bg-slate-900 dark:bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
               >
                 {val === 'stats' && <BarChart2 size={14} />}
                 {lbl}
@@ -585,7 +599,7 @@ const Payments = () => {
           </div>
 
           {tab !== 'stats' && (
-            <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="flex bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
               {[
                 ['all', 'Todos'],
                 ['pending', 'Pendientes'],
@@ -595,7 +609,7 @@ const Payments = () => {
                 <button
                   key={val}
                   onClick={() => setStatusFilter(val)}
-                  className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                  className={`px-4 py-2 text-xs font-medium transition ${statusFilter === val ? 'bg-slate-900 dark:bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                 >
                   {lbl}
                 </button>
@@ -615,13 +629,13 @@ const Payments = () => {
             >
               <DatePicker onChange={setDateRange} />
               <div className="relative max-w-md">
-                <Search size={18} className="absolute left-4 top-3.5 text-slate-400" />
+                <Search size={18} className="absolute left-4 top-3.5 text-slate-400 dark:text-slate-600" />
                 <input
                   type="text"
                   placeholder="Buscar cliente o descripción…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
+                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 transition"
                 />
               </div>
             </motion.div>

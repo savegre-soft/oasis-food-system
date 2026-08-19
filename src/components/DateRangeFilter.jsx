@@ -15,8 +15,8 @@ const DateRangeFilter = ({ dateRange, setDateRange, accent = 'emerald' }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
-      <span className="text-xs font-medium text-slate-500 shrink-0">Período</span>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm px-5 py-4 flex flex-wrap items-center gap-3">
+      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">Período</span>
 
       <div className="flex flex-wrap gap-2">
         {CHART_PRESETS.map(({ label, fn }) => (
@@ -25,7 +25,7 @@ const DateRangeFilter = ({ dateRange, setDateRange, accent = 'emerald' }) => {
             type="button"
             onClick={() => setDateRange(fn())}
             className={`text-xs px-3 py-1.5 rounded-xl border transition ${
-              isPreset(fn) ? activeClass : 'text-slate-600 border-slate-200 hover:bg-slate-50'
+              isPreset(fn) ? activeClass : 'text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
             {label}
@@ -33,7 +33,7 @@ const DateRangeFilter = ({ dateRange, setDateRange, accent = 'emerald' }) => {
         ))}
       </div>
 
-      <span className="text-slate-200 hidden sm:block">|</span>
+      <span className="text-slate-200 dark:text-slate-700 hidden sm:block">|</span>
 
       <div className="flex items-center gap-2">
         <input
@@ -41,15 +41,15 @@ const DateRangeFilter = ({ dateRange, setDateRange, accent = 'emerald' }) => {
           value={dateRange.from}
           max={dateRange.to}
           onChange={(e) => setDateRange((r) => ({ ...r, from: e.target.value }))}
-          className={`text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 ${ringClass}`}
+          className={`text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-3 py-1.5 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 ${ringClass}`}
         />
-        <span className="text-xs text-slate-400">→</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">→</span>
         <input
           type="date"
           value={dateRange.to}
           min={dateRange.from}
           onChange={(e) => setDateRange((r) => ({ ...r, to: e.target.value }))}
-          className={`text-xs border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 ${ringClass}`}
+          className={`text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl px-3 py-1.5 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 ${ringClass}`}
         />
       </div>
     </div>

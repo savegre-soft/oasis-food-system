@@ -11,8 +11,8 @@ const DAY_LABELS = {
 };
 
 const ROUTE_TYPE_LABELS = {
-  complete: { label: 'Almuerzo + Cena', className: 'bg-indigo-50 text-indigo-700' },
-  individual: { label: 'Solo Almuerzo o Cena', className: 'bg-amber-50 text-amber-700' },
+  complete: { label: 'Almuerzo + Cena', className: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
+  individual: { label: 'Solo Almuerzo o Cena', className: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
 };
 
 const RouteCard = ({ route, onDelete, onEdit }) => {
@@ -20,11 +20,11 @@ const RouteCard = ({ route, onDelete, onEdit }) => {
   const typeLabel = ROUTE_TYPE_LABELS[route.route_type];
 
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+    <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex justify-between items-center">
       <div className="flex flex-col gap-1">
         {/* Nombre + badge */}
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-semibold text-slate-800">{route.name}</p>
+          <p className="font-semibold text-slate-800 dark:text-slate-100">{route.name}</p>
           {isSystem && typeLabel && (
             <span
               className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${typeLabel.className}`}
@@ -35,7 +35,7 @@ const RouteCard = ({ route, onDelete, onEdit }) => {
         </div>
 
         {/* Descripción */}
-        {route.description && <p className="text-sm text-slate-500">{route.description}</p>}
+        {route.description && <p className="text-sm text-slate-500 dark:text-slate-400">{route.description}</p>}
 
         {/* Días de entrega */}
         {route.route_delivery_days?.length > 0 && (
@@ -43,7 +43,7 @@ const RouteCard = ({ route, onDelete, onEdit }) => {
             {route.route_delivery_days.map((d) => (
               <span
                 key={d.id_delivery_day}
-                className="bg-slate-100 text-slate-600 text-xs font-medium px-2 py-0.5 rounded-full"
+                className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium px-2 py-0.5 rounded-full"
               >
                 {DAY_LABELS[d.day_of_week] ?? d.day_of_week}
               </span>
@@ -57,17 +57,17 @@ const RouteCard = ({ route, onDelete, onEdit }) => {
         {onEdit && (
           <button
             onClick={() => onEdit(route)}
-            className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-400 transition"
+            className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 transition"
           >
             <Pencil size={14} />
           </button>
         )}
         {isSystem ? (
-          <ShieldCheck size={18} className="text-slate-300" />
+          <ShieldCheck size={18} className="text-slate-300 dark:text-slate-600" />
         ) : (
           <button
             onClick={() => onDelete(route.id_route)}
-            className="p-1.5 rounded-xl border border-slate-200 text-red-400 hover:text-red-600 hover:border-red-300 transition"
+            className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-red-400 dark:text-red-500/80 hover:text-red-600 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-500 transition"
           >
             <Trash2 size={14} />
           </button>

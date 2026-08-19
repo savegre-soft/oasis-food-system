@@ -97,7 +97,7 @@ const ComparativaPanel = ({ expenses, empCosts, payments, dateRange, loading }) 
           bg={balance >= 0 ? 'bg-blue-50' : 'bg-red-50'}
           iconColor={balance >= 0 ? 'text-blue-600' : 'text-red-500'}
         />
-        <StatCard icon={<BarChart2 size={14} />}   label="Ratio gastos/ingresos"  value={loading ? '—' : (ratio !== null ? `${ratio}%` : '—')} sub="Gastos como % de ingresos" accent="text-slate-700" bg="bg-slate-100" iconColor="text-slate-500" />
+        <StatCard icon={<BarChart2 size={14} />}   label="Ratio gastos/ingresos"  value={loading ? '—' : (ratio !== null ? `${ratio}%` : '—')} sub="Gastos como % de ingresos" accent="text-slate-700 dark:text-slate-300" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-500 dark:text-slate-400" />
       </div>
 
       <ChartCard title="Ingresos vs Gastos por día" sub={periodLabel} loading={loading}>

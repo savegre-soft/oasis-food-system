@@ -35,18 +35,18 @@ const Estadisticas = () => {
   return (
 
     <AuthRoles rolesNames={['Finanzas', 'Administrador']}>
-    <div className="p-8 bg-slate-50 min-h-screen space-y-5">
-      <h1 className="text-3xl font-bold text-slate-800">Estadísticas Financieras</h1>
+    <div className="p-8 bg-slate-50 dark:bg-slate-900 min-h-screen space-y-5 transition-colors duration-300">
+      <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Estadísticas Financieras</h1>
 
       <DateRangeFilter dateRange={dateRange} setDateRange={setDateRange} accent={currentAccent} />
 
-      <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden w-fit">
+      <div className="flex bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden w-fit">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={`px-5 py-2.5 text-sm font-medium transition ${
-              tab === key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+              tab === key ? 'bg-slate-900 dark:bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             {label}

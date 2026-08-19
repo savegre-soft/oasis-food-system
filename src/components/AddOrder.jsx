@@ -58,7 +58,6 @@ const AddOrder = ({ onSuccess }) => {
   const [allRoutes, setAllRoutes] = useState([]);
   const [routeManuallyChanged, setRouteManuallyChanged] = useState(false);
   const [allRecipes, setAllRecipes] = useState([]);
-  const [extraMealTypes, setExtraMealTypes] = useState({});
 
   const [loading, setLoading] = useState(false);
 
@@ -101,6 +100,8 @@ const AddOrder = ({ onSuccess }) => {
     ingredientOverrides,
     setIngredientOverrides,
     expandedDays,
+    recipeMealTypes,
+    setRecipeMealTypes,
     addRecipeToDay,
     updateRecipeInDay,
     removeRecipeFromDay,
@@ -316,7 +317,7 @@ const AddOrder = ({ onSuccess }) => {
       templates.push({ tmpl: selectedLunchTemplate, type: 'Lunch' });
     if ((menuType === 'Dinner' || menuType === 'both') && selectedDinnerTemplate)
       templates.push({ tmpl: selectedDinnerTemplate, type: 'Dinner' });
-    templates.forEach(({ tmpl }) => {
+    templates.forEach(({ tmpl, type }) => {
       (tmpl.order_template_days ?? []).forEach((tday) => {
         const day = tday.day_of_week;
         if (!recipes[day]) recipes[day] = [];
@@ -326,11 +327,22 @@ const AddOrder = ({ onSuccess }) => {
             recipe_name: det.recipes?.name ?? '',
             quantity: det.quantity,
             isExtra: false,
+            mealType: type,
           });
         });
       });
     });
     setDayRecipes(recipes);
+    // Autocompleta recipeMealTypes con el origen de plantilla de cada receta
+    // (solo relevante para menuType 'both' — templates.forEach solo agrega
+    // 'type' distinto de undefined cuando hay más de una plantilla en juego).
+    const mealTypes = {};
+    Object.entries(recipes).forEach(([day, items]) => {
+      items.forEach((r, idx) => {
+        if (r.mealType) mealTypes[`${day}-${idx}`] = r.mealType;
+      });
+    });
+    setRecipeMealTypes(mealTypes);
     const ids = Object.values(recipes)
       .flat()
       .map((r) => r.recipe_id)
@@ -489,7 +501,7 @@ const AddOrder = ({ onSuccess }) => {
     setSelectedFamilyTemplate(null);
     setResolvedRoute(null);
     setRouteManuallyChanged(false);
-    setExtraMealTypes({});
+    setRecipeMealTypes({});
     setIsExpress(false);
     setExpressRecipes([]);
     setExpressType('Lunch');
@@ -621,9 +633,14 @@ const AddOrder = ({ onSuccess }) => {
           .from('order_day_details')
           .insert(
             detailsWithIdx.map(({ r, origIdx }) => {
-              const effectiveType = r.isExtra
-                ? (extraMealTypes[`${day}-${origIdx}`] ?? type)
-                : type;
+              // effectiveType es 'Lunch'/'Dinner' real por receta cuando el
+              // pedido es 'both' (viene de recipeMealTypes, autocompletado
+              // por plantilla o elegido a mano); para pedidos de un solo
+              // tiempo o familiares, type ya es inequívoco. El fallback a
+              // 'Lunch' cuando no hay entrada en el mapa coincide con el
+              // default visual del toggle ☀️/🌙 en DayRecipeBlock.jsx.
+              const effectiveType =
+                recipeMealTypes[`${day}-${origIdx}`] ?? (type === 'both' ? 'Lunch' : type);
               const eff = isExpress ? expressMacros : getEffectiveMacros(day, effectiveType);
               return {
                 order_day_id: dayData.id_order_day,
@@ -631,6 +648,7 @@ const AddOrder = ({ onSuccess }) => {
                 quantity: Number(r.quantity) || 1,
                 protein_value_applied: eff?.protein_value ?? null,
                 carb_value_applied: eff?.carb_value ?? null,
+                meal_type: effectiveType === 'Lunch' || effectiveType === 'Dinner' ? effectiveType : null,
               };
             })
           )
@@ -873,8 +891,8 @@ const AddOrder = ({ onSuccess }) => {
             onRemoveRecipe={removeRecipeFromDay}
             onOverrideChange={setOverride}
             onToggleDay={toggleDay}
-            extraMealTypes={extraMealTypes}
-            onExtraMealTypeChange={(key, cls) => setExtraMealTypes((p) => ({ ...p, [key]: cls }))}
+            extraMealTypes={recipeMealTypes}
+            onExtraMealTypeChange={(key, cls) => setRecipeMealTypes((p) => ({ ...p, [key]: cls }))}
             clientLunchMacro={selectedClient?.lunch_macro}
             clientDinnerMacro={selectedClient?.dinner_macro}
             onApplyStandardLunch={() => setLunchMacros({ ...STANDARD_MACRO })}

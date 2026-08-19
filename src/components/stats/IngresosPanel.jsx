@@ -29,7 +29,7 @@ const IngresosPanel = ({ payments, dateRange, loading }) => {
         <StatCard icon={<DollarSign size={14} />}   label="Pagado en el período" value={loading ? '—' : fmtCRC(totalChart)}     sub={loading ? '' : `${paymentCount} pago${paymentCount !== 1 ? 's' : ''} cobrado${paymentCount !== 1 ? 's' : ''}`} accent="text-emerald-600"  bg="bg-emerald-50" iconColor="text-emerald-600" />
         <StatCard icon={<Clock size={14} />}        label="Pendientes"           value={loading ? '—' : fmtCRC(pendingChart)}   sub={grandTotal > 0 ? `${((pendingChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}   accent="text-amber-500"  bg="bg-amber-50"  iconColor="text-amber-500" />
         <StatCard icon={<TrendingDown size={14} />} label="Cancelados"           value={loading ? '—' : fmtCRC(cancelledChart)} sub={grandTotal > 0 ? `${((cancelledChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}  accent="text-red-500"    bg="bg-red-50"    iconColor="text-red-500" />
-        <StatCard icon={<DollarSign size={14} />}   label="Total registrado"     value={loading ? '—' : fmtCRC(grandTotal)}     sub={loading ? '' : `${payments.length} pago${payments.length !== 1 ? 's' : ''} en total`} accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
+        <StatCard icon={<DollarSign size={14} />}   label="Total registrado"     value={loading ? '—' : fmtCRC(grandTotal)}     sub={loading ? '' : `${payments.length} pago${payments.length !== 1 ? 's' : ''} en total`} accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
       </div>
 
       <ChartCard title="Ingresos por día" sub={periodLabel} loading={loading}>

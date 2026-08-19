@@ -8,7 +8,7 @@ import OrderBlock from './OrderBlock';
 const CurrentWeekView = ({ orders }) => {
   if (orders.length === 0) {
     return (
-      <div className="text-center py-12 text-slate-400">
+      <div className="text-center py-12 text-slate-400 dark:text-slate-500">
         <Clock size={32} className="mx-auto mb-2 opacity-30" />
         <p className="text-sm">No hay órdenes activas esta semana</p>
       </div>
@@ -105,8 +105,8 @@ const OrdersSection = ({ clientId }) => {
   ];
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-4">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Órdenes</p>
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4">
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Órdenes</p>
 
       {/* Tab bar */}
       <div className="flex gap-2">
@@ -115,11 +115,11 @@ const OrdersSection = ({ clientId }) => {
           const cls =
             'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition border ' +
             (isActive
-              ? 'bg-slate-800 border-slate-800 text-white'
-              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400');
+              ? 'bg-slate-800 dark:bg-indigo-600 border-slate-800 dark:border-indigo-600 text-white'
+              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500');
           const badgeCls =
             'text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ' +
-            (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 text-slate-600');
+            (isActive ? 'bg-white text-slate-800' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300');
           return (
             <button key={id} type="button" onClick={() => setActiveTab(id)} className={cls}>
               {label}
@@ -131,7 +131,7 @@ const OrdersSection = ({ clientId }) => {
 
       {/* Content */}
       {loading ? (
-        <p className="text-sm text-slate-400 py-4">Cargando órdenes...</p>
+        <p className="text-sm text-slate-400 dark:text-slate-500 py-4">Cargando órdenes...</p>
       ) : activeTab === 'current' ? (
         <CurrentWeekView orders={currentOrders} />
       ) : (

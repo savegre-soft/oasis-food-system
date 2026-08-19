@@ -24,6 +24,8 @@ const EditOrder = ({ order, onSuccess }) => {
     recipeIngredients,
     ingredientOverrides,
     expandedDays,
+    recipeMealTypes,
+    setRecipeMealTypes,
     addRecipeToDay,
     updateRecipeInDay,
     removeRecipeFromDay,
@@ -207,21 +209,29 @@ const EditOrder = ({ order, onSuccess }) => {
         return;
       }
 
-      const details = (dayRecipes[day] ?? []).filter((r) => r.recipe_id);
-      if (!details.length) continue;
+      const detailsWithIdx = (dayRecipes[day] ?? [])
+        .map((r, origIdx) => ({ r, origIdx }))
+        .filter(({ r }) => r.recipe_id);
+      if (!detailsWithIdx.length) continue;
 
       const { data: detData, error: detErr } = await supabase
         .schema('operations')
         .from('order_day_details')
         .insert(
-          details.map((r) => {
-            const eff = getEffectiveMacros(day, type === 'Family' ? 'Lunch' : type);
+          detailsWithIdx.map(({ r, origIdx }) => {
+            // effectiveType es 'Lunch'/'Dinner' real por receta en pedidos
+            // 'both' (viene de recipeMealTypes, precargado desde meal_type al
+            // abrir el editor o elegido a mano); mismo criterio que AddOrder.jsx.
+            const fallbackType = type === 'both' || type === 'Family' ? 'Lunch' : type;
+            const effectiveType = recipeMealTypes[`${day}-${origIdx}`] ?? fallbackType;
+            const eff = getEffectiveMacros(day, effectiveType);
             return {
               order_day_id: dayData.id_order_day,
               recipe_id: r.recipe_id,
               quantity: Number(r.quantity) || 1,
               protein_value_applied: eff?.protein_value ?? null,
               carb_value_applied: eff?.carb_value ?? null,
+              meal_type: effectiveType === 'Lunch' || effectiveType === 'Dinner' ? effectiveType : null,
             };
           })
         )
@@ -315,6 +325,8 @@ const EditOrder = ({ order, onSuccess }) => {
         onRemoveRecipe={removeRecipeFromDay}
         onOverrideChange={setOverride}
         onToggleDay={toggleDay}
+        extraMealTypes={recipeMealTypes}
+        onExtraMealTypeChange={(key, cls) => setRecipeMealTypes((p) => ({ ...p, [key]: cls }))}
       />
 
       <div className="flex justify-end pt-6">

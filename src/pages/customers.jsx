@@ -129,12 +129,12 @@ export default function Customers() {
         )}
       </AnimatePresence>
       <AuthRoles rolesNames={['Administrador','Clientes']}>
-        <div className="p-8 bg-slate-50 rounded-2xl min-h-screen">
+        <div className="p-8 bg-slate-50 dark:bg-slate-900 rounded-2xl min-h-screen transition-colors duration-300">
           {/* Header */}
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">Clientes</h1>
-              <p className="text-slate-500 mt-1">Gestiona los clientes registrados</p>
+              <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">Clientes</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1">Gestiona los clientes registrados</p>
             </div>
 
             <button
@@ -147,13 +147,13 @@ export default function Customers() {
 
           <div className="flex flex-row justify-between w-full">
             {/* Tabs */}
-            <div className="flex items-center gap-1 mb-5 bg-white border border-slate-100 rounded-2xl p-1 w-fit shadow-sm">
+            <div className="flex items-center gap-1 mb-5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-1 w-fit shadow-sm">
               <button
                 onClick={() => setActiveTab('active')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
                   activeTab === 'active'
-                    ? 'bg-slate-800 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 <UserCheck size={15} />
@@ -161,8 +161,8 @@ export default function Customers() {
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                     activeTab === 'active'
-                      ? 'bg-slate-600 text-slate-200'
-                      : 'bg-slate-100 text-slate-500'
+                      ? 'bg-slate-600 dark:bg-indigo-800 text-slate-200'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300'
                   }`}
                 >
                   {activeCustomers.length}
@@ -173,8 +173,8 @@ export default function Customers() {
                 onClick={() => setActiveTab('inactive')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
                   activeTab === 'inactive'
-                    ? 'bg-slate-800 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 <UserX size={15} />
@@ -183,8 +183,8 @@ export default function Customers() {
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                       activeTab === 'inactive'
-                        ? 'bg-slate-600 text-slate-200'
-                        : 'bg-slate-100 text-slate-500'
+                        ? 'bg-slate-600 dark:bg-indigo-800 text-slate-200'
+                        : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300'
                     }`}
                   >
                     {inactiveCustomers.length}
@@ -194,13 +194,13 @@ export default function Customers() {
             </div>
 
             {/* View toggle */}
-            <div className="flex items-center gap-1 mb-5 bg-white border border-slate-100 rounded-2xl p-1 w-fit shadow-sm">
+            <div className="flex items-center gap-1 mb-5 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-1 w-fit shadow-sm">
               <button
                 onClick={() => setViewSelector('grid')}
                 className={`p-2 rounded-xl transition ${
                   viewSelector === 'grid'
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-white text-slate-500 hover:text-slate-700'
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 <LayoutGrid size={18} />
@@ -210,8 +210,8 @@ export default function Customers() {
                 onClick={() => setViewSelector('table')}
                 className={`p-2 rounded-xl transition ${
                   viewSelector === 'table'
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-white text-slate-500 hover:text-slate-700'
+                    ? 'bg-slate-800 dark:bg-indigo-600 text-white'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                 }`}
               >
                 <Table size={18} />
@@ -221,16 +221,16 @@ export default function Customers() {
 
           {/* Search */}
           <div className="relative mb-5 w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-600" size={16} />
             <input
               type="text"
               placeholder="Buscar cliente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 transition text-sm"
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 transition text-sm"
             />
           </div>
-          <hr className="my-4 border-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+          <hr className="my-4 border-0 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-slate-700 to-transparent" />
 
           {/* View */}
           {viewSelector === 'table' ? (

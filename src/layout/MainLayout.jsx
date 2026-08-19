@@ -24,11 +24,11 @@ export default function MainLayout() {
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col transition-colors duration-300">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full p-2 pt-6 pb-16">
+      <main className="flex-1 max-w-6xl mx-auto w-full p-2 pt-6 pb-6">
         <Outlet />
       </main>
 
-      <footer className="fixed bottom-0 left-0 w-full bg-green-800 dark:bg-green-950 text-center p-3 text-sm text-white z-50 shadow-md transition-colors duration-300">
+      <footer className="w-full bg-green-800 dark:bg-green-950 text-center p-3 text-sm text-white shadow-md transition-colors duration-300">
         © 2026 Oasis Food System. All rights reserved.
       </footer>
     </div>

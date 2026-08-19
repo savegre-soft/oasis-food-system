@@ -34,6 +34,7 @@ import Combos from './pages/Combos';
 import BulkDishes from './pages/BulkDishes';
 import BulkSales from './pages/BulkSales';
 import Prospects from './pages/Prospects';
+import Notifications from './pages/Notifications';
 import PromotionsAdmin from './pages/PromotionsAdmin';
 import PortalLayout from './layout/PortalLayout';
 import CustomerPortal from './pages/CustomerPortal';
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/combos" element={<Combos />} />
             <Route path="/prospectos" element={<Prospects />} />
+            <Route path="/notificaciones" element={<Notifications />} />
             <Route path="/promociones-admin" element={<PromotionsAdmin />} />
             <Route path="/control-gastos" element={<ExpenseStadistic />} />
             <Route path="/pagos" element={<Payments />} />

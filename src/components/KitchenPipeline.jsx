@@ -57,7 +57,7 @@ const KitchenPipeline = ({
 
   return (
     <>
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+      <div className="flex flex-wrap gap-2 mb-8">
         {STAGE_TABS.map(({ id, label, Icon }) => (
           <TabButton
             key={id}

@@ -16,6 +16,7 @@ const groupByClient = (orderDays) => {
       recipes: (od.order_day_details ?? []).map((d) => ({
         name: d.recipes?.name ?? '(sin nombre)',
         quantity: d.quantity ?? 1,
+        meal_type: d.meal_type,
       })),
     });
   }
@@ -35,6 +36,12 @@ const ClassificationBadge = ({ classification }) => {
     return (
       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
         🌙 Cena
+      </span>
+    );
+  if (classification === 'both')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400">
+        ☀️🌙 Almuerzo + Cena
       </span>
     );
   return (
@@ -133,6 +140,11 @@ const ClientDeliveredCard = ({ client, onUndeliver, selectedIds, onToggleId }) =
                       key={i}
                       className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full"
                     >
+                      {/* En pedidos 'both' el día puede traer un plato de
+                          almuerzo y otro de cena — sin esto se veían como
+                          dos platos indistinguibles del mismo tiempo. */}
+                      {od.classification === 'both' && r.meal_type === 'Lunch' && '☀️ '}
+                      {od.classification === 'both' && r.meal_type === 'Dinner' && '🌙 '}
                       {r.name}
                       {r.quantity > 1 ? ` ×${r.quantity}` : ''}
                     </span>

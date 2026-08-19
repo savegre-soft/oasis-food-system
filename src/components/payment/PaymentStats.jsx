@@ -24,25 +24,25 @@ const PaymentStats = ({ chartRange, setChartRange, chartData, chartPayments }) =
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Pagado en el período</p>
-          <p className="text-2xl font-bold text-emerald-600">{fmtCRC(totalChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{paymentCount} pago{paymentCount !== 1 ? 's' : ''} cobrado{paymentCount !== 1 ? 's' : ''}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Pagado en el período</p>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{fmtCRC(totalChart)}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{paymentCount} pago{paymentCount !== 1 ? 's' : ''} cobrado{paymentCount !== 1 ? 's' : ''}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Pendientes</p>
-          <p className="text-2xl font-bold text-amber-500">{fmtCRC(pendingChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{grandTotal > 0 ? `${((pendingChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Pendientes</p>
+          <p className="text-2xl font-bold text-amber-500 dark:text-amber-400">{fmtCRC(pendingChart)}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{grandTotal > 0 ? `${((pendingChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Cancelados</p>
-          <p className="text-2xl font-bold text-red-500">{fmtCRC(cancelledChart)}</p>
-          <p className="text-xs text-gray-400 mt-1">{grandTotal > 0 ? `${((cancelledChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}</p>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Cancelados</p>
+          <p className="text-2xl font-bold text-red-500 dark:text-red-400">{fmtCRC(cancelledChart)}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{grandTotal > 0 ? `${((cancelledChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <p className="text-xs text-gray-500 mb-1">Total registrado</p>
-          <p className="text-2xl font-bold text-slate-800">{fmtCRC(grandTotal)}</p>
-          <p className="text-xs text-gray-400 mt-1">{chartPayments.length} pago{chartPayments.length !== 1 ? 's' : ''} en total</p>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Total registrado</p>
+          <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{fmtCRC(grandTotal)}</p>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{chartPayments.length} pago{chartPayments.length !== 1 ? 's' : ''} en total</p>
         </div>
       </div>
 

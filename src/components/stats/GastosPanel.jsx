@@ -88,8 +88,8 @@ const GastosPanel = ({ expenses, empCosts, dateRange, loading }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={<DollarSign size={14} />} label="Gastos operativos"  value={loading ? '—' : fmtCRC(totalExpenses)} sub={loading ? '' : `${expenses.length} registros`}  accent="text-orange-500" bg="bg-orange-50" iconColor="text-orange-500" />
         <StatCard icon={<Users size={14} />}      label="Costo de personal"  value={loading ? '—' : fmtCRC(totalEmp)}      sub={loading ? '' : `${empCosts.length} registros`} accent="text-indigo-500" bg="bg-indigo-50" iconColor="text-indigo-500" />
-        <StatCard icon={<TrendingDown size={14} />} label="Total combinado"  value={loading ? '—' : fmtCRC(totalCombined)} sub={periodLabel}                                    accent="text-slate-800"  bg="bg-slate-100" iconColor="text-slate-600" />
-        <StatCard icon={<Hash size={14} />}        label="Registros totales" value={loading ? '—' : (expenses.length + empCosts.length).toLocaleString()} sub={loading ? '' : `${expenses.length} gastos · ${empCosts.length} personal`} accent="text-slate-700" bg="bg-slate-100" iconColor="text-slate-500" />
+        <StatCard icon={<TrendingDown size={14} />} label="Total combinado"  value={loading ? '—' : fmtCRC(totalCombined)} sub={periodLabel}                                    accent="text-slate-800 dark:text-slate-100"  bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
+        <StatCard icon={<Hash size={14} />}        label="Registros totales" value={loading ? '—' : (expenses.length + empCosts.length).toLocaleString()} sub={loading ? '' : `${expenses.length} gastos · ${empCosts.length} personal`} accent="text-slate-700 dark:text-slate-300" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-500 dark:text-slate-400" />
       </div>
 
       <ChartCard title="Gastos por día" sub={periodLabel} loading={loading}>

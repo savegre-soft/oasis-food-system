@@ -261,11 +261,18 @@ export default function Main() {
           {topRecipes.length === 0 ? (
             <p className="text-sm text-slate-400 dark:text-gray-500 py-8 text-center">Sin datos</p>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={Math.max(280, topRecipes.length * 36)}>
               <BarChart layout="vertical" data={topRecipes} margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} horizontal={false} />
                 <XAxis type="number" tick={tickStyle} stroke={axisColor} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" width={130} tick={tickStyle} stroke={axisColor} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={130}
+                  tick={tickStyle}
+                  stroke={axisColor}
+                  tickFormatter={(name) => (name.length > 16 ? `${name.slice(0, 16)}…` : name)}
+                />
                 <Tooltip {...tooltip} formatter={(v) => [v, 'Unidades']} />
                 <Bar dataKey="total" fill="#10b981" radius={[0, 4, 4, 0]} maxBarSize={22} />
               </BarChart>

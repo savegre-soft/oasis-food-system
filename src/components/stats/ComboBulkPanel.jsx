@@ -128,11 +128,11 @@ const ComboBulkPanel = ({ payments, dateRange, loading }) => {
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Combos</h3>
+        <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Combos</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
           <StatCard icon={<ShoppingBag size={14} />} label="Vendido (combos)" value={isLoading ? '—' : fmtCRC(comboTotal)} sub={periodLabel} accent="text-violet-600" bg="bg-violet-50" iconColor="text-violet-600" />
-          <StatCard icon={<Hash size={14} />} label="Pedidos de combo" value={isLoading ? '—' : comboOrderCount.toLocaleString()} sub={periodLabel} accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
-          <StatCard icon={<TrendingUp size={14} />} label="Precio promedio" value={isLoading ? '—' : fmtCRC(comboAvg)} sub="por pedido" accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
+          <StatCard icon={<Hash size={14} />} label="Pedidos de combo" value={isLoading ? '—' : comboOrderCount.toLocaleString()} sub={periodLabel} accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
+          <StatCard icon={<TrendingUp size={14} />} label="Precio promedio" value={isLoading ? '—' : fmtCRC(comboAvg)} sub="por pedido" accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -175,11 +175,11 @@ const ComboBulkPanel = ({ payments, dateRange, loading }) => {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Ventas Masivas</h3>
+        <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Ventas Masivas</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
           <StatCard icon={<Boxes size={14} />} label="Vendido (ventas masivas)" value={isLoading ? '—' : fmtCRC(bulkTotal)} sub={periodLabel} accent="text-teal-600" bg="bg-teal-50" iconColor="text-teal-600" />
-          <StatCard icon={<Hash size={14} />} label="Lotes cocinados" value={isLoading ? '—' : bulkBatchCount.toLocaleString()} sub={periodLabel} accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
-          <StatCard icon={<Percent size={14} />} label="Aprovechamiento" value={isLoading ? '—' : `${utilizationPct}%`} sub="vendido / cocinado" accent="text-slate-800" bg="bg-slate-100" iconColor="text-slate-600" />
+          <StatCard icon={<Hash size={14} />} label="Lotes cocinados" value={isLoading ? '—' : bulkBatchCount.toLocaleString()} sub={periodLabel} accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
+          <StatCard icon={<Percent size={14} />} label="Aprovechamiento" value={isLoading ? '—' : `${utilizationPct}%`} sub="vendido / cocinado" accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
         </div>
 
         <ChartCard title="Ingresos de ventas masivas por plato" sub={periodLabel} loading={isLoading}>

@@ -120,9 +120,9 @@ const PlanillaPanel = ({ empCosts, dateRange, loading }) => {
           label="Pagos registrados"
           value={loading ? '—' : empCosts.length.toString()}
           sub="En el período"
-          accent="text-slate-700"
-          bg="bg-slate-100"
-          iconColor="text-slate-500"
+          accent="text-slate-700 dark:text-slate-300"
+          bg="bg-slate-100 dark:bg-slate-700"
+          iconColor="text-slate-500 dark:text-slate-400"
         />
       </div>
 

@@ -1,8 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   ClipboardList,
-  // ClipboardCheck — solo usado por la pestaña "Checklist envío", oculta
-  // temporalmente más abajo.
+  ClipboardCheck,
   Calendar,
   History,
   ChevronLeft,
@@ -56,8 +55,7 @@ const STATUS_STYLES = {
 
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
-  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
-  // { id: 'checklist', label: 'Checklist envío', Icon: ClipboardCheck },
+  { id: 'checklist', label: 'Checklist envío', Icon: ClipboardCheck },
   { id: 'history', label: 'Historico', Icon: History },
 ];
 
@@ -354,7 +352,11 @@ const OrderCard = ({ order, onClick, onEdit }) => {
                   ? 'Almuerzo'
                   : order.classification === 'Dinner'
                     ? 'Cena'
-                    : order.classification}
+                    : order.classification === 'both'
+                      ? 'Almuerzo + Cena'
+                      : order.classification === 'Family'
+                        ? 'Familiar'
+                        : order.classification}
               </span>
             </div>
 
@@ -712,6 +714,7 @@ const Orders = () => {
             id_order_day_detail,
             recipe_id,
             quantity,
+            meal_type,
             recipes ( id_recipe, name )
           )
         )

@@ -63,9 +63,8 @@ const Homes = () => {
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.2 }}
-              viewport={{ once: true }}
               className="bg-white rounded-2xl shadow-md p-8 text-center hover:shadow-xl transition"
             >
               <h3 className="text-xl font-semibold text-emerald-700 mb-4">{item.title}</h3>

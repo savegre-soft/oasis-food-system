@@ -110,10 +110,12 @@ const DayRecipeBlock = ({
                     </span>
                   )}
 
-                  {/* Lunch/Dinner toggle for extras on 'both' menu */}
+                  {/* Lunch/Dinner toggle — en pedidos 'both' toda receta (de plantilla
+                      o agregada a mano) necesita saber a cuál tiempo de comida
+                      pertenece; antes solo se mostraba para "extras", dejando las
+                      recetas base sin forma de distinguirse en Producción. */}
                   {!readOnly &&
                     !isFamilyClient &&
-                    item.isExtra &&
                     menuType === 'both' &&
                     onExtraMealTypeChange && (
                       <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 text-xs font-medium">

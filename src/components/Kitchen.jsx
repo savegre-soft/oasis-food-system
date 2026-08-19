@@ -34,7 +34,6 @@ export const groupByRecipe = (orderDays, { filterStatus = null } = {}) => {
     if (!orderDay.orders?.clients) continue;
 
     const clientName = orderDay.orders.clients.name;
-    const classification = orderDay.orders.classification;
 
     for (const detail of orderDay.order_day_details ?? []) {
       if (filterStatus && detail.status !== filterStatus) continue;
@@ -69,13 +68,20 @@ export const groupByRecipe = (orderDays, { filterStatus = null } = {}) => {
         g.clients[clientName] = { clientName, totalQuantity: 0, meals: {} };
       }
 
-      const mealKey = orderDay.id_order_day;
+      // Clave por detail (no por order_day): un pedido 'both' puede tener 2
+      // detalles en el mismo día (almuerzo + cena) que antes se fusionaban
+      // en una sola "meal" si coincidían en receta, perdiendo cuál era cuál.
+      const mealKey = detail.id_order_day_detail;
       if (!g.clients[clientName].meals[mealKey]) {
         g.clients[clientName].meals[mealKey] = {
           id_order_day: orderDay.id_order_day,
           id_order_day_detail: detail.id_order_day_detail,
           day_of_week: orderDay.day_of_week,
-          classification,
+          // meal_type es la fuente de verdad por plato (permite distinguir
+          // almuerzo de cena dentro de un pedido 'both'); classification de
+          // la orden completa solo sirve de respaldo para filas históricas
+          // sin meal_type o pedidos que no son 'both'.
+          classification: detail.meal_type ?? orderDay.orders.classification,
           quantity: 0,
           orderDayIds: new Set(),
           id_order: orderDay.orders?.id_order,
