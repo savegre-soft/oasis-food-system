@@ -86,6 +86,8 @@ A diferencia del portal regular (token por cliente), este es un **link público 
 
 **Bloqueante externo**: requiere que el usuario cree una cuenta en un proveedor de correo transaccional (Resend recomendado) y genere un API key antes de poder implementarse — no hay ninguna integración de correo/SMS existente en el repo para reutilizar. Diseño completo (esquema `combo_public_requests`/`email_outbox`, funciones `SECURITY DEFINER`, Edge Function `send-combo-otp`) documentado en el plan de implementación de esta ronda; pendiente de retomar cuando el usuario tenga la cuenta lista.
 
+**Actualización 2026-08-19**: la parte de generación/validación del código OTP de este diseño se actualiza en `09_REQUERIMIENTOS_MENSAJERIA.md` — en vez de `email_outbox` armado a mano, se recomienda Twilio Verify (WhatsApp/SMS/correo, expiración y límite de intentos ya resueltos por el proveedor), ya que de todas formas hace falta integrar Twilio para RF-PC-10. El resto del diseño de este Bloque 3 (qué pide, cuándo se crea el cliente, sin pago en línea) no cambia. Sigue bloqueado por la misma dependencia externa.
+
 ## 7. Pendientes / dependencias
 
 - Ninguno de los ítems de este documento bloquea otro módulo del roadmap.
