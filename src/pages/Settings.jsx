@@ -5,10 +5,12 @@ import AddUser from '../components/user/AddUser';
 import Modal from '../components/Modal';
 import AuthRoles from '../components/auth/AuthRoles';
 import ExpenseCategories from '../components/ExpenseCategories';
+import LabelTemplateSettings from '../components/settings/LabelTemplateSettings';
 
 const TABS = [
   { id: 'users', label: 'Usuarios' },
   { id: 'expense_categories', label: 'Categorías de gastos' },
+  { id: 'label_template', label: 'Etiquetas' },
 ];
 
 const Settings = () => {
@@ -93,6 +95,16 @@ const Settings = () => {
                   </p>
                 </div>
                 <ExpenseCategories />
+              </div>
+            </div>
+          </AuthRoles>
+        )}
+
+        {activeTab === 'label_template' && (
+          <AuthRoles rolesNames={['Administrador']}>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-700 overflow-hidden">
+              <div className="p-6">
+                <LabelTemplateSettings />
               </div>
             </div>
           </AuthRoles>

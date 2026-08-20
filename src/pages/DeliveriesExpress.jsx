@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Zap, Printer } from 'lucide-react';
+import { Zap, Printer, Tags } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 import ProductionPrintReport from '../components/ProductionPrintReport';
+import LabelPrintSheet from '../components/LabelPrintSheet';
 import KitchenPipeline from '../components/KitchenPipeline';
 import { useOrderDayActions } from '../hooks/useOrderDayActions';
 
@@ -15,7 +16,7 @@ const ORDER_DAY_SELECT = `
     id_order,
     classification,
     route_id,
-    clients ( id_client, name, client_type )
+    clients ( id_client, name, client_type, plan_type )
   ),
   order_day_details (
     id_order_day_detail,
@@ -38,6 +39,7 @@ const DeliveriesExpress = () => {
 
   const [activeTab, setActiveTab] = useState('cocina');
   const [showPrint, setShowPrint] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pendingDays, setPendingDays] = useState([]);
   const [packedDays, setPackedDays] = useState([]);
@@ -91,18 +93,32 @@ const DeliveriesExpress = () => {
           onClose={() => setShowPrint(false)}
         />
       )}
+      {showLabels && (
+        <LabelPrintSheet
+          orderDays={[...pendingDays, ...packedDays, ...deliveredDays]}
+          onClose={() => setShowLabels(false)}
+        />
+      )}
 
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Express</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Entrega hoy · {todayLabel}</p>
         </div>
-        <button
-          onClick={() => setShowPrint(true)}
-          className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
-        >
-          <Printer size={15} /> Imprimir resumen
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowLabels(true)}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+          >
+            <Tags size={15} /> Generar etiquetas
+          </button>
+          <button
+            onClick={() => setShowPrint(true)}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+          >
+            <Printer size={15} /> Imprimir resumen
+          </button>
+        </div>
       </div>
 
       <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl px-5 py-4 flex items-center gap-3 mb-8">
