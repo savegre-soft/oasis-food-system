@@ -380,38 +380,40 @@ const AddOrder = ({ onSuccess }) => {
     if (!selectedClient) return;
     setPaymentLookupLoading(true);
     (async () => {
-      // Un pago mensual sigue siendo reutilizable hasta llenar sus 4 órdenes
-      // o hasta cerrarse manualmente (closed_at) — period_end_date es solo
-      // informativo (cuándo vence "nominalmente" el período) y nunca debe
-      // usarse para dejar de ofrecer un pago con cupo: si el cliente tarda
-      // más de esas ~4 semanas en completarlo, el pago debe seguir
-      // disponible en vez de quedar huérfano y forzar uno nuevo.
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('payments')
-        .select('id_payment, amount, payment_date, period_start_date, period_end_date, payment_orders(id_payment_order)')
-        .eq('client_id', selectedClient.id_client)
-        .eq('payment_type', 'monthly')
-        .in('status', ['pending', 'paid'])
-        .gte('period_end_date', todayStr)
-        .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
-      if (error || !data) {
+      try {
+        // Un pago mensual sigue siendo reutilizable hasta llenar sus 4 órdenes
+        // o hasta cerrarse manualmente (closed_at) — period_end_date es solo
+        // informativo (cuándo vence "nominalmente" el período) y nunca debe
+        // usarse para dejar de ofrecer un pago con cupo: si el cliente tarda
+        // más de esas ~4 semanas en completarlo, el pago debe seguir
+        // disponible en vez de quedar huérfano y forzar uno nuevo.
+        const { data, error } = await supabase
+          .schema('operations')
+          .from('payments')
+          .select('id_payment, amount, payment_date, period_start_date, period_end_date, payment_orders(id_payment_order)')
+          .eq('client_id', selectedClient.id_client)
+          .eq('payment_type', 'monthly')
+          .in('status', ['pending', 'paid'])
+          .is('closed_at', null); // pagos cerrados manualmente desde Ingresos no se reutilizan
+        if (error || !data) return;
+        const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
+        setAvailableMonthly(available);
+        // Si el cliente ya tiene un pago mensual con espacio, se prioriza sobre
+        // la sugerencia por tipo de menú (antes esto solo pasaba cuando el
+        // pedido era "Ambos" — un pedido de un solo tiempo de comida nunca
+        // activaba la reutilización automática, obligando al personal a darse
+        // cuenta y cambiar el tipo de pago a mano; cuando se les pasaba, se
+        // creaba un pago mensual nuevo en vez de reutilizar el existente).
+        if (available.length > 0 && !isExpress) {
+          setPaymentType('monthly');
+          setAssociatePaymentId(available[0].id_payment);
+        }
+      } catch {
+        // fallo de red/CORS al buscar el pago mensual reutilizable: se sigue
+        // con el flujo de pago nuevo en vez de dejar el paso 4 bloqueado.
+      } finally {
         setPaymentLookupLoading(false);
-        return;
       }
-      const available = data.filter((p) => (p.payment_orders?.length ?? 0) < 4);
-      setAvailableMonthly(available);
-      // Si el cliente ya tiene un pago mensual con espacio, se prioriza sobre
-      // la sugerencia por tipo de menú (antes esto solo pasaba cuando el
-      // pedido era "Ambos" — un pedido de un solo tiempo de comida nunca
-      // activaba la reutilización automática, obligando al personal a darse
-      // cuenta y cambiar el tipo de pago a mano; cuando se les pasaba, se
-      // creaba un pago mensual nuevo en vez de reutilizar el existente).
-      if (available.length > 0 && !isExpress) {
-        setPaymentType('monthly');
-        setAssociatePaymentId(available[0].id_payment);
-      }
-      setPaymentLookupLoading(false);
     })();
   }, [step]);
 
