@@ -8,9 +8,24 @@ import {
 
 import ChartCard from '../ChartCard';
 import StatCard from './StatCard';
-import { isoWeekMonday, fmtCRC, ING_COLOR, EXP_COLOR, BAL_COLOR } from '../../utils/chartUtils';
+import TrendBadge from './TrendBadge';
+import { isoWeekMonday, fmtCRC, pctChange, ING_COLOR, EXP_COLOR, BAL_COLOR } from '../../utils/chartUtils';
 
-const ComparativaPanel = ({ expenses, empCosts, payments, dateRange, loading }) => {
+const ComparativaPanel = ({ expenses, empCosts, payments, dateRange, loading, comparison }) => {
+  const { previous, yoy, loading: comparisonLoading } = comparison;
+
+  const trendPair = (now, prevVal, yoyVal, positiveIsGood) => (
+    <div className="flex flex-col items-end gap-0.5">
+      {comparisonLoading ? (
+        <span className="text-[11px] text-slate-300 dark:text-slate-600">…</span>
+      ) : (
+        <>
+          <TrendBadge pct={pctChange(now, prevVal)} label="vs anterior" positiveIsGood={positiveIsGood} />
+          <TrendBadge pct={pctChange(now, yoyVal)} label="vs año pasado" positiveIsGood={positiveIsGood} />
+        </>
+      )}
+    </div>
+  );
   const periodLabel = `${dateRange.from} → ${dateRange.to}`;
 
   const { vsByDay, weeklyVs, totalIngresos, totalGastos, balance } = useMemo(() => {
@@ -86,8 +101,18 @@ const ComparativaPanel = ({ expenses, empCosts, payments, dateRange, loading }) 
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={<TrendingUp size={14} />}  label="Total Ingresos"         value={loading ? '—' : fmtCRC(totalIngresos)} sub={periodLabel}                    accent="text-emerald-600"                          bg="bg-emerald-50"                         iconColor="text-emerald-600" />
-        <StatCard icon={<TrendingDown size={14} />} label="Total Gastos"           value={loading ? '—' : fmtCRC(totalGastos)}   sub="Operativos + Personal"           accent="text-orange-500"                           bg="bg-orange-50"                          iconColor="text-orange-500" />
+        <StatCard
+          icon={<TrendingUp size={14} />} label="Total Ingresos"
+          value={loading ? '—' : fmtCRC(totalIngresos)} sub={periodLabel}
+          accent="text-emerald-600" bg="bg-emerald-50" iconColor="text-emerald-600"
+          trend={!loading && trendPair(totalIngresos, previous?.ingresos, yoy?.ingresos, true)}
+        />
+        <StatCard
+          icon={<TrendingDown size={14} />} label="Total Gastos"
+          value={loading ? '—' : fmtCRC(totalGastos)} sub="Operativos + Personal"
+          accent="text-orange-500" bg="bg-orange-50" iconColor="text-orange-500"
+          trend={!loading && trendPair(totalGastos, previous?.gastos, yoy?.gastos, false)}
+        />
         <StatCard
           icon={<Scale size={14} />}
           label="Balance neto"
@@ -96,6 +121,7 @@ const ComparativaPanel = ({ expenses, empCosts, payments, dateRange, loading }) 
           accent={balance >= 0 ? 'text-blue-600' : 'text-red-500'}
           bg={balance >= 0 ? 'bg-blue-50' : 'bg-red-50'}
           iconColor={balance >= 0 ? 'text-blue-600' : 'text-red-500'}
+          trend={!loading && trendPair(balance, previous?.balance, yoy?.balance, true)}
         />
         <StatCard icon={<BarChart2 size={14} />}   label="Ratio gastos/ingresos"  value={loading ? '—' : (ratio !== null ? `${ratio}%` : '—')} sub="Gastos como % de ingresos" accent="text-slate-700 dark:text-slate-300" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-500 dark:text-slate-400" />
       </div>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { DollarSign, TrendingDown, Clock } from 'lucide-react';
+import { DollarSign, TrendingDown, Clock, Receipt, Users, AlertTriangle } from 'lucide-react';
 import {
   BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -9,7 +9,7 @@ import {
 import ChartCard from '../ChartCard';
 import StatCard from './StatCard';
 import {
-  fmtCRC, renderDonutLabel, buildIncomeStats,
+  fmtCRC, renderDonutLabel, buildIncomeStats, buildIngresosInsights,
   ING_COLOR, TYPE_PIE_COLORS, STATUS_PIE_COLORS, CLIENT_BAR_COLORS,
 } from '../../utils/chartUtils';
 
@@ -21,6 +21,11 @@ const IngresosPanel = ({ payments, dateRange, loading }) => {
     totalChart, pendingChart, cancelledChart, paymentCount,
   } = useMemo(() => buildIncomeStats(payments, dateRange), [payments, dateRange]);
 
+  const {
+    avgTicket, top5Concentration, byClientType,
+    overduePct, overdueAmount, overdueClients, avgCollectionDays, pendingCount,
+  } = useMemo(() => buildIngresosInsights(payments, totalChart, topClients), [payments, totalChart, topClients]);
+
   const grandTotal = totalChart + pendingChart + cancelledChart;
 
   return (
@@ -30,6 +35,27 @@ const IngresosPanel = ({ payments, dateRange, loading }) => {
         <StatCard icon={<Clock size={14} />}        label="Pendientes"           value={loading ? '—' : fmtCRC(pendingChart)}   sub={grandTotal > 0 ? `${((pendingChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}   accent="text-amber-500"  bg="bg-amber-50"  iconColor="text-amber-500" />
         <StatCard icon={<TrendingDown size={14} />} label="Cancelados"           value={loading ? '—' : fmtCRC(cancelledChart)} sub={grandTotal > 0 ? `${((cancelledChart / grandTotal) * 100).toFixed(0)}% del total` : '—'}  accent="text-red-500"    bg="bg-red-50"    iconColor="text-red-500" />
         <StatCard icon={<DollarSign size={14} />}   label="Total registrado"     value={loading ? '—' : fmtCRC(grandTotal)}     sub={loading ? '' : `${payments.length} pago${payments.length !== 1 ? 's' : ''} en total`} accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-600 dark:text-slate-400" />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard icon={<Receipt size={14} />} label="Ticket promedio" value={loading ? '—' : fmtCRC(avgTicket)} sub="Por pago cobrado" accent="text-slate-800 dark:text-slate-100" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-500 dark:text-slate-400" />
+        <StatCard
+          icon={<Users size={14} />} label="Concentración top 5"
+          value={loading ? '—' : `${top5Concentration.toFixed(0)}%`}
+          sub="Del ingreso viene de 5 clientes"
+          accent={top5Concentration >= 60 ? 'text-red-500' : top5Concentration >= 40 ? 'text-amber-500' : 'text-emerald-600'}
+          bg={top5Concentration >= 60 ? 'bg-red-50' : top5Concentration >= 40 ? 'bg-amber-50' : 'bg-emerald-50'}
+          iconColor={top5Concentration >= 60 ? 'text-red-500' : top5Concentration >= 40 ? 'text-amber-500' : 'text-emerald-600'}
+        />
+        <StatCard
+          icon={<AlertTriangle size={14} />} label="Cobros atrasados"
+          value={loading ? '—' : `${overduePct.toFixed(0)}%`}
+          sub={loading ? '' : `${fmtCRC(overdueAmount)} de ${pendingCount} pendiente${pendingCount !== 1 ? 's' : ''}`}
+          accent={overduePct >= 30 ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}
+          bg={overduePct >= 30 ? 'bg-red-50' : 'bg-slate-100 dark:bg-slate-700'}
+          iconColor={overduePct >= 30 ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}
+        />
+        <StatCard icon={<Clock size={14} />} label="Días promedio de cobro" value={loading ? '—' : (avgCollectionDays !== null ? avgCollectionDays.toFixed(0) : '—')} sub="Desde la fecha límite" accent="text-slate-700 dark:text-slate-300" bg="bg-slate-100 dark:bg-slate-700" iconColor="text-slate-500 dark:text-slate-400" />
       </div>
 
       <ChartCard title="Ingresos por día" sub={periodLabel} loading={loading}>
@@ -121,6 +147,44 @@ const IngresosPanel = ({ payments, dateRange, loading }) => {
           </ResponsiveContainer>
         )}
       </ChartCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ChartCard title="Personal vs Familiar" sub="Ticket promedio por tipo de cliente" loading={loading}>
+          {byClientType.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">Sin datos</p>
+          ) : (
+            <div className="space-y-3">
+              {byClientType.map((t) => (
+                <div key={t.type} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t.label}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{t.clientCount} cliente{t.clientCount !== 1 ? 's' : ''} · {fmtCRC(t.total)} total</p>
+                  </div>
+                  <p className="text-lg font-bold text-slate-800 dark:text-slate-100">{fmtCRC(t.avgTicket)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
+
+        <ChartCard title="Clientes con cobros atrasados" sub="Top 5 por monto pendiente" loading={loading}>
+          {overdueClients.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">Sin cobros atrasados 🎉</p>
+          ) : (
+            <div className="space-y-3">
+              {overdueClients.map((c) => (
+                <div key={c.name} className="flex items-center justify-between p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/40">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{c.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{c.count} pago{c.count !== 1 ? 's' : ''} atrasado{c.count !== 1 ? 's' : ''}</p>
+                  </div>
+                  <p className="text-lg font-bold text-red-500">{fmtCRC(c.amount)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </ChartCard>
+      </div>
 
       {weeklyData.length > 1 && (
         <ChartCard title="Comparativa semanal" sub="Ingresos totales por semana" loading={loading}>

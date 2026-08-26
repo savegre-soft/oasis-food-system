@@ -2,6 +2,40 @@ import { getThisWeek, getLast, getThisMonth } from '../hooks/useDashboardData';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
+// Rango inmediatamente anterior, de la misma duración que dateRange — p.ej.
+// si dateRange es todo agosto, devuelve todo julio (mismo número de días).
+export const getPreviousPeriod = ({ from, to }) => {
+  const fromD = new Date(from + 'T00:00:00');
+  const toD = new Date(to + 'T00:00:00');
+  const spanDays = Math.round((toD - fromD) / 86400000) + 1;
+
+  const prevTo = new Date(fromD);
+  prevTo.setDate(prevTo.getDate() - 1);
+  const prevFrom = new Date(prevTo);
+  prevFrom.setDate(prevFrom.getDate() - (spanDays - 1));
+
+  return { from: prevFrom.toISOString().split('T')[0], to: prevTo.toISOString().split('T')[0] };
+};
+
+// Mismo rango de fechas, un año atrás — para comparar contra el mismo período
+// del año anterior (YoY).
+export const getSameRangeLastYear = ({ from, to }) => {
+  const shiftYear = (dateStr) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().split('T')[0];
+  };
+  return { from: shiftYear(from), to: shiftYear(to) };
+};
+
+// % de cambio de `previous` a `current`. Si no hay línea base (previous === 0)
+// no hay un % de crecimiento matemáticamente válido, así que se devuelve null
+// (la UI lo muestra como "nuevo" en vez de un porcentaje engañoso).
+export const pctChange = (current, previous) => {
+  if (!previous) return null;
+  return ((current - previous) / Math.abs(previous)) * 100;
+};
+
 export const isoWeekMonday = (dateStr) => {
   const d = new Date(dateStr + 'T00:00:00');
   const day = d.getDay();
@@ -156,5 +190,90 @@ export const buildIncomeStats = (payments, dateRange) => {
   return {
     incomeByDay, incomeByType, incomeByStatus, topClients, weeklyData,
     totalChart, pendingChart, paidChart, cancelledChart, paymentCount,
+  };
+};
+
+// ── Insights extendidos de ingresos ───────────────────────────────────────────
+// Ticket promedio, concentración de clientes y cobranza. Se calculan aparte de
+// buildIncomeStats porque necesitan campos que solo trae el select ampliado de
+// usePaymentStatistics (period_end_date, created_at, clients.client_type) —
+// buildIncomeStats se mantiene intacto porque también lo usa la pestaña de
+// Estadísticas dentro de Pagos con un select más angosto.
+export const CLIENT_TYPE_LABEL = { personal: 'Personal', family: 'Familiar' };
+
+// No existe un campo "fecha de vencimiento" para todos los tipos de pago —
+// solo los mensuales tienen period_end_date. Para el resto se usa un umbral
+// de 7 días desde la creación del pago como proxy razonable de "atrasado".
+const PENDING_GRACE_DAYS = 7;
+
+export const buildIngresosInsights = (payments, incomeTotal, topClients) => {
+  const paid = payments.filter((p) => p.status === 'paid');
+  const today = new Date().toISOString().split('T')[0];
+  const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+
+  // ── Ticket promedio y concentración ──
+  const activeClientIds = new Set(paid.map((p) => p.client_id ?? `sin-id:${p.clients?.name}`));
+  const activeClientsCount = activeClientIds.size;
+  const avgTicket = paid.length > 0 ? Math.round(incomeTotal / paid.length) : 0;
+  const avgPerClient = activeClientsCount > 0 ? Math.round(incomeTotal / activeClientsCount) : 0;
+
+  const top5Total = topClients.slice(0, 5).reduce((s, c) => s + c.total, 0);
+  const top5Concentration = incomeTotal > 0 ? (top5Total / incomeTotal) * 100 : 0;
+
+  const typeMap = {};
+  paid.forEach((p) => {
+    const type = p.clients?.client_type;
+    if (!type) return;
+    if (!typeMap[type]) typeMap[type] = { total: 0, count: 0, clients: new Set() };
+    typeMap[type].total += p.amount || 0;
+    typeMap[type].count += 1;
+    typeMap[type].clients.add(p.client_id);
+  });
+  const byClientType = Object.entries(typeMap).map(([type, { total, count, clients }]) => ({
+    type,
+    label: CLIENT_TYPE_LABEL[type] || type,
+    total,
+    avgTicket: count > 0 ? Math.round(total / count) : 0,
+    clientCount: clients.size,
+  }));
+
+  // ── Cobranza ──
+  const isOverdue = (p) => {
+    if (p.status !== 'pending') return false;
+    if (p.payment_type === 'monthly' && p.period_end_date) return p.period_end_date < today;
+    const createdDate = p.created_at?.split('T')[0];
+    return createdDate ? daysBetween(createdDate, today) > PENDING_GRACE_DAYS : false;
+  };
+
+  const pendingPayments = payments.filter((p) => p.status === 'pending');
+  const overduePayments = pendingPayments.filter(isOverdue);
+  const overdueAmount = overduePayments.reduce((s, p) => s + (p.amount || 0), 0);
+  const overduePct = pendingPayments.length > 0 ? (overduePayments.length / pendingPayments.length) * 100 : 0;
+
+  const collectionDays = paid
+    .map((p) => {
+      const start = p.payment_type === 'monthly' && p.period_end_date ? p.period_end_date : p.created_at?.split('T')[0];
+      if (!start || !p.payment_date) return null;
+      return Math.max(0, daysBetween(start, p.payment_date));
+    })
+    .filter((d) => d !== null);
+  const avgCollectionDays = collectionDays.length > 0
+    ? collectionDays.reduce((s, d) => s + d, 0) / collectionDays.length
+    : null;
+
+  const overdueClients = Object.values(
+    overduePayments.reduce((acc, p) => {
+      const key = p.client_id ?? p.clients?.name ?? 'desconocido';
+      if (!acc[key]) acc[key] = { name: p.clients?.name || `Cliente ${p.client_id}`, amount: 0, count: 0 };
+      acc[key].amount += p.amount || 0;
+      acc[key].count += 1;
+      return acc;
+    }, {})
+  ).sort((a, b) => b.amount - a.amount).slice(0, 5);
+
+  return {
+    avgTicket, activeClientsCount, avgPerClient, top5Concentration, byClientType,
+    overdueCount: overduePayments.length, overdueAmount, overduePct, avgCollectionDays,
+    overdueClients, pendingCount: pendingPayments.length,
   };
 };

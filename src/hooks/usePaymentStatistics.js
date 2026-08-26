@@ -66,7 +66,7 @@ export const usePaymentStatistics = ({ from, to }) => {
           .schema('operations')
           .from('payments')
           .select(
-            'id_payment, client_id, payment_type, amount, payment_date, status, clients(name)'
+            'id_payment, client_id, payment_type, amount, payment_date, period_end_date, created_at, status, clients(name, client_type)'
           )
           .gte('payment_date', from)
           .lte('payment_date', to)
