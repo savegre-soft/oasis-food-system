@@ -45,8 +45,8 @@ const DeliveriesExpress = () => {
   const [packedDays, setPackedDays] = useState([]);
   const [deliveredDays, setDeliveredDays] = useState([]);
 
-  const getData = async () => {
-    setLoading(true);
+  const getData = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     const base = (status) =>
       supabase
         .schema('operations')
@@ -61,13 +61,16 @@ const DeliveriesExpress = () => {
     setPendingDays((p.data ?? []).filter(isExpress));
     setPackedDays((k.data ?? []).filter(isExpress));
     setDeliveredDays((d.data ?? []).filter(isExpress));
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => {
     getData();
   }, []);
 
+  // Refresco silencioso tras marcar un pedido: no activa `loading`, para no
+  // desmontar KitchenPipeline y perder el estado local de tarjetas
+  // expandidas / selecciones en Empaque y Entrega.
   const {
     markPacked,
     markDelivered,
@@ -75,7 +78,7 @@ const DeliveriesExpress = () => {
     markPackedDetail,
     markDeliveredDetail,
     markPendingDetail,
-  } = useOrderDayActions(supabase, getData);
+  } = useOrderDayActions(supabase, () => getData({ silent: true }));
 
   const todayLabel = new Date(todayStr + 'T00:00:00').toLocaleDateString('es-CR', {
     weekday: 'long',
