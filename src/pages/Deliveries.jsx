@@ -199,9 +199,9 @@ const Production = () => {
 
   // ── Fetch order days for selected slot ────────────────────────────────────────
 
-  const getData = async () => {
+  const getData = async ({ silent = false } = {}) => {
     if (!selectedSlot) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
 
     const base = (status) =>
       supabase
@@ -225,7 +225,7 @@ const Production = () => {
     setPendingDays(pendingRes.data ?? []);
     setPackedDays(packedRes.data ?? []);
     setDeliveredDays(deliveredRes.data ?? []);
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   // Clear stale data immediately when the week changes, so old week's orders
@@ -261,15 +261,17 @@ const Production = () => {
   useEffect(() => {
     if (!selectedSlot) return;
     const interval = setInterval(() => {
-      getData();
+      getData({ silent: true });
     }, 45000);
     return () => clearInterval(interval);
   }, [selectedSlot]);
 
+  // Refresco silencioso tras marcar un pedido: no reconsulta los slots
+  // disponibles (no cambian por una sola acción) ni activa `loading`, para
+  // no desmontar KitchenPipeline y perder el estado local de las tarjetas
+  // expandidas / selecciones en Empaque y Entrega.
   const refresh = async () => {
-    const { weekStart: ws, weekEnd: we } = computeWeekRange(weekOffset);
-    await getAvailableDays(ws, we);
-    await getData();
+    await getData({ silent: true });
   };
 
   const {

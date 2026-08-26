@@ -49,12 +49,12 @@ const DeliveriesCombos = () => {
   const currentWeek = weeks[weekIndex] ?? null;
 
   const getComboData = useCallback(
-    async (weekId) => {
+    async (weekId, { silent = false } = {}) => {
       if (!weekId) {
         setComboOrders([]);
         return;
       }
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data, error } = await supabase
         .schema('operations')
         .from('combo_orders')
@@ -67,7 +67,7 @@ const DeliveriesCombos = () => {
         .order('id_combo_order', { ascending: false });
       if (error) console.error(error);
       setComboOrders(data ?? []);
-      setLoading(false);
+      if (!silent) setLoading(false);
     },
     [supabase]
   );
@@ -76,7 +76,10 @@ const DeliveriesCombos = () => {
     setTimeout(() => getComboData(currentWeek?.id_combo_week), 0);
   }, [currentWeek, getComboData]);
 
-  const refresh = async () => getComboData(currentWeek?.id_combo_week);
+  // Refresco silencioso tras marcar un combo: no activa `loading`, para no
+  // desmontar ComboDeliveryView y perder el estado local (subtab activo,
+  // tarjetas expandidas) cada vez que se empaca/entrega un combo.
+  const refresh = async () => getComboData(currentWeek?.id_combo_week, { silent: true });
 
   const updateComboOrderStatus = async (id, newStatus, successMsg) => {
     const { error } = await supabase
