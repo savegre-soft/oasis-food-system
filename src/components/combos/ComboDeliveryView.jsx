@@ -48,7 +48,7 @@ const PlatoView = ({ orders }) => {
           <div className="space-y-3">
             {group.items.map((row) => (
               <div
-                key={row.name}
+                key={`${row.category}-${row.name}`}
                 className="flex items-center justify-between bg-white dark:bg-slate-900 px-5 py-3.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800"
               >
                 <p className="font-semibold text-slate-800 dark:text-slate-100">{row.name}</p>
