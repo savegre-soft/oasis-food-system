@@ -34,18 +34,30 @@ export const CATEGORY_ORDER = Object.fromEntries(COMBO_CATEGORIES.map((c, i) => 
 
 export const compareByCategoryThenName = (a, b) =>
   (CATEGORY_ORDER[a.category] ?? 99) - (CATEGORY_ORDER[b.category] ?? 99) ||
-  a.name.localeCompare(b.name);
+  (a.name ?? '').localeCompare(b.name ?? '');
 
-// Agrega las selecciones de un conjunto de pedidos de combo por ítem de
-// catálogo (ej. "Arroz blanco: 3000 g"), ordenado por categoría y nombre.
-// Usado por la vista "Por plato" y por el resumen de impresión.
+// Agrega las selecciones de un conjunto de pedidos de combo por PLATO
+// (ej. "Arroz blanco: 3000 g"), ordenado por categoría y nombre.
+// Usado por la vista "Por plato", el resumen de impresión y el panel de stats.
+//
+// La clave de agrupación es la identidad del plato (categoría + nombre), NO el
+// `combo_item_id`: el catálogo `combo_items` acumula filas duplicadas para el
+// mismo plato (una vieja inactiva sin precio + una nueva activa con precio,
+// creada al "reemplazar" un ítem). Los pedidos previos al reemplazo apuntan al
+// id viejo y los posteriores al nuevo, así que agrupar por id partía el mismo
+// plato en dos líneas del resumen de producción. Para categorías en gramos se
+// incluye `portion_size_g` en la clave para no sumar nunca porciones de
+// distinto tamaño en un mismo total.
 export const aggregateComboSelections = (orders) => {
   const grouped = {};
   for (const order of orders ?? []) {
     for (const sel of order.combo_order_selections ?? []) {
       const item = sel.combo_items;
       if (!item) continue;
-      const key = sel.combo_item_id;
+      const nameKey = (item.name ?? '').trim().toLowerCase();
+      const key = isGramCategory(sel.category)
+        ? `${sel.category}__${nameKey}__${item.portion_size_g ?? ''}`
+        : `${sel.category}__${nameKey}`;
       if (!grouped[key]) {
         grouped[key] = {
           name: item.name,
