@@ -5,6 +5,7 @@ import {
   DAY_SHORT,
   MACRO_UNIT,
   MEAL_META,
+  classificationLabel,
   mealLabel,
   mealTypesOf,
 } from '../../orderUtils';
@@ -62,9 +63,9 @@ const StepConfirm = ({
             ? selectedFamilyTemplate?.name
               ? `Familiar — ${selectedFamilyTemplate.name}`
               : 'Familiar'
-            : menuType === 'both'
-              ? 'Almuerzo + Cena'
-              : `Solo ${MEAL_META[menuType]?.label ?? ''}`}
+            : mealTypesOf(menuType).length > 1
+              ? classificationLabel(menuType)
+              : `Solo ${classificationLabel(menuType)}`}
       </p>
     </div>
 

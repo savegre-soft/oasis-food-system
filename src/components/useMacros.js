@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { MEAL_TYPES, primaryMealType } from './orderUtils';
 
 /**
  * @typedef {Object} Macros
@@ -54,7 +55,11 @@ export const useMacros = (initialLunch = null, initialDinner = null, initialBrea
    * @returns {Macros|null}
    */
   const getBaseMacros = useCallback(
-    (cls) => (cls === 'Dinner' ? dinnerMacros : cls === 'Breakfast' ? breakfastMacros : lunchMacros),
+    (cls) => {
+      // Una clasificación combinada (ej. 'both', 'Breakfast+Lunch') usa el tiempo principal.
+      const meal = MEAL_TYPES.includes(cls) ? cls : primaryMealType(cls);
+      return meal === 'Dinner' ? dinnerMacros : meal === 'Breakfast' ? breakfastMacros : lunchMacros;
+    },
     [lunchMacros, dinnerMacros, breakfastMacros]
   );
 

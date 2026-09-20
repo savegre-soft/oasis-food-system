@@ -7,7 +7,10 @@
 --  2. portal_template_overrides.meal_type acepta 'Breakfast'.
 --  3. order_day_details.meal_type acepta 'Breakfast' (solo si esa columna/constraint
 --     existe en este ambiente; se ajusta de forma condicional).
---  4. portal_get_client / portal_get_menu_options / portal_submit_order entienden
+--  4. Los pedidos pueden combinar 1, 2 o los 3 tiempos de comida: orders.classification
+--     usa 'both' (Almuerzo + Cena, legado) o tiempos unidos por '+' en orden canónico
+--     Breakfast, Lunch, Dinner (ej. 'Breakfast+Lunch+Dinner').
+--  5. portal_get_client / portal_get_menu_options / portal_submit_order entienden
 --     'Breakfast' (macros, plantilla semanal resuelta y snapshot del pedido).
 --
 -- orders.classification y order_templates.meal_type / recipes.meal_type son varchar
@@ -182,6 +185,7 @@ DECLARE
   v_sunday date := v_monday + 6;
   v_tuesday_delivery date := CASE WHEN v_is_early THEN v_monday + 1 ELSE NULL END;
   v_classification text;
+  v_snapshot_meal text;
   v_order_id bigint;
   v_protein int;
   v_carb int;
@@ -205,11 +209,19 @@ BEGIN
 
   v_classification := CASE WHEN v_client.client_type = 'family' THEN 'Family' ELSE p_payload->>'classification' END;
 
-  IF v_classification = 'Dinner' THEN
+  -- classification puede ser un tiempo ('Breakfast'|'Lunch'|'Dinner'), 'both'
+  -- (Almuerzo + Cena, legado) o una combinación con '+' (ej. 'Breakfast+Lunch').
+  -- El snapshot de macros del pedido corresponde al primer tiempo de comida.
+  v_snapshot_meal := CASE
+    WHEN v_classification = 'both' THEN 'Lunch'
+    ELSE split_part(v_classification, '+', 1)
+  END;
+
+  IF v_snapshot_meal = 'Dinner' THEN
     SELECT protein_value, carb_value INTO v_protein, v_carb
       FROM operations.macro_profiles WHERE id_macro_profile = v_client.dinner_macro_profile_id;
     v_macro_profile_snapshot_id := v_client.dinner_macro_profile_id;
-  ELSIF v_classification = 'Breakfast' THEN
+  ELSIF v_snapshot_meal = 'Breakfast' THEN
     SELECT protein_value, carb_value INTO v_protein, v_carb
       FROM operations.macro_profiles WHERE id_macro_profile = v_client.breakfast_macro_profile_id;
     v_macro_profile_snapshot_id := v_client.breakfast_macro_profile_id;

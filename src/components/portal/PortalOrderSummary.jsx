@@ -1,13 +1,5 @@
 import { CheckCircle2, Pencil } from 'lucide-react';
-import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT, MEAL_META, mealTypesOf } from '../orderUtils';
-
-const CLASSIFICATION_LABEL = {
-  Breakfast: 'Solo Desayuno',
-  Lunch: 'Solo Almuerzo',
-  Dinner: 'Solo Cena',
-  both: 'Almuerzo + Cena',
-  Family: 'Familiar',
-};
+import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT, MEAL_META, classificationLabel, mealTypesOf } from '../orderUtils';
 
 // Resumen de confirmación del portal — mismo formato que StepConfirm.jsx
 // (usado internamente por el staff en AddOrder.jsx), sin las secciones de
@@ -64,7 +56,7 @@ const PortalOrderSummary = ({
       <div>
         <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">Menú</p>
         <p className="text-sm text-slate-700 dark:text-slate-300">
-          {CLASSIFICATION_LABEL[classification] ?? classification}
+          {isFamilyClient ? 'Familiar' : `${mealTypesOf(classification).length > 1 ? '' : 'Solo '}${classificationLabel(classification)}`}
         </p>
       </div>
 

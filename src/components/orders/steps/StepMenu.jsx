@@ -1,4 +1,4 @@
-import { MEAL_META, mealLabel, mealTypesOf } from '../../orderUtils';
+import { MEAL_META, MEAL_TYPES, classificationOf, mealLabel, mealTypesOf } from '../../orderUtils';
 
 // Clases completas (no interpoladas) para que Tailwind las detecte.
 const SELECTED_STYLES = {
@@ -22,27 +22,35 @@ const StepMenu = ({
 }) => (
   <div className="space-y-5">
     <div>
-      <label className="block text-sm font-medium text-slate-600 mb-2">Tipo de menú</label>
+      <label className="block text-sm font-medium text-slate-600 mb-1">Tiempos de comida</label>
+      <p className="text-xs text-slate-400 mb-2">Elegí uno, dos o los tres.</p>
       <div className="flex gap-2">
-        {[
-          ['Breakfast', mealLabel('Breakfast')],
-          ['Lunch', mealLabel('Lunch')],
-          ['Dinner', mealLabel('Dinner')],
-          ['both', '☀️🌙 Almuerzo + Cena'],
-        ].map(([val, lbl]) => (
-          <button
-            key={val}
-            type="button"
-            onClick={() => setMenuType(val)}
-            className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
-              menuType === val
-                ? 'bg-slate-800 text-white border-slate-800'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
-            }`}
-          >
-            {lbl}
-          </button>
-        ))}
+        {MEAL_TYPES.map((type) => {
+          const selected = mealTypesOf(menuType).includes(type);
+          return (
+            <button
+              key={type}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => {
+                const current = mealTypesOf(menuType);
+                setMenuType(
+                  classificationOf(
+                    selected ? current.filter((t) => t !== type) : [...current, type]
+                  )
+                );
+              }}
+              className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
+                selected
+                  ? 'bg-slate-800 text-white border-slate-800'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+              }`}
+            >
+              {selected ? '✓ ' : ''}
+              {mealLabel(type)}
+            </button>
+          );
+        })}
       </div>
     </div>
 

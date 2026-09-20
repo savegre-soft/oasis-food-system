@@ -6,13 +6,13 @@ import { sileo } from 'sileo';
 import OrderAdjustments from './OrderAdjustments';
 import { useDayRecipes } from './useDayRecipes';
 import { useMacros } from './useMacros';
-import { DAYS_ORDER, DAY_LABELS, isFamily, getDateForDay } from './orderUtils';
+import { DAYS_ORDER, DAY_LABELS, isFamily, getDateForDay, primaryMealType } from './orderUtils';
 
 
 const EditOrder = ({ order, onSuccess }) => {
   const { supabase } = useApp();
   const isFamilyClient = isFamily(order.clients);
-  const menuType = order.classification; // 'Breakfast' | 'Lunch' | 'Dinner' | 'both' | 'Family'
+  const menuType = order.classification; // 'Breakfast' | 'Lunch' | 'Dinner' | 'both' | 'Breakfast+Lunch' | … | 'Family'
   const [loading, setLoading] = useState(false);
   const [allRecipes, setAllRecipes] = useState([]);
   const [allRoutes, setAllRoutes] = useState([]);
@@ -108,8 +108,10 @@ const EditOrder = ({ order, onSuccess }) => {
       protein_value: order.protein_snapshot ?? '',
       carb_value: order.carb_snapshot ?? '',
     };
-    if (menuType === 'Breakfast') setBreakfastMacros(snapshot);
-    else if (menuType === 'Dinner') setDinnerMacros(snapshot);
+    // El snapshot del pedido corresponde al tiempo de comida principal.
+    const primary = primaryMealType(menuType);
+    if (primary === 'Breakfast') setBreakfastMacros(snapshot);
+    else if (primary === 'Dinner') setDinnerMacros(snapshot);
     else setLunchMacros(snapshot);
 
     // Recipes

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { mealLabel, mealTypesOf } from './orderUtils';
 import { CheckCircle, Truck, Archive } from 'lucide-react';
 
 // ── Group DELIVERED order_days by client ──────────────────────────────────────
@@ -41,6 +42,12 @@ const ClassificationBadge = ({ classification }) => {
     return (
       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
         🌙 Cena
+      </span>
+    );
+  if (mealTypesOf(classification).length > 1)
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+        {mealLabel(classification)}
       </span>
     );
   return (

@@ -84,7 +84,7 @@ Wizard de **4 pasos** (o 2 si es express):
 | 4 | `StepConfirm.jsx` | Resumen y confirmación |
 
 **Tipos de cliente:**
-- `'personal'` — tiene macros de almuerzo y cena (y opcionalmente desayuno), menuType puede ser `'Breakfast'`, `'Lunch'`, `'Dinner'` o `'both'` (= Almuerzo + Cena; el desayuno es un tiempo de comida independiente, no se combina)
+- `'personal'` — tiene macros de almuerzo y cena (y opcionalmente desayuno), se eligen 1, 2 o los 3 tiempos de comida (Desayuno/Almuerzo/Cena). `classification` = un tiempo, `'both'` (Almuerzo + Cena, legado) o tiempos unidos por `+` en orden canónico (`'Breakfast+Lunch'`, `'Breakfast+Lunch+Dinner'`…); usar `mealTypesOf`/`classificationOf`
 - `'family'` — sin macros individuales, menuType es `'Family'`, entrega siempre viernes
 
 **Pedido Express (`isExpress = true`):**
@@ -158,7 +158,7 @@ DAY_LABELS = { Monday: 'Lunes', ... }
 DAY_SHORT   = { Monday: 'Lun', ... }
 MEAL_TYPES / MEAL_META      // ['Breakfast','Lunch','Dinner'] + label/emoji/color por tiempo de comida
 mealLabel(type)             // '🌅 Desayuno' | '☀️ Almuerzo' | '🌙 Cena' (también 'both'/'Family')
-mealTypesOf(menuType)       // tiempos de comida de un menuType ('both' → Lunch+Dinner)
+mealTypesOf(classification) // tiempos de una clasificación ('both' → Lunch+Dinner); classificationOf(types) es el inverso
 clientMacroKey(type)        // 'breakfast_macro' | 'lunch_macro' | 'dinner_macro'
 isFamily(client)            // client.client_type === 'family'
 getWeekRange()              // devuelve { start, end, label } de la semana actual

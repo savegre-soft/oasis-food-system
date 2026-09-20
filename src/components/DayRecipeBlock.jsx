@@ -3,6 +3,13 @@ import MacroPanel from './MacroPanel';
 import RecipeIngredientEditor from './RecipeIngredientEditor';
 import { DAY_LABELS, MEAL_META, mealLabel, mealTypesOf } from './orderUtils';
 
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const EXTRA_ACTIVE = {
+  Breakfast: 'bg-sky-400 text-white',
+  Lunch: 'bg-amber-400 text-white',
+  Dinner: 'bg-indigo-500 text-white',
+};
+
 // A collapsible day block: recipe list + per-day macro overrides
 const DayRecipeBlock = ({
   day,
@@ -109,15 +116,15 @@ const DayRecipeBlock = ({
                     </span>
                   )}
 
-                  {/* Lunch/Dinner toggle for extras on 'both' menu */}
+                  {/* Toggle de tiempo de comida para extras cuando el menú tiene más de uno */}
                   {!readOnly &&
                     !isFamilyClient &&
                     item.isExtra &&
-                    menuType === 'both' &&
+                    macroClasses.length > 1 &&
                     onExtraMealTypeChange && (
                       <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 text-xs font-medium">
-                        {['Lunch', 'Dinner'].map((cls) => {
-                          const current = extraMealTypes[`${day}-${index}`] ?? 'Lunch';
+                        {macroClasses.map((cls) => {
+                          const current = extraMealTypes[`${day}-${index}`] ?? macroClasses[0];
                           return (
                             <button
                               key={cls}
@@ -125,13 +132,11 @@ const DayRecipeBlock = ({
                               onClick={() => onExtraMealTypeChange(`${day}-${index}`, cls)}
                               className={`px-2 py-1.5 transition ${
                                 current === cls
-                                  ? cls === 'Lunch'
-                                    ? 'bg-amber-400 text-white'
-                                    : 'bg-indigo-500 text-white'
+                                  ? EXTRA_ACTIVE[cls]
                                   : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                               }`}
                             >
-                              {cls === 'Lunch' ? '☀️' : '🌙'}
+                              {MEAL_META[cls].emoji}
                             </button>
                           );
                         })}

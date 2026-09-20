@@ -18,6 +18,7 @@ import {
   MEAL_TYPES,
   clientMacroKey,
   mealTypesOf,
+  primaryMealType,
 } from './orderUtils';
 
 import StepClient from './orders/steps/StepClient';
@@ -302,7 +303,7 @@ const AddOrder = ({ onSuccess }) => {
   // Auto-resolve route
   useEffect(() => {
     if (step !== 3 || !menuType || familyClient || routeManuallyChanged) return;
-    const preferredType = menuType === 'both' || extraCount >= 3 ? 'complete' : 'individual';
+    const preferredType = mealTypesOf(menuType).length > 1 || extraCount >= 3 ? 'complete' : 'individual';
     (async () => {
       let { data } = await supabase
         .schema('operations')
@@ -336,7 +337,7 @@ const AddOrder = ({ onSuccess }) => {
     DAYS_ORDER.forEach((d) => {
       recipes[d] = [];
     });
-    templates.forEach(({ tmpl }) => {
+    templates.forEach(({ tmpl, type }) => {
       (tmpl.order_template_days ?? []).forEach((tday) => {
         const day = tday.day_of_week;
         if (!recipes[day]) recipes[day] = [];
@@ -346,6 +347,8 @@ const AddOrder = ({ onSuccess }) => {
             recipe_name: det.recipes?.name ?? '',
             quantity: det.quantity,
             isExtra: false,
+            // Tiempo de comida al que pertenece (define los macros aplicados al guardar).
+            mealType: type,
           });
         });
       });
@@ -390,7 +393,7 @@ const AddOrder = ({ onSuccess }) => {
     // Sugerencia inicial basada en el tipo de menú del pedido puntual — se
     // corrige más abajo en cuanto se sabe si el cliente ya tiene un pago
     // mensual con espacio disponible (señal más confiable que el menú).
-    const menuSuggestsMonthly = familyClient || menuType === 'both';
+    const menuSuggestsMonthly = familyClient || mealTypesOf(menuType).length > 1;
     setPaymentType(isExpress ? 'express' : menuSuggestsMonthly ? 'monthly' : 'weekly');
     setPaymentAmount('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -552,9 +555,7 @@ const AddOrder = ({ onSuccess }) => {
       ? [expressType]
       : familyClient
         ? ['Family']
-        : menuType === 'both'
-          ? ['both']
-          : [menuType];
+        : [menuType];
     const routeDelDays = (resolvedRoute?.route_delivery_days ?? []).map((d) => d.day_of_week);
     const todayStr = new Date().toISOString().split('T')[0];
 
@@ -562,9 +563,9 @@ const AddOrder = ({ onSuccess }) => {
       const templateId =
         type === 'Family'
           ? selectedFamilyTemplate?.id_template
-          : type === 'both'
-            ? (selectedTemplates.Lunch?.id_template ?? selectedTemplates.Dinner?.id_template)
-            : selectedTemplates[type]?.id_template;
+          : mealTypesOf(type)
+              .map((t) => selectedTemplates[t]?.id_template)
+              .find(Boolean);
 
       const { data: orderData, error: orderError } = await supabase
         .schema('operations')
@@ -581,7 +582,7 @@ const AddOrder = ({ onSuccess }) => {
             // La consulta de clientes solo trae el perfil embebido (no la columna
             // *_macro_profile_id), por eso el id se toma del perfil.
             macro_profile_snapshot_id:
-              selectedClient?.[clientMacroKey(type)]?.id_macro_profile ?? null,
+              selectedClient?.[clientMacroKey(primaryMealType(type))]?.id_macro_profile ?? null,
             protein_snapshot: isExpress
               ? expressMacros.protein_value
               : (getBaseMacros(type)?.protein_value ?? null),
@@ -637,9 +638,11 @@ const AddOrder = ({ onSuccess }) => {
           .from('order_day_details')
           .insert(
             detailsWithIdx.map(({ r, origIdx }) => {
+              // Cada receta usa los macros de su propio tiempo de comida; en un pedido
+              // combinado, las extras eligen con el toggle y el resto trae el de su plantilla.
               const effectiveType = r.isExtra
-                ? (extraMealTypes[`${day}-${origIdx}`] ?? type)
-                : type;
+                ? (extraMealTypes[`${day}-${origIdx}`] ?? primaryMealType(type))
+                : (r.mealType ?? primaryMealType(type));
               const eff = isExpress ? expressMacros : getEffectiveMacros(day, effectiveType);
               return {
                 order_day_id: dayData.id_order_day,

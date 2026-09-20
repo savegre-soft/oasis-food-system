@@ -13,6 +13,7 @@ import {
   MACRO_UNIT,
   MEAL_TYPES,
   clientMacroKey,
+  classificationOf,
   mealLabel,
   mealTypesOf,
   getWeekRange,
@@ -75,6 +76,7 @@ const CustomerPortal = () => {
   const [menuOptions, setMenuOptions] = useState(null);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [classification, setClassification] = useState(null);
+  const [pickedMeals, setPickedMeals] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null);
   const [justSubmitted, setJustSubmitted] = useState(false);
@@ -315,25 +317,40 @@ const CustomerPortal = () => {
           <h2 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">
             ¿Qué querés armar esta semana?
           </h2>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+            Elegí uno o varios tiempos de comida.
+          </p>
           <div className="flex gap-2 flex-wrap">
-            {MEAL_TYPES.filter((t) => client[clientMacroKey(t)]).map((type) => (
-              <button
-                key={type}
-                onClick={() => chooseClassification(type)}
-                className={PICKER_BUTTON}
-              >
-                {mealLabel(type)}
-              </button>
-            ))}
-            {client.lunch_macro && client.dinner_macro && (
-              <button
-                onClick={() => chooseClassification('both')}
-                className={PICKER_BUTTON}
-              >
-                ☀️🌙 Almuerzo + Cena
-              </button>
-            )}
+            {MEAL_TYPES.filter((t) => client[clientMacroKey(t)]).map((type) => {
+              const selected = pickedMeals.includes(type);
+              return (
+                <button
+                  key={type}
+                  aria-pressed={selected}
+                  onClick={() =>
+                    setPickedMeals((prev) =>
+                      selected ? prev.filter((t) => t !== type) : [...prev, type]
+                    )
+                  }
+                  className={`${PICKER_BUTTON} ${
+                    selected
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-600'
+                      : ''
+                  }`}
+                >
+                  {selected ? '✓ ' : ''}
+                  {mealLabel(type)}
+                </button>
+              );
+            })}
           </div>
+          <button
+            disabled={pickedMeals.length === 0}
+            onClick={() => chooseClassification(classificationOf(pickedMeals))}
+            className="mt-4 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition disabled:opacity-40"
+          >
+            Continuar
+          </button>
         </div>
       )}
 
