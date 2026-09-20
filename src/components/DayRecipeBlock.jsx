@@ -124,7 +124,7 @@ const DayRecipeBlock = ({
                     onExtraMealTypeChange && (
                       <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 text-xs font-medium">
                         {macroClasses.map((cls) => {
-                          const current = extraMealTypes[`${day}-${index}`] ?? macroClasses[0];
+                          const current = extraMealTypes[`${day}-${index}`] ?? item.mealType ?? macroClasses[0];
                           return (
                             <button
                               key={cls}

@@ -75,7 +75,8 @@ const OrderAdjustments = ({
   showIngredientEditor = true,
   hideMacroEditor = false,
 }) => {
-  const macroTypes = mealTypesOf(menuType).filter((t) => macrosByType?.[t]);
+  // Todos los tiempos de comida del pedido muestran sus macros (obligatorio).
+  const macroTypes = mealTypesOf(menuType);
 
   return (
     <div className="space-y-5">
@@ -167,7 +168,7 @@ const OrderAdjustments = ({
                   <MacroPanel
                     label={mealLabel(type)}
                     colorClass={MEAL_META[type].color}
-                    macros={macros}
+                    macros={macros ?? {}}
                     onUpdate={(field, value) => onUpdateMacro(type, field, value)}
                   />
                 </div>

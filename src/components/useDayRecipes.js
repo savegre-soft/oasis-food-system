@@ -209,6 +209,8 @@ export const useDayRecipes = () => {
           recipe_name: det.recipes?.name ?? '',
           quantity: det.quantity ?? 1,
           isExtra: true,
+          // Tiempo de comida del detalle (si el llamador lo infirió); define sus macros.
+          ...(det.mealType ? { mealType: det.mealType } : {}),
         }));
       });
 

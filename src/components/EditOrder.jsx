@@ -6,7 +6,16 @@ import { sileo } from 'sileo';
 import OrderAdjustments from './OrderAdjustments';
 import { useDayRecipes } from './useDayRecipes';
 import { useMacros } from './useMacros';
-import { DAYS_ORDER, DAY_LABELS, isFamily, getDateForDay, primaryMealType } from './orderUtils';
+import {
+  DAYS_ORDER,
+  DAY_LABELS,
+  STANDARD_MACRO,
+  clientMacroKey,
+  isFamily,
+  getDateForDay,
+  mealTypesOf,
+  primaryMealType,
+} from './orderUtils';
 
 
 const EditOrder = ({ order, onSuccess }) => {
@@ -17,6 +26,7 @@ const EditOrder = ({ order, onSuccess }) => {
   const [allRecipes, setAllRecipes] = useState([]);
   const [allRoutes, setAllRoutes] = useState([]);
   const [resolvedRoute, setResolvedRoute] = useState(order.routes ?? null);
+  const [extraMealTypes, setExtraMealTypes] = useState({});
 
   // ── Hooks ─────────────────────────────────────────────────────────────────
   const {
@@ -102,20 +112,92 @@ const EditOrder = ({ order, onSuccess }) => {
   }, [order.route_id]);
 
   // ── Pre-fill from order ───────────────────────────────────────────────────
+  // Cada tiempo de comida del pedido tiene sus propios macros base: el tiempo
+  // principal usa el snapshot del pedido y los demás el perfil actual del cliente
+  // (o el estándar si el cliente no lo tiene). Cada receta existente se asigna al
+  // tiempo cuyos macros coinciden con los que se le aplicaron al crearla.
   useEffect(() => {
-    // Macros
-    const snapshot = {
-      protein_value: order.protein_snapshot ?? '',
-      carb_value: order.carb_snapshot ?? '',
-    };
-    // El snapshot del pedido corresponde al tiempo de comida principal.
-    const primary = primaryMealType(menuType);
-    if (primary === 'Breakfast') setBreakfastMacros(snapshot);
-    else if (primary === 'Dinner') setDinnerMacros(snapshot);
-    else setLunchMacros(snapshot);
+    let cancelled = false;
+    (async () => {
+      const types = isFamilyClient ? [] : mealTypesOf(menuType);
+      const primary = primaryMealType(menuType);
+      const setters = {
+        Breakfast: setBreakfastMacros,
+        Lunch: setLunchMacros,
+        Dinner: setDinnerMacros,
+      };
 
-    // Recipes
-    loadFromOrderDays(order.order_days ?? []);
+      const base = {};
+      if (types.length > 0) {
+        const { data: clientRow } = await supabase
+          .schema('operations')
+          .from('clients')
+          .select(
+            `id_client,
+             lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey(protein_value,carb_value),
+             dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey(protein_value,carb_value),
+             breakfast_macro:macro_profiles!clients_breakfast_macro_profile_id_fkey(protein_value,carb_value)`
+          )
+          .eq('id_client', order.clients?.id_client ?? order.client_id)
+          .maybeSingle();
+        types.forEach((t) => {
+          const m = clientRow?.[clientMacroKey(t)];
+          base[t] =
+            t === primary
+              ? {
+                  protein_value: order.protein_snapshot ?? m?.protein_value ?? STANDARD_MACRO.protein_value,
+                  carb_value: order.carb_snapshot ?? m?.carb_value ?? STANDARD_MACRO.carb_value,
+                }
+              : m
+                ? { protein_value: m.protein_value, carb_value: m.carb_value }
+                : { ...STANDARD_MACRO };
+        });
+      } else {
+        // Pedido familiar: solo el snapshot, sin desglose por tiempo de comida.
+        base.Lunch = {
+          protein_value: order.protein_snapshot ?? '',
+          carb_value: order.carb_snapshot ?? '',
+        };
+      }
+
+      // Macros aplicados a cada detalle existente, para asignarle su tiempo de comida.
+      const orderDays = order.order_days ?? [];
+      let appliedById = {};
+      if (types.length > 1) {
+        const dayIds = orderDays.map((d) => d.id_order_day);
+        const { data: applied } = await supabase
+          .schema('operations')
+          .from('order_day_details')
+          .select('id_order_day_detail, protein_value_applied, carb_value_applied')
+          .in('order_day_id', dayIds);
+        appliedById = Object.fromEntries((applied ?? []).map((a) => [a.id_order_day_detail, a]));
+      }
+      const inferMealType = (det) => {
+        const a = appliedById[det.id_order_day_detail];
+        if (!a) return primary;
+        return (
+          types.find(
+            (t) =>
+              String(base[t]?.protein_value) === String(a.protein_value_applied) &&
+              String(base[t]?.carb_value) === String(a.carb_value_applied)
+          ) ?? primary
+        );
+      };
+
+      if (cancelled) return;
+      Object.entries(base).forEach(([t, m]) => setters[t](m));
+      loadFromOrderDays(
+        orderDays.map((od) => ({
+          ...od,
+          order_day_details: (od.order_day_details ?? []).map((det) =>
+            types.length > 0 ? { ...det, mealType: inferMealType(det) } : det
+          ),
+        }))
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [order]);
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -207,15 +289,20 @@ const EditOrder = ({ order, onSuccess }) => {
         return;
       }
 
-      const details = (dayRecipes[day] ?? []).filter((r) => r.recipe_id);
+      const details = (dayRecipes[day] ?? [])
+        .map((r, origIdx) => ({ r, origIdx }))
+        .filter(({ r }) => r.recipe_id);
       if (!details.length) continue;
 
       const { data: detData, error: detErr } = await supabase
         .schema('operations')
         .from('order_day_details')
         .insert(
-          details.map((r) => {
-            const eff = getEffectiveMacros(day, type === 'Family' ? 'Lunch' : type);
+          details.map(({ r, origIdx }) => {
+            // Cada receta usa los macros de su propio tiempo de comida.
+            const mealType =
+              extraMealTypes[`${day}-${origIdx}`] ?? r.mealType ?? primaryMealType(type);
+            const eff = getEffectiveMacros(day, mealType);
             return {
               order_day_id: dayData.id_order_day,
               recipe_id: r.recipe_id,
@@ -319,6 +406,8 @@ const EditOrder = ({ order, onSuccess }) => {
         onRemoveRecipe={removeRecipeFromDay}
         onOverrideChange={setOverride}
         onToggleDay={toggleDay}
+        extraMealTypes={extraMealTypes}
+        onExtraMealTypeChange={(key, cls) => setExtraMealTypes((p) => ({ ...p, [key]: cls }))}
       />
 
       <div className="flex justify-end pt-6">

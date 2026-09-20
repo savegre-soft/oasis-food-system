@@ -213,8 +213,13 @@ const AddOrder = ({ onSuccess }) => {
     const lm = selectedClient.lunch_macro;
     const dm = selectedClient.dinner_macro;
     const bm = selectedClient.breakfast_macro;
-    if (lm) setLunchMacros({ protein_value: lm.protein_value, carb_value: lm.carb_value });
-    if (dm) setDinnerMacros({ protein_value: dm.protein_value, carb_value: dm.carb_value });
+    // Todo tiempo de comida del pedido debe tener macros: sin perfil, arranca en estándar.
+    setLunchMacros(
+      lm ? { protein_value: lm.protein_value, carb_value: lm.carb_value } : { ...STANDARD_MACRO }
+    );
+    setDinnerMacros(
+      dm ? { protein_value: dm.protein_value, carb_value: dm.carb_value } : { ...STANDARD_MACRO }
+    );
     // El desayuno es opcional en el perfil del cliente: sin perfil, arranca en estándar.
     setBreakfastMacros(
       bm ? { protein_value: bm.protein_value, carb_value: bm.carb_value } : { ...STANDARD_MACRO }
