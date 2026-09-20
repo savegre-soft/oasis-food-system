@@ -36,7 +36,8 @@ const DeliveriesCombos = () => {
       setWeeks(list);
 
       const todayStr = toDateString(new Date());
-      let idx = list.findIndex((w) => w.status === 'open');
+      // Semana que contiene hoy; si no hay, la más reciente ya iniciada.
+      let idx = list.findIndex((w) => w.week_start_date <= todayStr && todayStr <= w.week_end_date);
       if (idx === -1) {
         idx = list.reduce((best, w, i) => (w.week_start_date <= todayStr ? i : best), -1);
       }
