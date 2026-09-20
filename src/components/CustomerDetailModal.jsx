@@ -50,7 +50,7 @@ const CustomerDetailModal = ({ customer, onClose }) => {
     ? (PLAN_TYPE[customer.plan_type] ?? PLAN_TYPE.estandar)
     : null;
   const hasMap = customer.latitude && customer.longitude;
-  const hasMacros = customer.lunch_macro || customer.dinner_macro;
+  const hasMacros = customer.lunch_macro || customer.dinner_macro || customer.breakfast_macro;
 
   // Close on Escape
   useEffect(() => {
@@ -137,6 +137,7 @@ const CustomerDetailModal = ({ customer, onClose }) => {
               </p>
               {hasMacros ? (
                 <div className="grid grid-cols-2 gap-3">
+                  <MacroPanel label="🌅 Desayuno" accent="sky" macro={customer.breakfast_macro} />
                   <MacroPanel label="☀️ Almuerzo" accent="amber" macro={customer.lunch_macro} />
                   <MacroPanel label="🌙 Cena" accent="indigo" macro={customer.dinner_macro} />
                 </div>

@@ -9,6 +9,43 @@ export const MACRO_UNIT = 'ud.';
  *  el valor estándar (alta de cliente, asistente de pedidos, express, etc.). */
 export const STANDARD_MACRO = { protein_value: 4, carb_value: 2 };
 
+/** Tiempos de comida individuales que puede tener un pedido personal.
+ *  'both' (Almuerzo + Cena) y 'Family' son clasificaciones de pedido, no tiempos
+ *  de comida: no viven aquí. Única fuente de verdad de etiquetas/emoji/color. */
+export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
+
+export const MEAL_META = {
+  Breakfast: { label: 'Desayuno', emoji: '🌅', color: 'sky' },
+  Lunch: { label: 'Almuerzo', emoji: '☀️', color: 'amber' },
+  Dinner: { label: 'Cena', emoji: '🌙', color: 'indigo' },
+};
+
+/** '🌅 Desayuno' — etiqueta con emoji de un tiempo de comida (o de 'both'/'Family'). */
+export const mealLabel = (type) =>
+  MEAL_META[type]
+    ? `${MEAL_META[type].emoji} ${MEAL_META[type].label}`
+    : type === 'both'
+      ? '☀️🌙 Almuerzo + Cena'
+      : type === 'Family'
+        ? '👨‍👩‍👧 Familiar'
+        : type;
+
+/** Tiempos de comida (y por ende plantillas/macros) que involucra un tipo de menú.
+ *  'both' = Almuerzo + Cena; 'Family' no tiene tiempos de comida individuales. */
+export const mealTypesOf = (menuType) =>
+  menuType === 'both' ? ['Lunch', 'Dinner'] : MEAL_TYPES.includes(menuType) ? [menuType] : [];
+
+/** Texto plano de una clasificación de pedido (sin emoji). */
+export const classificationLabel = (c) =>
+  MEAL_META[c]?.label ?? (c === 'both' ? 'Almuerzo + Cena' : c === 'Family' ? 'Familiar' : c);
+
+/** Emoji del tiempo de comida de un pedido; 'both' y desconocidos → ☀️ (base almuerzo). */
+export const classificationEmoji = (c) => MEAL_META[c]?.emoji ?? '☀️';
+
+/** Nombre de la columna de perfil de macros del cliente para un tiempo de comida. */
+export const clientMacroKey = (type) =>
+  type === 'Breakfast' ? 'breakfast_macro' : type === 'Dinner' ? 'dinner_macro' : 'lunch_macro';
+
 export const DAYS_ORDER = [
   'Monday',
   'Tuesday',

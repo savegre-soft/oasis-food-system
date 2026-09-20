@@ -23,7 +23,7 @@ import AddOrder from '../components/AddOrder';
 import EditOrder from '../components/EditOrder';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OrderChecklistTab from '../components/OrderChecklistTab';
-import { MACRO_UNIT } from '../components/orderUtils';
+import { MACRO_UNIT, classificationEmoji, classificationLabel } from '../components/orderUtils';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -197,15 +197,7 @@ const OrderDetailModal = ({ order, onClose, onEdit, onDelete }) => {
               Menú
             </p>
             <p className="text-sm text-slate-700 dark:text-slate-300">
-              {isFamilyClient
-                ? 'Familiar'
-                : order.classification === 'both'
-                  ? 'Almuerzo + Cena'
-                  : order.classification === 'Lunch'
-                    ? 'Almuerzo'
-                    : order.classification === 'Dinner'
-                      ? 'Cena'
-                      : order.classification}
+              {isFamilyClient ? 'Familiar' : classificationLabel(order.classification)}
             </p>
           </section>
 
@@ -243,7 +235,7 @@ const OrderDetailModal = ({ order, onClose, onEdit, onDelete }) => {
                 Macros globales
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                {order.classification === 'Dinner' ? '🌙 ' : '☀️ '}
+                {classificationEmoji(order.classification)} 
                 {order.protein_snapshot} {MACRO_UNIT} prot
                 <span className="mx-2 text-slate-300 dark:text-slate-700">|</span>
                 {order.carb_snapshot} {MACRO_UNIT} carbos
@@ -350,11 +342,7 @@ const OrderCard = ({ order, onClick, onEdit }) => {
 
               {/* Badge de Clasificación (Almuerzo/Cena) */}
               <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                {order.classification === 'Lunch'
-                  ? 'Almuerzo'
-                  : order.classification === 'Dinner'
-                    ? 'Cena'
-                    : order.classification}
+                {classificationLabel(order.classification)}
               </span>
             </div>
 

@@ -33,7 +33,7 @@ const ORDER_STATUS_COLOR = {
   CANCELLED: 'bg-red-100 text-red-600',
 };
 const CLS_LABEL = {
-  Lunch: 'Almuerzo', Dinner: 'Cena', Family: 'Familiar', both: 'Almuerzo + Cena',
+  Breakfast: 'Desayuno', Lunch: 'Almuerzo', Dinner: 'Cena', Family: 'Familiar', both: 'Almuerzo + Cena',
 };
 
 const formatDate = (dateStr) => {

@@ -12,7 +12,7 @@ import { DAYS_ORDER, DAY_LABELS, isFamily, getDateForDay } from './orderUtils';
 const EditOrder = ({ order, onSuccess }) => {
   const { supabase } = useApp();
   const isFamilyClient = isFamily(order.clients);
-  const menuType = order.classification; // 'Lunch' | 'Dinner' | 'Family'
+  const menuType = order.classification; // 'Breakfast' | 'Lunch' | 'Dinner' | 'both' | 'Family'
   const [loading, setLoading] = useState(false);
   const [allRecipes, setAllRecipes] = useState([]);
   const [allRoutes, setAllRoutes] = useState([]);
@@ -37,8 +37,12 @@ const EditOrder = ({ order, onSuccess }) => {
     setLunchMacros,
     dinnerMacros,
     setDinnerMacros,
+    breakfastMacros,
+    setBreakfastMacros,
     updateLunchMacro,
     updateDinnerMacro,
+    updateBreakfastMacro,
+    getBaseMacros,
     updateDayMacro,
     resetDayMacro,
     resetAllDayMacros,
@@ -100,17 +104,13 @@ const EditOrder = ({ order, onSuccess }) => {
   // ── Pre-fill from order ───────────────────────────────────────────────────
   useEffect(() => {
     // Macros
-    const isLunch = menuType === 'Lunch' || menuType === 'Family';
-    if (isLunch)
-      setLunchMacros({
-        protein_value: order.protein_snapshot ?? '',
-        carb_value: order.carb_snapshot ?? '',
-      });
-    else
-      setDinnerMacros({
-        protein_value: order.protein_snapshot ?? '',
-        carb_value: order.carb_snapshot ?? '',
-      });
+    const snapshot = {
+      protein_value: order.protein_snapshot ?? '',
+      carb_value: order.carb_snapshot ?? '',
+    };
+    if (menuType === 'Breakfast') setBreakfastMacros(snapshot);
+    else if (menuType === 'Dinner') setDinnerMacros(snapshot);
+    else setLunchMacros(snapshot);
 
     // Recipes
     loadFromOrderDays(order.order_days ?? []);
@@ -130,10 +130,8 @@ const EditOrder = ({ order, onSuccess }) => {
       .from('orders')
       .update({
         route_id: resolvedRoute?.id_route ?? null,
-        protein_snapshot:
-          (type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ?? null,
-        carb_snapshot:
-          (type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null,
+        protein_snapshot: getBaseMacros(type)?.protein_value ?? null,
+        carb_snapshot: getBaseMacros(type)?.carb_value ?? null,
       })
       .eq('id_order', order.id_order);
     if (orderErr) {
@@ -294,10 +292,14 @@ const EditOrder = ({ order, onSuccess }) => {
           setResolvedRoute(r);
         }}
         showRouteChange={true}
-        lunchMacros={lunchMacros}
-        dinnerMacros={dinnerMacros}
-        onUpdateLunchMacro={updateLunchMacro}
-        onUpdateDinnerMacro={updateDinnerMacro}
+        macrosByType={{ Breakfast: breakfastMacros, Lunch: lunchMacros, Dinner: dinnerMacros }}
+        onUpdateMacro={(type, field, value) =>
+          (type === 'Breakfast'
+            ? updateBreakfastMacro
+            : type === 'Dinner'
+              ? updateDinnerMacro
+              : updateLunchMacro)(field, value)
+        }
         onResetAllDayMacros={resetAllDayMacros}
         getEffectiveMacros={getEffectiveMacros}
         isDayOverridden={isDayOverridden}

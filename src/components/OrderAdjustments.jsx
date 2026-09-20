@@ -2,7 +2,22 @@ import { RefreshCw } from 'lucide-react';
 import MacroPanel from './MacroPanel';
 import RouteSelector from './RouteSelector';
 import DayRecipeBlock from './DayRecipeBlock';
-import { DAYS_ORDER, MACRO_UNIT, STANDARD_MACRO } from './orderUtils';
+import { DAYS_ORDER, MACRO_UNIT, MEAL_META, STANDARD_MACRO, mealLabel, mealTypesOf } from './orderUtils';
+
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const STANDARD_ACTIVE = {
+  Breakfast: 'bg-sky-500 text-white border-sky-500',
+  Lunch: 'bg-amber-500 text-white border-amber-500',
+  Dinner: 'bg-indigo-500 text-white border-indigo-500',
+};
+const STANDARD_IDLE = {
+  Breakfast:
+    'border-sky-200 dark:border-sky-800/50 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/30',
+  Lunch:
+    'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30',
+  Dinner:
+    'border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
+};
 
 // Helper: are the current macros equal to standard values?
 const isStandard = (m) =>
@@ -15,7 +30,7 @@ const isStandard = (m) =>
 const OrderAdjustments = ({
   // Client / menu context
   isFamilyClient,
-  menuType, // 'Lunch' | 'Dinner' | 'both' | 'Family'
+  menuType, // 'Breakfast' | 'Lunch' | 'Dinner' | 'both' | 'Family'
 
   // Route
   resolvedRoute,
@@ -24,10 +39,8 @@ const OrderAdjustments = ({
   showRouteChange = true,
 
   // Base macros
-  lunchMacros,
-  dinnerMacros,
-  onUpdateLunchMacro,
-  onUpdateDinnerMacro,
+  macrosByType, // { Breakfast, Lunch, Dinner } — macros base de cada tiempo de comida
+  onUpdateMacro, // (type, field, value) => void
   onResetAllDayMacros,
   getEffectiveMacros,
   isDayOverridden,
@@ -47,12 +60,9 @@ const OrderAdjustments = ({
   onToggleDay,
 
   // Macro quick-set helpers
-  clientLunchMacro, // raw macro profile from client (for "Del cliente" button)
-  clientDinnerMacro,
-  onApplyStandardLunch, // () => void  — set lunch macros to 120/120
-  onApplyStandardDinner,
-  onApplyClientLunch, // () => void  — restore client profile macros
-  onApplyClientDinner,
+  clientMacros, // { Breakfast, Lunch, Dinner } — perfiles crudos del cliente (botón "Del cliente")
+  onApplyStandard, // (type) => void — macros estándar
+  onApplyClient, // (type) => void — restaurar macros del perfil del cliente
 
   // Extras (AddOrder-specific)
   extraMealTypes = {},
@@ -65,6 +75,8 @@ const OrderAdjustments = ({
   showIngredientEditor = true,
   hideMacroEditor = false,
 }) => {
+  const macroTypes = mealTypesOf(menuType).filter((t) => macrosByType?.[t]);
+
   return (
     <div className="space-y-5">
       {/* Route */}
@@ -98,7 +110,7 @@ const OrderAdjustments = ({
       )}
 
       {/* Base macros */}
-      {!hideMacroEditor && !isFamilyClient && (lunchMacros || dinnerMacros) && (
+      {!hideMacroEditor && !isFamilyClient && macroTypes.length > 0 && (
         <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
@@ -117,89 +129,50 @@ const OrderAdjustments = ({
           </div>
 
           {/* Quick-set macro buttons per column */}
-          <div className={`grid gap-3 ${menuType === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {/* Lunch quick-set */}
-            {lunchMacros && (menuType === 'Lunch' || menuType === 'both') && (
-              <div className="space-y-2">
-                <div className="flex gap-1.5 flex-wrap">
-                  {clientLunchMacro && onApplyClientLunch && (
-                    <button
-                      type="button"
-                      onClick={onApplyClientLunch}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
-                        !isStandard(lunchMacros) &&
-                        String(lunchMacros?.protein_value) === String(clientLunchMacro.protein_value) &&
-                        String(lunchMacros?.carb_value) === String(clientLunchMacro.carb_value)
-                          ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
-                      }`}
-                    >
-                      👤 Del cliente
-                    </button>
-                  )}
-                  {onApplyStandardLunch && (
-                    <button
-                      type="button"
-                      onClick={onApplyStandardLunch}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
-                        isStandard(lunchMacros)
-                          ? 'bg-amber-500 text-white border-amber-500'
-                          : 'border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-                      }`}
-                    >
-                      ⭐ Estándar ({STANDARD_MACRO.protein_value}/{STANDARD_MACRO.carb_value} {MACRO_UNIT})
-                    </button>
-                  )}
+          <div className={`grid gap-3 ${macroTypes.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {macroTypes.map((type) => {
+              const macros = macrosByType[type];
+              const clientMacro = clientMacros?.[type];
+              return (
+                <div key={type} className="space-y-2">
+                  <div className="flex gap-1.5 flex-wrap">
+                    {clientMacro && onApplyClient && (
+                      <button
+                        type="button"
+                        onClick={() => onApplyClient(type)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                          !isStandard(macros) &&
+                          String(macros?.protein_value) === String(clientMacro.protein_value) &&
+                          String(macros?.carb_value) === String(clientMacro.carb_value)
+                            ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
+                            : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
+                        }`}
+                      >
+                        👤 Del cliente
+                      </button>
+                    )}
+                    {onApplyStandard && (
+                      <button
+                        type="button"
+                        onClick={() => onApplyStandard(type)}
+                        className={`text-xs px-2.5 py-1 rounded-lg border transition ${
+                          isStandard(macros) ? STANDARD_ACTIVE[type] : STANDARD_IDLE[type]
+                        }`}
+                      >
+                        ⭐ Estándar ({STANDARD_MACRO.protein_value}/{STANDARD_MACRO.carb_value}{' '}
+                        {MACRO_UNIT})
+                      </button>
+                    )}
+                  </div>
+                  <MacroPanel
+                    label={mealLabel(type)}
+                    colorClass={MEAL_META[type].color}
+                    macros={macros}
+                    onUpdate={(field, value) => onUpdateMacro(type, field, value)}
+                  />
                 </div>
-                <MacroPanel
-                  label="☀️ Almuerzo"
-                  colorClass="amber"
-                  macros={lunchMacros}
-                  onUpdate={onUpdateLunchMacro}
-                />
-              </div>
-            )}
-            {/* Dinner quick-set */}
-            {dinnerMacros && (menuType === 'Dinner' || menuType === 'both') && (
-              <div className="space-y-2">
-                <div className="flex gap-1.5 flex-wrap">
-                  {clientDinnerMacro && onApplyClientDinner && (
-                    <button
-                      type="button"
-                      onClick={onApplyClientDinner}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
-                        !isStandard(dinnerMacros) &&
-                        String(dinnerMacros?.protein_value) === String(clientDinnerMacro.protein_value) &&
-                        String(dinnerMacros?.carb_value) === String(clientDinnerMacro.carb_value)
-                          ? 'bg-green-800 dark:bg-green-600 text-white border-green-800 dark:border-green-600'
-                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-500'
-                      }`}
-                    >
-                      👤 Del cliente
-                    </button>
-                  )}
-                  {onApplyStandardDinner && (
-                    <button
-                      type="button"
-                      onClick={onApplyStandardDinner}
-                      className={`text-xs px-2.5 py-1 rounded-lg border transition ${
-                        isStandard(dinnerMacros)
-                          ? 'bg-indigo-500 text-white border-indigo-500'
-                          : 'border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'
-                      }`}
-                    >
-                      ⭐ Estándar ({STANDARD_MACRO.protein_value}/{STANDARD_MACRO.carb_value} {MACRO_UNIT})
-                    </button>
-                  )}
-                </div>
-                <MacroPanel
-                  label="🌙 Cena"
-                  colorClass="indigo"
-                  macros={dinnerMacros}
-                  onUpdate={onUpdateDinnerMacro}
-                />
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
       )}

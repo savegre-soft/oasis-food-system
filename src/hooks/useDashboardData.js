@@ -247,7 +247,7 @@ export const useDashboardData = () => {
           dateMap[d.toISOString().split('T')[0]] = 0;
         }
 
-        const classCounts = { Lunch: 0, Dinner: 0, Family: 0 };
+        const classCounts = { Breakfast: 0, Lunch: 0, Dinner: 0, Family: 0 };
         const recipeCounts = {};
         const activeIds = new Set();
 
@@ -294,6 +294,7 @@ export const useDashboardData = () => {
         );
 
         setClassificationDist([
+          { name: 'Desayuno', value: classCounts.Breakfast },
           { name: 'Almuerzo', value: classCounts.Lunch },
           { name: 'Cena', value: classCounts.Dinner },
           { name: 'Familiar', value: classCounts.Family },

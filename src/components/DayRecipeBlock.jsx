@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import MacroPanel from './MacroPanel';
 import RecipeIngredientEditor from './RecipeIngredientEditor';
-import { DAY_LABELS } from './orderUtils';
+import { DAY_LABELS, MEAL_META, mealLabel, mealTypesOf } from './orderUtils';
 
 // A collapsible day block: recipe list + per-day macro overrides
 const DayRecipeBlock = ({
@@ -10,7 +10,7 @@ const DayRecipeBlock = ({
   allRecipes = [],
   isExpanded = false,
   onToggle,
-  menuType, // 'Lunch' | 'Dinner' | 'Family'
+  menuType, // 'Breakfast' | 'Lunch' | 'Dinner' | 'both' | 'Family'
   isFamilyClient,
   // recipe editing
   onAddRecipe,
@@ -34,8 +34,7 @@ const DayRecipeBlock = ({
   hideMacroEditor = false,
 }) => {
   const hasRecipes = recipes.some((r) => r.recipe_id);
-  const macroClasses =
-    menuType === 'both' ? ['Lunch', 'Dinner'] : menuType === 'Family' ? [] : [menuType];
+  const macroClasses = mealTypesOf(menuType);
 
   return (
     <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
@@ -200,8 +199,8 @@ const DayRecipeBlock = ({
                 {macroClasses.map((cls) => (
                   <MacroPanel
                     key={cls}
-                    label={cls === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
-                    colorClass={cls === 'Lunch' ? 'amber' : 'indigo'}
+                    label={mealLabel(cls)}
+                    colorClass={MEAL_META[cls].color}
                     macros={getEffectiveMacros(day, cls)}
                     overridden={isDayOverridden?.(day, cls)}
                     onUpdate={(field, value) => onUpdateDayMacro(day, cls, field, value)}

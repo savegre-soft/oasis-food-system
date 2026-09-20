@@ -1,4 +1,4 @@
-import { MACRO_UNIT } from './orderUtils';
+import { MACRO_UNIT, mealLabel } from './orderUtils';
 
 const STATUS_STYLES = {
   PENDING: { label: 'Pendiente', className: 'bg-yellow-50 text-yellow-700' },
@@ -38,11 +38,7 @@ const OrderCard = ({ order }) => {
               {st.label}
             </span>
             <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              {order.classification === 'Lunch'
-                ? '☀️ Almuerzo'
-                : order.classification === 'Dinner'
-                  ? '🌙 Cena'
-                  : order.classification}
+              {mealLabel(order.classification)}
             </span>
           </div>
 

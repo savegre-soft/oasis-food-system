@@ -25,6 +25,12 @@ const groupByClient = (orderDays) => {
 // ── Classification badge ──────────────────────────────────────────────────────
 
 const ClassificationBadge = ({ classification }) => {
+  if (classification === 'Breakfast')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400">
+        🌅 Desayuno
+      </span>
+    );
   if (classification === 'Lunch')
     return (
       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
-import { MACRO_UNIT } from '../orderUtils';
+import { MACRO_UNIT, mealLabel } from '../orderUtils';
 
 const STATUS_CONFIG = {
   PENDING: {
@@ -43,19 +43,16 @@ const DAY_LABELS = {
 const OrderBlock = ({ order }) => {
   const [open, setOpen] = useState(false);
 
-  const classLabel =
-    order.classification === 'Lunch'
-      ? '☀️ Almuerzo'
-      : order.classification === 'Dinner'
-        ? '🌙 Cena'
-        : '👨‍👩‍👧 Familiar';
+  const classLabel = mealLabel(order.classification);
 
   const classBg =
-    order.classification === 'Lunch'
-      ? 'bg-amber-50 text-amber-700'
-      : order.classification === 'Dinner'
-        ? 'bg-indigo-50 text-indigo-700'
-        : 'bg-purple-50 text-purple-700';
+    order.classification === 'Breakfast'
+      ? 'bg-sky-50 text-sky-700'
+      : order.classification === 'Lunch'
+        ? 'bg-amber-50 text-amber-700'
+        : order.classification === 'Dinner'
+          ? 'bg-indigo-50 text-indigo-700'
+          : 'bg-purple-50 text-purple-700';
 
   const days = (order.order_days ?? []).sort(
     (a, b) => new Date(a.delivery_date) - new Date(b.delivery_date)

@@ -11,6 +11,10 @@ import {
   DAYS_ORDER,
   DAY_LABELS,
   MACRO_UNIT,
+  MEAL_TYPES,
+  clientMacroKey,
+  mealLabel,
+  mealTypesOf,
   getWeekRange,
   getDateForDay,
   toDateString,
@@ -48,10 +52,18 @@ const buildDayRecipesFromTemplates = (resolvedTemplates, classification) => {
       });
     });
   };
-  if (classification === 'Lunch' || classification === 'both') addTemplate(resolvedTemplates?.Lunch);
-  if (classification === 'Dinner' || classification === 'both') addTemplate(resolvedTemplates?.Dinner);
+  mealTypesOf(classification).forEach((type) => addTemplate(resolvedTemplates?.[type]));
   return recipes;
 };
+
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const CARD_STYLES = {
+  Breakfast: { card: 'bg-sky-50 dark:bg-sky-900/20', label: 'text-sky-600 dark:text-sky-400' },
+  Lunch: { card: 'bg-amber-50 dark:bg-amber-900/20', label: 'text-amber-600 dark:text-amber-400' },
+  Dinner: { card: 'bg-indigo-50 dark:bg-indigo-900/20', label: 'text-indigo-600 dark:text-indigo-400' },
+};
+const PICKER_BUTTON =
+  'px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition';
 
 const CustomerPortal = () => {
   const { token } = useParams();
@@ -106,6 +118,7 @@ const CustomerPortal = () => {
 
     macros.setLunchMacros(clientData.lunch_macro ?? null);
     macros.setDinnerMacros(clientData.dinner_macro ?? null);
+    macros.setBreakfastMacros(clientData.breakfast_macro ?? null);
 
     const isFamilyClient = clientData.client_type === 'family';
     let resolvedClassification = null;
@@ -113,10 +126,10 @@ const CustomerPortal = () => {
       resolvedClassification = 'Family';
     } else if (orderData?.exists) {
       resolvedClassification = orderData.classification;
-    } else if (clientData.lunch_macro && !clientData.dinner_macro) {
-      resolvedClassification = 'Lunch';
-    } else if (clientData.dinner_macro && !clientData.lunch_macro) {
-      resolvedClassification = 'Dinner';
+    } else {
+      // Un solo tiempo de comida con perfil de macros → se asume; con varios el cliente elige.
+      const available = MEAL_TYPES.filter((t) => clientData[clientMacroKey(t)]);
+      if (available.length === 1) resolvedClassification = available[0];
     }
     setClassification(resolvedClassification); // null → el cliente elige (picker)
 
@@ -151,6 +164,11 @@ const CustomerPortal = () => {
   };
 
   const isFamilyClient = client?.client_type === 'family';
+  const macrosByType = {
+    Breakfast: macros.breakfastMacros,
+    Lunch: macros.lunchMacros,
+    Dinner: macros.dinnerMacros,
+  };
 
   const resolvedRoute = client?.route
     ? {
@@ -276,24 +294,18 @@ const CustomerPortal = () => {
               ))}
             </div>
           </div>
-          {!isFamilyClient && client.lunch_macro && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
-              <p className="text-xs text-amber-600 dark:text-amber-400 uppercase font-medium mb-1">☀️ Almuerzo</p>
-              <p className="font-medium text-slate-800 dark:text-slate-200">
-                {client.lunch_macro.protein_value} {MACRO_UNIT} prot · {client.lunch_macro.carb_value}{' '}
-                {MACRO_UNIT} carbos
-              </p>
-            </div>
-          )}
-          {!isFamilyClient && client.dinner_macro && (
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3">
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase font-medium mb-1">🌙 Cena</p>
-              <p className="font-medium text-slate-800 dark:text-slate-200">
-                {client.dinner_macro.protein_value} {MACRO_UNIT} prot · {client.dinner_macro.carb_value}{' '}
-                {MACRO_UNIT} carbos
-              </p>
-            </div>
-          )}
+          {!isFamilyClient &&
+            MEAL_TYPES.filter((t) => client[clientMacroKey(t)]).map((type) => (
+              <div key={type} className={`${CARD_STYLES[type].card} rounded-xl p-3`}>
+                <p className={`text-xs ${CARD_STYLES[type].label} uppercase font-medium mb-1`}>
+                  {mealLabel(type)}
+                </p>
+                <p className="font-medium text-slate-800 dark:text-slate-200">
+                  {client[clientMacroKey(type)].protein_value} {MACRO_UNIT} prot ·{' '}
+                  {client[clientMacroKey(type)].carb_value} {MACRO_UNIT} carbos
+                </p>
+              </div>
+            ))}
         </div>
       </div>
 
@@ -304,28 +316,21 @@ const CustomerPortal = () => {
             ¿Qué querés armar esta semana?
           </h2>
           <div className="flex gap-2 flex-wrap">
-            {client.lunch_macro && (
+            {MEAL_TYPES.filter((t) => client[clientMacroKey(t)]).map((type) => (
               <button
-                onClick={() => chooseClassification('Lunch')}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
+                key={type}
+                onClick={() => chooseClassification(type)}
+                className={PICKER_BUTTON}
               >
-                ☀️ Solo almuerzo
+                {mealLabel(type)}
               </button>
-            )}
-            {client.dinner_macro && (
-              <button
-                onClick={() => chooseClassification('Dinner')}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
-              >
-                🌙 Solo cena
-              </button>
-            )}
+            ))}
             {client.lunch_macro && client.dinner_macro && (
               <button
                 onClick={() => chooseClassification('both')}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition"
+                className={PICKER_BUTTON}
               >
-                ☀️🌙 Ambos
+                ☀️🌙 Almuerzo + Cena
               </button>
             )}
           </div>
@@ -350,8 +355,7 @@ const CustomerPortal = () => {
             resolvedRoute={resolvedRoute}
             allRoutes={[]}
             showRouteChange={false}
-            lunchMacros={macros.lunchMacros}
-            dinnerMacros={macros.dinnerMacros}
+            macrosByType={macrosByType}
             getEffectiveMacros={macros.getEffectiveMacros}
             isDayOverridden={macros.isDayOverridden}
             onUpdateDayMacro={macros.updateDayMacro}
@@ -396,8 +400,7 @@ const CustomerPortal = () => {
           classification={classification}
           isFamilyClient={isFamilyClient}
           resolvedRoute={resolvedRoute}
-          lunchMacros={macros.lunchMacros}
-          dinnerMacros={macros.dinnerMacros}
+          macrosByType={macrosByType}
           dayRecipes={dayRecipesState.dayRecipes}
           weekStart={currentOrder?.week_start_date}
           weekEnd={currentOrder?.week_end_date}
