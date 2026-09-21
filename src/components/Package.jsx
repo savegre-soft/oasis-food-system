@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { mealLabel, mealTypesOf } from './orderUtils';
 import { Truck, Archive, CheckCircle, Package, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ── Ingredient helpers ────────────────────────────────────────────────────────
@@ -176,6 +177,12 @@ const groupByOrder = (allDays) => {
 // ── Classification badge ──────────────────────────────────────────────────────
 
 const ClassificationBadge = ({ classification }) => {
+  if (classification === 'Breakfast')
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400">
+        🌅 Desayuno
+      </span>
+    );
   if (classification === 'Lunch')
     return (
       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
@@ -188,10 +195,10 @@ const ClassificationBadge = ({ classification }) => {
         🌙 Cena
       </span>
     );
-  if (classification === 'both')
+  if (mealTypesOf(classification).length > 1)
     return (
       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
-        ☀️🌙 Ambos
+        {mealLabel(classification)}
       </span>
     );
   return (

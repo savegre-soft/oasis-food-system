@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { X, Printer, Package, UtensilsCrossed } from 'lucide-react';
-import { COMBO_CATEGORY_LABEL, aggregateComboSelections, groupByCategory, formatComboQuantity } from '../comboUtils';
+import {
+  COMBO_CATEGORY_LABEL,
+  aggregateComboSelections,
+  groupByCategory,
+  formatComboQuantity,
+  isGramCategory,
+} from '../comboUtils';
 
 const PRINT_STYLES = `
 @media print {
@@ -35,7 +41,12 @@ const ComboPrintReport = ({ orders, weekLabel, onClose }) => {
   const aggregated = aggregateComboSelections(activeOrders);
   const groups = groupByCategory(aggregated);
   const totalOrders = activeOrders.length;
-  const totalItems = aggregated.reduce((sum, r) => sum + r.count, 0);
+  // Solo categorías por unidad: arroz y proteína se miden en gramos (ya van
+  // desglosados en la tabla), sumar sus "count" con los de acompañamientos y
+  // extras daba un total sin significado.
+  const totalItems = aggregated
+    .filter((r) => !isGramCategory(r.category))
+    .reduce((sum, r) => sum + r.count, 0);
 
   const today = new Date().toLocaleDateString('es-CR', {
     weekday: 'long',
@@ -117,7 +128,7 @@ const ComboPrintReport = ({ orders, weekLabel, onClose }) => {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <SummaryCard label="Pedidos" value={totalOrders} icon={<Package size={16} className="text-slate-400" />} />
-                <SummaryCard label="Ítems totales" value={totalItems} icon={<UtensilsCrossed size={16} className="text-slate-400" />} />
+                <SummaryCard label="Ítems (unidades)" value={totalItems} icon={<UtensilsCrossed size={16} className="text-slate-400" />} />
               </div>
 
               {groups.map((group) => (
@@ -129,7 +140,7 @@ const ComboPrintReport = ({ orders, weekLabel, onClose }) => {
                     <table className="w-full text-sm">
                       <tbody className="divide-y divide-slate-50">
                         {group.items.map((row, idx) => (
-                          <tr key={row.name} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}>
+                          <tr key={`${row.category}-${row.name}`} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}>
                             <td className="px-4 py-3 font-medium text-slate-700">{row.name}</td>
                             <td className="px-4 py-3 text-right font-bold text-slate-800">
                               {formatComboQuantity(row.category, row.count, row.portion_size_g)}
@@ -194,7 +205,7 @@ function buildPrintHTML({ groups, totalOrders, totalItems, weekLabel, today }) {
         <p style="font-size:22px;font-weight:800;color:#0f172a;margin:0;">${totalOrders}</p>
       </div>
       <div style="flex:1;border:1px solid #e2e8f0;background:#f8fafc;border-radius:8px;padding:10px 14px;">
-        <p style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Ítems totales</p>
+        <p style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Ítems (unidades)</p>
         <p style="font-size:22px;font-weight:800;color:#0f172a;margin:0;">${totalItems}</p>
       </div>
     </div>

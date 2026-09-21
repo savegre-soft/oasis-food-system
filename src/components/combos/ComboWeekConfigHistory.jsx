@@ -68,14 +68,25 @@ const ComboWeekConfigHistory = ({ onApplied }) => {
       const { data: openWeek, error: openError } = await supabase
         .schema('operations')
         .from('combo_weeks')
-        .select('id_combo_week')
+        .select('id_combo_week, week_end_date')
         .eq('status', 'open')
         .order('id_combo_week', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (openError) throw openError;
 
+      // Una semana abierta cuyo rango ya terminó se cierra: reutilizarla
+      // mezclaría los pedidos de la semana nueva con los anteriores.
       let targetWeekId = openWeek?.id_combo_week;
+      if (targetWeekId && openWeek.week_end_date < toDateString(new Date())) {
+        const { error: closeError } = await supabase
+          .schema('operations')
+          .from('combo_weeks')
+          .update({ status: 'closed' })
+          .eq('id_combo_week', targetWeekId);
+        if (closeError) throw closeError;
+        targetWeekId = null;
+      }
       if (!targetWeekId) {
         const today = new Date();
         const inSevenDays = new Date(today);

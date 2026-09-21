@@ -1,7 +1,14 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import MacroPanel from './MacroPanel';
 import RecipeIngredientEditor from './RecipeIngredientEditor';
-import { DAY_LABELS } from './orderUtils';
+import { DAY_LABELS, MEAL_META, mealLabel, mealTypesOf } from './orderUtils';
+
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const EXTRA_ACTIVE = {
+  Breakfast: 'bg-sky-400 text-white',
+  Lunch: 'bg-amber-400 text-white',
+  Dinner: 'bg-indigo-500 text-white',
+};
 
 // A collapsible day block: recipe list + per-day macro overrides
 const DayRecipeBlock = ({
@@ -10,7 +17,7 @@ const DayRecipeBlock = ({
   allRecipes = [],
   isExpanded = false,
   onToggle,
-  menuType, // 'Lunch' | 'Dinner' | 'Family'
+  menuType, // 'Breakfast' | 'Lunch' | 'Dinner' | 'both' | 'Family'
   isFamilyClient,
   // recipe editing
   onAddRecipe,
@@ -34,8 +41,7 @@ const DayRecipeBlock = ({
   hideMacroEditor = false,
 }) => {
   const hasRecipes = recipes.some((r) => r.recipe_id);
-  const macroClasses =
-    menuType === 'both' ? ['Lunch', 'Dinner'] : menuType === 'Family' ? [] : [menuType];
+  const macroClasses = mealTypesOf(menuType);
 
   return (
     <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
@@ -110,17 +116,16 @@ const DayRecipeBlock = ({
                     </span>
                   )}
 
-                  {/* Lunch/Dinner toggle — en pedidos 'both' toda receta (de plantilla
-                      o agregada a mano) necesita saber a cuál tiempo de comida
-                      pertenece; antes solo se mostraba para "extras", dejando las
-                      recetas base sin forma de distinguirse en Producción. */}
+                  {/* Toggle de tiempo de comida — con más de un tiempo en el pedido, toda receta
+                      (de plantilla o agregada a mano) necesita saber a cuál pertenece para
+                      aplicar sus macros y distinguirse en Producción. */}
                   {!readOnly &&
                     !isFamilyClient &&
-                    menuType === 'both' &&
+                    macroClasses.length > 1 &&
                     onExtraMealTypeChange && (
                       <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 text-xs font-medium">
-                        {['Lunch', 'Dinner'].map((cls) => {
-                          const current = extraMealTypes[`${day}-${index}`] ?? 'Lunch';
+                        {macroClasses.map((cls) => {
+                          const current = extraMealTypes[`${day}-${index}`] ?? macroClasses[0];
                           return (
                             <button
                               key={cls}
@@ -128,13 +133,11 @@ const DayRecipeBlock = ({
                               onClick={() => onExtraMealTypeChange(`${day}-${index}`, cls)}
                               className={`px-2 py-1.5 transition ${
                                 current === cls
-                                  ? cls === 'Lunch'
-                                    ? 'bg-amber-400 text-white'
-                                    : 'bg-indigo-500 text-white'
+                                  ? EXTRA_ACTIVE[cls]
                                   : 'bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
                               }`}
                             >
-                              {cls === 'Lunch' ? '☀️' : '🌙'}
+                              {MEAL_META[cls].emoji}
                             </button>
                           );
                         })}
@@ -202,8 +205,8 @@ const DayRecipeBlock = ({
                 {macroClasses.map((cls) => (
                   <MacroPanel
                     key={cls}
-                    label={cls === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
-                    colorClass={cls === 'Lunch' ? 'amber' : 'indigo'}
+                    label={mealLabel(cls)}
+                    colorClass={MEAL_META[cls].color}
                     macros={getEffectiveMacros(day, cls)}
                     overridden={isDayOverridden?.(day, cls)}
                     onUpdate={(field, value) => onUpdateDayMacro(day, cls, field, value)}

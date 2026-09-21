@@ -44,6 +44,9 @@ const Customer = () => {
         ),
         dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
           id_macro_profile, name, protein_value, carb_value
+        ),
+        breakfast_macro:macro_profiles!clients_breakfast_macro_profile_id_fkey (
+          id_macro_profile, name, protein_value, carb_value
         )
       `
       )
@@ -96,7 +99,7 @@ const Customer = () => {
     ? (PLAN_TYPE[customer.plan_type] ?? PLAN_TYPE.estandar)
     : null;
   const hasMap = customer.latitude && customer.longitude;
-  const hasMacros = customer.lunch_macro || customer.dinner_macro;
+  const hasMacros = customer.lunch_macro || customer.dinner_macro || customer.breakfast_macro;
 
   return (
     <AuthRoles rolesNames={['Administrador', 'Clientes']}>
@@ -186,6 +189,7 @@ const Customer = () => {
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Perfiles Nutricionales</p>
             {hasMacros ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MacroPanel label="🌅 Desayuno" accent="sky" macro={customer.breakfast_macro} />
                 <MacroPanel label="☀️ Almuerzo" accent="amber" macro={customer.lunch_macro} />
                 <MacroPanel label="🌙 Cena" accent="indigo" macro={customer.dinner_macro} />
               </div>

@@ -16,6 +16,7 @@ export default function CustomerTable({ customers, onSelected }) {
             <tr>
               <th className="px-6 py-4 text-left font-semibold">Cliente</th>
               <th className="px-6 py-4 text-left font-semibold">Tipo</th>
+              <th className="px-6 py-4 text-left font-semibold">Macro Desayuno</th>
               <th className="px-6 py-4 text-left font-semibold">Macro Almuerzo</th>
               <th className="px-6 py-4 text-left font-semibold">Macro Cena</th>
               <th className="px-6 py-4 text-right font-semibold">Acción</th>
@@ -44,6 +45,22 @@ export default function CustomerTable({ customers, onSelected }) {
                   >
                     {c.client_type}
                   </span>
+                </td>
+
+                {/* Macro Breakfast */}
+                <td className="px-6 py-4">
+                  {c.breakfast_macro ? (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2 py-0.5 bg-red-50 text-red-700 text-xs rounded-full font-medium">
+                        {c.breakfast_macro.protein_value} {MACRO_UNIT} prot
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full font-medium">
+                        {c.breakfast_macro.carb_value} {MACRO_UNIT} carb
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
                 </td>
 
                 {/* Macro Lunch */}

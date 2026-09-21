@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { mealTypesOf } from '../components/orderUtils';
 
 /**
  * @typedef {Object} DateRange
@@ -247,7 +248,7 @@ export const useDashboardData = () => {
           dateMap[d.toISOString().split('T')[0]] = 0;
         }
 
-        const classCounts = { Lunch: 0, Dinner: 0, Family: 0 };
+        const classCounts = { Breakfast: 0, Lunch: 0, Dinner: 0, Combined: 0, Family: 0 };
         const recipeCounts = {};
         const activeIds = new Set();
 
@@ -264,6 +265,8 @@ export const useDashboardData = () => {
 
           if (cls && cls in classCounts) {
             classCounts[cls]++;
+          } else if (mealTypesOf(cls).length > 1) {
+            classCounts.Combined++;
           }
 
           if (order?.route_id == null) express++;
@@ -294,8 +297,10 @@ export const useDashboardData = () => {
         );
 
         setClassificationDist([
+          { name: 'Desayuno', value: classCounts.Breakfast },
           { name: 'Almuerzo', value: classCounts.Lunch },
           { name: 'Cena', value: classCounts.Dinner },
+          { name: 'Combinado', value: classCounts.Combined },
           { name: 'Familiar', value: classCounts.Family },
         ]);
 

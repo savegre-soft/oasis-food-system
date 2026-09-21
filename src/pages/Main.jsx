@@ -36,7 +36,7 @@ L.Icon.Default.mergeOptions({
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 
-const CLASS_COLORS  = ['#f59e0b', '#6366f1', '#a855f7'];
+const CLASS_COLORS  = ['#0ea5e9', '#f59e0b', '#6366f1', '#14b8a6', '#a855f7'];
 const TYPE_COLORS   = ['#3b82f6', '#f97316'];
 const CLIENT_COLORS = ['#10b981', '#94a3b8'];
 

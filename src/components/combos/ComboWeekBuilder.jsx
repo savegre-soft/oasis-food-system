@@ -114,8 +114,26 @@ const ComboWeekBuilder = ({ comboWeek, onSuccess }) => {
     }
     setLoading(true);
 
+    // Si las fechas nuevas caen después del fin de la semana existente, es una
+    // semana distinta: se cierra la anterior y se crea una nueva. Editar la
+    // misma fila acumulaba todos los pedidos históricos bajo un solo combo_week.
+    const isNewWeek = isEdit && weekStart > comboWeek.week_end_date;
+    if (isNewWeek) {
+      const { error: closeError } = await supabase
+        .schema('operations')
+        .from('combo_weeks')
+        .update({ status: 'closed' })
+        .eq('id_combo_week', comboWeek.id_combo_week);
+      if (closeError) {
+        sileo.error('Error al cerrar la semana anterior');
+        console.error(closeError);
+        setLoading(false);
+        return;
+      }
+    }
+
     let weekId;
-    if (isEdit) {
+    if (isEdit && !isNewWeek) {
       const { error: weekError } = await supabase
         .schema('operations')
         .from('combo_weeks')

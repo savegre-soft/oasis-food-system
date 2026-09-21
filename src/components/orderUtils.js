@@ -9,6 +9,77 @@ export const MACRO_UNIT = 'ud.';
  *  el valor estándar (alta de cliente, asistente de pedidos, express, etc.). */
 export const STANDARD_MACRO = { protein_value: 4, carb_value: 2 };
 
+/** Tiempos de comida individuales que puede tener un pedido personal. Un pedido
+ *  puede incluir 1, 2 o los 3. Única fuente de verdad de etiquetas/emoji/color. */
+export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
+
+export const MEAL_META = {
+  Breakfast: { label: 'Desayuno', emoji: '🌅', color: 'sky' },
+  Lunch: { label: 'Almuerzo', emoji: '☀️', color: 'amber' },
+  Dinner: { label: 'Cena', emoji: '🌙', color: 'indigo' },
+};
+
+/** Tiempos de comida (y por ende plantillas/macros) que involucra una clasificación.
+ *  Codificación de `orders.classification`: un tiempo → 'Breakfast'|'Lunch'|'Dinner';
+ *  Almuerzo + Cena → 'both' (legado, se conserva); cualquier otra combinación →
+ *  tiempos en orden canónico unidos por '+' (ej. 'Breakfast+Lunch').
+ *  'Family' no tiene tiempos de comida individuales. */
+export const mealTypesOf = (classification) => {
+  if (!classification) return [];
+  if (classification === 'both') return ['Lunch', 'Dinner'];
+  return MEAL_TYPES.filter((t) => classification.split('+').includes(t));
+};
+
+/** Inverso de mealTypesOf: lista de tiempos de comida → clasificación (null si vacía). */
+export const classificationOf = (types) => {
+  const ordered = MEAL_TYPES.filter((t) => types.includes(t));
+  if (ordered.length === 0) return null;
+  if (ordered.length === 2 && ordered[0] === 'Lunch') return 'both';
+  return ordered.join('+');
+};
+
+/** Primer tiempo de comida de una clasificación (define el snapshot de macros del pedido). */
+export const primaryMealType = (classification) => mealTypesOf(classification)[0] ?? 'Lunch';
+
+/** '🌅 Desayuno' / '☀️🌙 Almuerzo + Cena' — etiqueta con emoji de una clasificación. */
+export const mealLabel = (classification) => {
+  const types = mealTypesOf(classification);
+  if (types.length === 1) return `${MEAL_META[types[0]].emoji} ${MEAL_META[types[0]].label}`;
+  if (types.length > 1)
+    return `${types.map((t) => MEAL_META[t].emoji).join('')} ${types.map((t) => MEAL_META[t].label).join(' + ')}`;
+  return classification === 'Family' ? '👨‍👩‍👧 Familiar' : classification;
+};
+
+/** Texto plano de una clasificación de pedido (sin emoji). */
+export const classificationLabel = (c) => {
+  const types = mealTypesOf(c);
+  if (types.length) return types.map((t) => MEAL_META[t].label).join(' + ');
+  return c === 'Family' ? 'Familiar' : c;
+};
+
+/** Clases Tailwind del badge de una clasificación (con dark mode). Un tiempo usa su
+ *  color; combinaciones → teal; familiar → púrpura. Clases completas para Tailwind. */
+export const classificationBadge = (c) => {
+  const types = mealTypesOf(c);
+  if (types.length === 1) {
+    return {
+      Breakfast: 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+      Lunch: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+      Dinner: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
+    }[types[0]];
+  }
+  if (types.length > 1) return 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400';
+  if (c === 'Family') return 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400';
+  return 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400';
+};
+
+/** Emoji del tiempo de comida principal de un pedido. */
+export const classificationEmoji = (c) => MEAL_META[primaryMealType(c)]?.emoji ?? '☀️';
+
+/** Nombre de la columna de perfil de macros del cliente para un tiempo de comida. */
+export const clientMacroKey = (type) =>
+  type === 'Breakfast' ? 'breakfast_macro' : type === 'Dinner' ? 'dinner_macro' : 'lunch_macro';
+
 export const DAYS_ORDER = [
   'Monday',
   'Tuesday',

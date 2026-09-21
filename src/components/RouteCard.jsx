@@ -12,7 +12,7 @@ const DAY_LABELS = {
 
 const ROUTE_TYPE_LABELS = {
   complete: { label: 'Almuerzo + Cena', className: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' },
-  individual: { label: 'Solo Almuerzo o Cena', className: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
+  individual: { label: 'Solo Desayuno, Almuerzo o Cena', className: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' },
 };
 
 const RouteCard = ({ route, onDelete, onEdit }) => {

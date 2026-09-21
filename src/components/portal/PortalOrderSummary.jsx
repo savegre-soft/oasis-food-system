@@ -1,12 +1,5 @@
 import { CheckCircle2, Pencil } from 'lucide-react';
-import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT } from '../orderUtils';
-
-const CLASSIFICATION_LABEL = {
-  Lunch: 'Solo Almuerzo',
-  Dinner: 'Solo Cena',
-  both: 'Almuerzo + Cena',
-  Family: 'Familiar',
-};
+import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT, MEAL_META, classificationLabel, mealTypesOf } from '../orderUtils';
 
 // Resumen de confirmación del portal — mismo formato que StepConfirm.jsx
 // (usado internamente por el staff en AddOrder.jsx), sin las secciones de
@@ -16,8 +9,7 @@ const PortalOrderSummary = ({
   classification,
   isFamilyClient,
   resolvedRoute,
-  lunchMacros,
-  dinnerMacros,
+  macrosByType,
   dayRecipes,
   weekStart,
   weekEnd,
@@ -64,7 +56,7 @@ const PortalOrderSummary = ({
       <div>
         <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">Menú</p>
         <p className="text-sm text-slate-700 dark:text-slate-300">
-          {CLASSIFICATION_LABEL[classification] ?? classification}
+          {isFamilyClient ? 'Familiar' : `${mealTypesOf(classification).length > 1 ? '' : 'Solo '}${classificationLabel(classification)}`}
         </p>
       </div>
 
@@ -87,19 +79,18 @@ const PortalOrderSummary = ({
         )}
       </div>
 
-      {!isFamilyClient && (lunchMacros || dinnerMacros) && (
+      {!isFamilyClient && mealTypesOf(classification).some((t) => macrosByType[t]) && (
         <div>
           <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">Macros</p>
           <p className="text-sm text-slate-700 dark:text-slate-300">
-            {(classification === 'Lunch' || classification === 'both') && lunchMacros && (
-              <span>
-                ☀️ {lunchMacros.protein_value} {MACRO_UNIT} prot · {lunchMacros.carb_value} {MACRO_UNIT} carbos
-              </span>
-            )}
-            {(classification === 'Dinner' || classification === 'both') && dinnerMacros && (
-              <span className={classification === 'both' ? 'ml-2' : ''}>
-                🌙 {dinnerMacros.protein_value} {MACRO_UNIT} prot · {dinnerMacros.carb_value} {MACRO_UNIT} carbos
-              </span>
+            {mealTypesOf(classification).map(
+              (t, i) =>
+                macrosByType[t] && (
+                  <span key={t} className={i > 0 ? 'ml-2' : ''}>
+                    {MEAL_META[t].emoji} {macrosByType[t].protein_value} {MACRO_UNIT} prot ·{' '}
+                    {macrosByType[t].carb_value} {MACRO_UNIT} carbos
+                  </span>
+                )
             )}
           </p>
         </div>

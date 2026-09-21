@@ -16,6 +16,7 @@ import { useApp } from '../context/AppContext';
  * @property {boolean} is_active - Estado activo/inactivo
  * @property {MacroProfile|null} lunch_macro - Perfil de macros para almuerzo
  * @property {MacroProfile|null} dinner_macro - Perfil de macros para cena
+ * @property {MacroProfile|null} breakfast_macro - Perfil de macros para desayuno (opcional)
  * @property {Object} [rest] - Otros campos provenientes de la BD
  */
 
@@ -57,6 +58,11 @@ export default function useCustomers() {
           carb_value
         ),
         dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey (
+          id_macro_profile, name,
+          protein_value,
+          carb_value
+        ),
+        breakfast_macro:macro_profiles!clients_breakfast_macro_profile_id_fkey (
           id_macro_profile, name,
           protein_value,
           carb_value

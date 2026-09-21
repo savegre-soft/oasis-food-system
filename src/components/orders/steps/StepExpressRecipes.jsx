@@ -1,6 +1,23 @@
 import MacroPanel from '../../MacroPanel';
 import RecipeIngredientEditor from '../../RecipeIngredientEditor';
-import { MACRO_UNIT, STANDARD_MACRO } from '../../orderUtils';
+import {
+  MACRO_UNIT,
+  MEAL_META,
+  MEAL_TYPES,
+  STANDARD_MACRO,
+  clientMacroKey,
+  mealLabel,
+} from '../../orderUtils';
+
+// Clases completas (no interpoladas) para que Tailwind las detecte.
+const SELECTED_STYLES = {
+  Breakfast:
+    'bg-sky-50 dark:bg-sky-900/20 border-sky-400 dark:border-sky-700 text-sky-900 dark:text-sky-400',
+  Lunch:
+    'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-700 text-amber-900 dark:text-amber-400',
+  Dinner:
+    'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-700 text-indigo-900 dark:text-indigo-400',
+};
 
 const StepExpressRecipes = ({
   expressType,
@@ -16,8 +33,7 @@ const StepExpressRecipes = ({
   fetchRecipeIngredients,
   selectedClient,
 }) => {
-  const clientMacro =
-    expressType === 'Lunch' ? selectedClient?.lunch_macro : selectedClient?.dinner_macro;
+  const clientMacro = selectedClient?.[clientMacroKey(expressType)];
 
   const isClientActive =
     clientMacro &&
@@ -30,7 +46,7 @@ const StepExpressRecipes = ({
     String(expressMacros.carb_value) === '1';
 
   const applyClientMacro = () => {
-    const m = expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
+    const m = clientMacro;
     setExpressMacros({
       protein_value: m.protein_value,
       carb_value: m.carb_value,
@@ -39,29 +55,24 @@ const StepExpressRecipes = ({
 
   return (
     <div className="space-y-5">
-      {/* Lunch / Dinner toggle */}
+      {/* Desayuno / Almuerzo / Cena toggle */}
       <div>
         <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
           Tipo de comida
         </label>
         <div className="flex gap-2">
-          {[
-            ['Lunch', '☀️ Almuerzo'],
-            ['Dinner', '🌙 Cena'],
-          ].map(([val, lbl]) => (
+          {MEAL_TYPES.map((val) => (
             <button
               key={val}
               type="button"
               onClick={() => setExpressType(val)}
               className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                 expressType === val
-                  ? val === 'Lunch'
-                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-700 text-amber-900 dark:text-amber-400'
-                    : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-700 text-indigo-900 dark:text-indigo-400'
+                  ? SELECTED_STYLES[val]
                   : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
               }`}
             >
-              {lbl}
+              {mealLabel(val)}
             </button>
           ))}
         </div>
@@ -101,8 +112,8 @@ const StepExpressRecipes = ({
           </div>
         </div>
         <MacroPanel
-          label={expressType === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
-          colorClass={expressType === 'Lunch' ? 'amber' : 'indigo'}
+          label={mealLabel(expressType)}
+          colorClass={MEAL_META[expressType].color}
           macros={expressMacros}
           onUpdate={(field, value) => setExpressMacros((prev) => ({ ...prev, [field]: value }))}
         />

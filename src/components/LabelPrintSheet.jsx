@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Printer, Tags, Layers } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { MEAL_META, MEAL_TYPES, mealTypesOf } from './orderUtils';
 import DefaultTemplateUrl from '../assets/label-template-default.png';
 import StickerUrl from '../assets/sticker-default.png';
 import Baloo2Url from '../assets/fonts/Baloo2.woff2';
@@ -40,7 +41,7 @@ const fmtMacro = (val, unit) => {
   return unit === 'g' ? `${n}g` : `${n} ${unit}`;
 };
 
-const MEAL_LABEL = { Lunch: 'Almuerzo', Dinner: 'Cena' };
+const MEAL_LABEL = Object.fromEntries(MEAL_TYPES.map((t) => [t, MEAL_META[t].label]));
 
 // Una etiqueta por unidad física — si quantity=2, se repite el item 2 veces.
 const buildLabelItems = (orderDays) => {
@@ -50,11 +51,10 @@ const buildLabelItems = (orderDays) => {
     const unit = macroUnit(od.orders?.clients?.plan_type);
     const mealClassification = od.orders?.classification;
     for (const det of od.order_day_details ?? []) {
-      // 'both': el plato ya trae su propio meal_type (fix de esta sesión).
-      // 'Lunch'/'Dinner': el pedido entero es de un solo tiempo de comida.
-      const mealType =
-        det.meal_type ??
-        (mealClassification === 'Lunch' || mealClassification === 'Dinner' ? mealClassification : null);
+      // Pedidos con varios tiempos ('both', 'Breakfast+Lunch'…): el plato ya trae su
+      // propio meal_type. Pedidos de un solo tiempo: el de la clasificación.
+      const singleMeal = mealTypesOf(mealClassification);
+      const mealType = det.meal_type ?? (singleMeal.length === 1 ? singleMeal[0] : null);
       const qty = Number(det.quantity) || 1;
       for (let i = 0; i < qty; i++) {
         items.push({

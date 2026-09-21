@@ -97,7 +97,7 @@ Wizard de **4 pasos** (o 2 si es express):
 | 4 | `StepConfirm.jsx` | Resumen y confirmación |
 
 **Tipos de cliente:**
-- `'personal'` — tiene macros de almuerzo y cena, menuType puede ser `'Lunch'`, `'Dinner'` o `'both'`
+- `'personal'` — tiene macros de almuerzo y cena (y opcionalmente desayuno), se eligen 1, 2 o los 3 tiempos de comida (Desayuno/Almuerzo/Cena). `classification` = un tiempo, `'both'` (Almuerzo + Cena, legado) o tiempos unidos por `+` en orden canónico (`'Breakfast+Lunch'`, `'Breakfast+Lunch+Dinner'`…); usar `mealTypesOf`/`classificationOf`
 - `'family'` — sin macros individuales, menuType es `'Family'`, entrega siempre viernes
 
 **Pedido Express (`isExpress = true`):**
@@ -144,7 +144,7 @@ Clave única: `recipeId__fingerprint` donde el fingerprint es la composición or
 |---|---|
 | `clients` | Clientes. Campos clave: `id_client`, `name`, `client_type` (`'personal'`/`'family'`), `lunch_macro`, `dinner_macro` |
 | `macro_profiles` | Perfiles de macros (`protein_value`, `carb_value`). Unidad: `'ud.'` (definida en `MACRO_UNIT`) |
-| `orders` | Pedido principal. Tiene `classification` (`'Lunch'`/`'Dinner'`) y FK a cliente y ruta |
+| `orders` | Pedido principal. Tiene `classification` (`'Breakfast'`/`'Lunch'`/`'Dinner'`/`'both'`/`'Family'`) y FK a cliente y ruta |
 | `order_days` | Un día de pedido. Campos: `id_order_day`, `status` (`PENDING`/`PACKED`/`DELIVERED`), `day_of_week`, FK a `orders` |
 | `order_day_details` | Detalle de receta en un `order_day`: `recipe_id`, `quantity`, `protein_value_applied`, `carb_value_applied` |
 | `order_day_recipe_overrides` | Override de ingredientes para una receta en un día específico: `category` (`protein`/`carb`/`extra`), `name` |
@@ -169,6 +169,10 @@ MACRO_UNIT = 'ud.'
 DAYS_ORDER = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 DAY_LABELS = { Monday: 'Lunes', ... }
 DAY_SHORT   = { Monday: 'Lun', ... }
+MEAL_TYPES / MEAL_META      // ['Breakfast','Lunch','Dinner'] + label/emoji/color por tiempo de comida
+mealLabel(type)             // '🌅 Desayuno' | '☀️ Almuerzo' | '🌙 Cena' (también 'both'/'Family')
+mealTypesOf(classification) // tiempos de una clasificación ('both' → Lunch+Dinner); classificationOf(types) es el inverso
+clientMacroKey(type)        // 'breakfast_macro' | 'lunch_macro' | 'dinner_macro'
 isFamily(client)            // client.client_type === 'family'
 getWeekRange()              // devuelve { start, end, label } de la semana actual
 getAbsoluteDate(day, weekStart)

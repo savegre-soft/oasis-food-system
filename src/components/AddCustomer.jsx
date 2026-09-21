@@ -22,6 +22,10 @@ const customerSchema = z
     lunchCarb: z.string(),
     dinnerProtein: z.string(),
     dinnerCarb: z.string(),
+    // Desayuno es opcional (clientes existentes no lo tienen): o ambos campos
+    // vacíos (sin perfil de desayuno) o ambos con un entero válido.
+    breakfastProtein: z.string(),
+    breakfastCarb: z.string(),
   })
   .superRefine((data, ctx) => {
     if (data.clientType !== 'personal') return;
@@ -46,6 +50,30 @@ const customerSchema = z
         });
       }
     }
+
+    const breakfastFields = [
+      ['breakfastProtein', 'Proteína de desayuno'],
+      ['breakfastCarb', 'Carbohidratos de desayuno'],
+    ];
+    if (breakfastFields.some(([key]) => data[key].trim() !== '')) {
+      for (const [key, label] of breakfastFields) {
+        const raw = data[key].trim();
+        const n = Number(raw);
+        if (raw === '') {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${label} es obligatorio si se define el perfil de desayuno`,
+          });
+        } else if (!Number.isInteger(n) || n < 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${label} debe ser un número entero mayor o igual a 0`,
+          });
+        }
+      }
+    }
   });
 
 // Icono del marker
@@ -64,6 +92,7 @@ const AddCustomer = ({ onAdd, initialData }) => {
 
   const lm = initialData?.lunch_macro;
   const dm = initialData?.dinner_macro;
+  const bm = initialData?.breakfast_macro;
 
   // Cliente
   const [nombre, setNombre] = useState(initialData?.name ?? '');
@@ -78,6 +107,9 @@ const AddCustomer = ({ onAdd, initialData }) => {
   const [dinnerPlanType, setDinnerPlanType] = useState(
     initialData?.plan_type === 'estandar' ? 'estandar' : 'nutricional'
   );
+  const [breakfastPlanType, setBreakfastPlanType] = useState(
+    initialData?.plan_type === 'estandar' ? 'estandar' : 'nutricional'
+  );
   const [errorMsg, setErrorMsg] = useState('');
 
   // Macros — almuerzo
@@ -86,6 +118,9 @@ const AddCustomer = ({ onAdd, initialData }) => {
   // Macros — cena
   const [dinnerProtein, setDinnerProtein] = useState(String(dm?.protein_value ?? ''));
   const [dinnerCarb, setDinnerCarb] = useState(String(dm?.carb_value ?? ''));
+  // Macros — desayuno (opcional)
+  const [breakfastProtein, setBreakfastProtein] = useState(String(bm?.protein_value ?? ''));
+  const [breakfastCarb, setBreakfastCarb] = useState(String(bm?.carb_value ?? ''));
 
   // Localización
   const [countries, setCountries] = useState([]);
@@ -170,9 +205,31 @@ const AddCustomer = ({ onAdd, initialData }) => {
     setDinnerPlanType(isStandard(newProtein, newCarb) ? 'estandar' : 'nutricional');
   };
 
-  // Derived plan_type for DB: estandar only if both meals are standard
+  const handleBreakfastPlanChange = (value) => {
+    setBreakfastPlanType(value);
+    if (value === 'estandar') {
+      setBreakfastProtein(STANDARD_PROTEIN);
+      setBreakfastCarb(STANDARD_CARB);
+    }
+  };
+
+  const handleBreakfastMacroChange = (field, value) => {
+    const newProtein = field === 'protein' ? value : breakfastProtein;
+    const newCarb = field === 'carb' ? value : breakfastCarb;
+    if (field === 'protein') setBreakfastProtein(value);
+    if (field === 'carb') setBreakfastCarb(value);
+    setBreakfastPlanType(isStandard(newProtein, newCarb) ? 'estandar' : 'nutricional');
+  };
+
+  const hasBreakfast = breakfastProtein.trim() !== '' || breakfastCarb.trim() !== '';
+
+  // Derived plan_type for DB: estandar only if every meal the client has is standard
   const derivedPlanType =
-    lunchPlanType === 'estandar' && dinnerPlanType === 'estandar' ? 'estandar' : 'nutricional';
+    lunchPlanType === 'estandar' &&
+    dinnerPlanType === 'estandar' &&
+    (!hasBreakfast || breakfastPlanType === 'estandar')
+      ? 'estandar'
+      : 'nutricional';
 
   const resetForm = () => {
     setNombre('');
@@ -181,6 +238,7 @@ const AddCustomer = ({ onAdd, initialData }) => {
     setClientType('personal');
     setLunchPlanType('nutricional');
     setDinnerPlanType('nutricional');
+    setBreakfastPlanType('nutricional');
     setSelectedCountry('');
     setSelectedProvince('');
     setSelectedCanton('');
@@ -191,6 +249,8 @@ const AddCustomer = ({ onAdd, initialData }) => {
     setLunchCarb('');
     setDinnerProtein('');
     setDinnerCarb('');
+    setBreakfastProtein('');
+    setBreakfastCarb('');
     setErrorMsg('');
   };
 
@@ -206,6 +266,8 @@ const AddCustomer = ({ onAdd, initialData }) => {
       lunchCarb,
       dinnerProtein,
       dinnerCarb,
+      breakfastProtein,
+      breakfastCarb,
     });
     if (!parsed.success) {
       const message = parsed.error.issues[0].message;
@@ -220,6 +282,7 @@ const AddCustomer = ({ onAdd, initialData }) => {
     try {
       if (isEdit) {
         // ── Edit mode ──────────────────────────────────────────────────────
+        let newBreakfastProfileId = null;
         if (clientType === 'personal') {
           // Update existing macro profiles
           if (initialData.lunch_macro_profile_id) {
@@ -242,6 +305,38 @@ const AddCustomer = ({ onAdd, initialData }) => {
               })
               .eq('id_macro_profile', initialData.dinner_macro_profile_id);
           }
+          if (initialData.breakfast_macro_profile_id && hasBreakfast) {
+            await supabase
+              .schema('operations')
+              .from('macro_profiles')
+              .update({
+                protein_value: parseInt(breakfastProtein, 10),
+                carb_value: parseInt(breakfastCarb, 10),
+              })
+              .eq('id_macro_profile', initialData.breakfast_macro_profile_id);
+          } else if (!initialData.breakfast_macro_profile_id && hasBreakfast) {
+            // Cliente existente que aún no tenía perfil de desayuno: se crea ahora.
+            const { data: breakfastData, error: breakfastError } = await supabase
+              .schema('operations')
+              .from('macro_profiles')
+              .insert([
+                {
+                  name: `${nombre.trim()} — Desayuno`,
+                  protein_value: parseInt(breakfastProtein, 10),
+                  carb_value: parseInt(breakfastCarb, 10),
+                  is_active: true,
+                },
+              ])
+              .select('id_macro_profile')
+              .single();
+            if (breakfastError) {
+              sileo.error('Error al guardar el perfil de desayuno');
+              console.error(breakfastError);
+              setLoading(false);
+              return;
+            }
+            newBreakfastProfileId = breakfastData.id_macro_profile;
+          }
         }
         const { error } = await supabase
           .schema('operations')
@@ -254,6 +349,7 @@ const AddCustomer = ({ onAdd, initialData }) => {
             latitude,
             longitude,
             plan_type: derivedPlanType,
+            ...(newBreakfastProfileId ? { breakfast_macro_profile_id: newBreakfastProfileId } : {}),
           })
           .eq('id_client', initialData.id_client);
         if (error) {
@@ -269,6 +365,7 @@ const AddCustomer = ({ onAdd, initialData }) => {
         // ── Create mode ────────────────────────────────────────────────────
         let lunchProfileId = null;
         let dinnerProfileId = null;
+        let breakfastProfileId = null;
 
         if (clientType === 'personal') {
           const { data: lunchData, error: lunchError } = await supabase
@@ -312,6 +409,29 @@ const AddCustomer = ({ onAdd, initialData }) => {
             return;
           }
           dinnerProfileId = dinnerData.id_macro_profile;
+
+          if (hasBreakfast) {
+            const { data: breakfastData, error: breakfastError } = await supabase
+              .schema('operations')
+              .from('macro_profiles')
+              .insert([
+                {
+                  name: `${nombre.trim()} — Desayuno`,
+                  protein_value: parseInt(breakfastProtein, 10),
+                  carb_value: parseInt(breakfastCarb, 10),
+                  is_active: true,
+                },
+              ])
+              .select('id_macro_profile')
+              .single();
+            if (breakfastError) {
+              sileo.error('Error al guardar el perfil de desayuno');
+              console.error(breakfastError);
+              setLoading(false);
+              return;
+            }
+            breakfastProfileId = breakfastData.id_macro_profile;
+          }
         }
 
         const { error: clientError } = await supabase
@@ -327,6 +447,7 @@ const AddCustomer = ({ onAdd, initialData }) => {
               longitude,
               lunch_macro_profile_id: lunchProfileId,
               dinner_macro_profile_id: dinnerProfileId,
+              breakfast_macro_profile_id: breakfastProfileId,
               client_type: clientType,
               plan_type: derivedPlanType,
               is_active: true,
@@ -522,6 +643,50 @@ const AddCustomer = ({ onAdd, initialData }) => {
               <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
                 Perfiles Nutricionales
               </h2>
+
+              {/* Desayuno */}
+              <div className="border border-sky-200 rounded-xl p-4 bg-sky-50">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-sky-700">🌅 Desayuno <span className="font-normal text-slate-400">(opcional)</span></p>
+                  <PlanToggle
+                    value={breakfastPlanType}
+                    onChange={handleBreakfastPlanChange}
+                    name="breakfastPlan"
+                  />
+                </div>
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className={labelClass}>Proteína (unidades)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={breakfastProtein}
+                        onChange={(e) => handleBreakfastMacroChange('protein', e.target.value)}
+                        className={inputClass}
+                        placeholder="Ej: 2"
+                      />
+                      <span className="text-xs text-slate-400">{MACRO_UNIT}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Carbohidratos (unidades)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={breakfastCarb}
+                        onChange={(e) => handleBreakfastMacroChange('carb', e.target.value)}
+                        className={inputClass}
+                        placeholder="Ej: 3"
+                      />
+                      <span className="text-xs text-slate-400">{MACRO_UNIT}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Almuerzo */}
               <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">

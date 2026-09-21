@@ -6,6 +6,11 @@ const PALETTE = {
     bg: 'bg-amber-50 dark:bg-amber-900/20',
     text: 'text-amber-700 dark:text-amber-400',
   },
+  sky: {
+    border: 'border-sky-200 dark:border-sky-800/50',
+    bg: 'bg-sky-50 dark:bg-sky-900/20',
+    text: 'text-sky-700 dark:text-sky-400',
+  },
   indigo: {
     border: 'border-indigo-200 dark:border-indigo-800/50',
     bg: 'bg-indigo-50 dark:bg-indigo-900/20',
