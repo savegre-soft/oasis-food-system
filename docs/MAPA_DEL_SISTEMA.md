@@ -445,3 +445,14 @@ Cuarta y quinta causa raíz de la fragmentación de pagos mensuales (ver §8 pun
 ---
 
 *Generado automáticamente por Claude a partir de una revisión exhaustiva del código fuente. Mantener actualizado cuando cambien rutas, esquema de BD o reglas de negocio importantes.*
+
+
+## 18. Cambios aplicados — 2026-09-20 (Desayuno y selección de 1, 2 o 3 tiempos de comida)
+
+Detalle completo en `docs/TIEMPOS_DE_COMIDA_DESAYUNO.md`. Resumen:
+
+- Nuevo tiempo de comida **Desayuno** (`Breakfast`); un pedido puede tener 1, 2 o los 3 tiempos. `orders.classification` = tiempo suelto, `both` (Almuerzo + Cena, legado) o combinación con `+` en orden canónico (`Breakfast+Lunch+Dinner`).
+- Esquema: `clients.breakfast_macro_profile_id` (opcional), CHECK de `portal_template_overrides.meal_type` ampliado, RPC del portal (`portal_get_client`, `portal_get_menu_options`, `portal_submit_order`) actualizadas. Migración `20260920_breakfast_category.sql` (aplicada en producción); en `Fase_2`, además `20260921_breakfast_portal_meal_type.sql`.
+- Código: helpers centralizados en `orderUtils.js` (`MEAL_TYPES`, `MEAL_META`, `mealTypesOf`, `classificationOf`, `primaryMealType`, `mealLabel`, `classificationLabel`, `classificationBadge`, `clientMacroKey`); macros obligatorios por cada tiempo elegido en creación y edición; cada receta usa los macros de su propio tiempo.
+- Correcciones incidentales: `macro_profile_snapshot_id` de `AddOrder` (siempre null), dashboard que ignoraba `both`, `OrderBlock` que rotulaba `both` como Familiar.
+- Regla de negocio nueva (§8): un pedido de varios tiempos sugiere ruta `complete` y pago mensual; el snapshot de macros del pedido es el del primer tiempo.
