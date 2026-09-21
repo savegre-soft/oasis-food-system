@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Pencil, Check, X, Eye, Lock, Trash2 } from 'lucide-react';
 import ConfirmDialog from '../ConfirmDialog';
 import Tooltip from '../Tooltip';
+import { classificationLabel } from '../orderUtils';
 import { PAYMENT_STATUS_LABEL, PAYMENT_TYPE_LABEL } from '../../utils/chartUtils';
 
 // ── Domain constants ──────────────────────────────────────────────────────────
@@ -32,9 +33,6 @@ const ORDER_STATUS_COLOR = {
   DELIVERED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-600',
 };
-const CLS_LABEL = {
-  Lunch: 'Almuerzo', Dinner: 'Cena', Family: 'Familiar', both: 'Almuerzo + Cena',
-};
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '—';
@@ -56,7 +54,7 @@ const OrderMiniRow = ({ order, onView }) => (
         {ORDER_STATUS_LABEL[order.status] ?? order.status}
       </span>
       <span className="text-xs font-medium text-slate-700 truncate">
-        {CLS_LABEL[order.classification] ?? order.classification}
+        {classificationLabel(order.classification)}
       </span>
       <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">
         {fmtShort(order.week_start_date)} — {fmtShort(order.week_end_date)}

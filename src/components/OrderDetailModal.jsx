@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, User, Pencil, X } from 'lucide-react';
-import { MACRO_UNIT } from './orderUtils';
+import { MACRO_UNIT, classificationEmoji, classificationLabel } from './orderUtils';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -132,15 +132,7 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
               Menu
             </p>
             <p className="text-sm text-slate-700">
-              {isFamilyClient
-                ? 'Familiar'
-                : order.classification === 'both'
-                  ? 'Almuerzo + Cena'
-                  : order.classification === 'Lunch'
-                    ? 'Almuerzo'
-                    : order.classification === 'Dinner'
-                      ? 'Cena'
-                      : order.classification}
+              {isFamilyClient ? 'Familiar' : classificationLabel(order.classification)}
             </p>
           </div>
 
@@ -173,7 +165,7 @@ const OrderDetailModal = ({ order, onClose, onEdit }) => {
                 Macros globales
               </p>
               <p className="text-sm text-slate-700">
-                {order.classification === 'Dinner' ? '🌙 ' : '☀️ '}
+                {classificationEmoji(order.classification)} 
                 {order.protein_snapshot} {MACRO_UNIT} prot
                 {' · '}
                 {order.carb_snapshot} {MACRO_UNIT} carbos

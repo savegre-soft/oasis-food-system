@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { sileo } from 'sileo';
+import { mealLabel } from './orderUtils';
 
 const DAYS = [
   { value: 'Monday', label: 'Lunes' },
@@ -249,8 +250,9 @@ const AddTemplate = ({ onSuccess, initialData }) => {
               <label className={labelClass}>Tipo de menú</label>
               <div className="flex gap-2 mt-1">
                 {[
-                  { value: 'Lunch', label: '☀️ Almuerzo' },
-                  { value: 'Dinner', label: '🌙 Cena' },
+                  { value: 'Breakfast', label: mealLabel('Breakfast') },
+                  { value: 'Lunch', label: mealLabel('Lunch') },
+                  { value: 'Dinner', label: mealLabel('Dinner') },
                 ].map((opt) => (
                   <button
                     key={opt.value}

@@ -13,6 +13,7 @@ const DAY_LABELS = {
 const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const MEAL_TYPE_STYLES = {
+  Breakfast: { label: '🌅 Desayuno', className: 'bg-sky-50 text-sky-700' },
   Lunch: { label: '☀️ Almuerzo', className: 'bg-amber-50 text-amber-700' },
   Dinner: { label: '🌙 Cena', className: 'bg-indigo-50 text-indigo-700' },
 };

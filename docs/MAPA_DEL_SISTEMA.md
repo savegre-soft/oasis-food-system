@@ -106,12 +106,12 @@ No hay estado de dominio (clientes/pedidos/pagos) en contexto — vive disperso 
 ## 4. Modelo de datos (esquema Supabase `operations`, salvo que se indique)
 
 ### Clientes y geografía
-- **`clients`**: `id_client` PK, `name`, `phone`, `address_detail`, `district_id` FK, `latitude`, `longitude`, `client_type` (`personal|family`), `plan_type` (`estandar|nutricional`), `lunch_macro_profile_id` / `dinner_macro_profile_id` FK → `macro_profiles`, `is_active`, `created_at`.
+- **`clients`**: `id_client` PK, `name`, `phone`, `address_detail`, `district_id` FK, `latitude`, `longitude`, `client_type` (`personal|family`), `plan_type` (`estandar|nutricional`), `lunch_macro_profile_id` / `dinner_macro_profile_id` / `breakfast_macro_profile_id` (opcional, desde 2026-09-20) FK → `macro_profiles`, `is_active`, `created_at`.
 - **`macro_profiles`**: `id_macro_profile` PK, `name`, `protein_value`, `carb_value` (enteros = **unidades**, no gramos), `is_active`.
 - **`countries` / `provinces` / `cantons` / `districts`**: jerarquía geográfica de Costa Rica, usada en selects en cascada de `AddCustomer.jsx` y en el gráfico "clientes por distrito".
 
 ### Pedidos (jerarquía: orden → día → detalle)
-- **`orders`**: `id_order` PK, `client_id` FK, `template_id` FK (nullable), `week_start_date`, `week_end_date`, `route_id` FK (null = express), `classification` (`Lunch|Dinner|both|Family`), `status` (`PENDING|PACKED|DELIVERED|CANCELLED`), `macro_profile_snapshot_id`, `protein_snapshot`/`carb_snapshot`.
+- **`orders`**: `id_order` PK, `client_id` FK, `template_id` FK (nullable), `week_start_date`, `week_end_date`, `route_id` FK (null = express), `classification` (un tiempo `Breakfast|Lunch|Dinner`, `both` = Almuerzo + Cena, combinaciones con `+` como `Breakfast+Lunch`, o `Family`), `status` (`PENDING|PACKED|DELIVERED|CANCELLED`), `macro_profile_snapshot_id`, `protein_snapshot`/`carb_snapshot`.
 - **`order_days`**: `id_order_day` PK, `order_id` FK, `day_of_week`, `delivery_date`, `status` (sincronizado automáticamente por trigger, ver §7).
 - **`order_day_details`**: `id_order_day_detail` PK, `order_day_id` FK, `recipe_id` FK, `quantity`, `protein_value_applied`/`carb_value_applied`, `status` (mismo enum de 4 valores; es el nivel real donde cocina/empaque/entrega actúan).
 - **`order_day_recipe_overrides`**: `order_day_detail_id` FK, `name`, `category` (`protein|carb|extra`) — sustituye ingredientes de una receta para un plato entregado específico.
@@ -119,7 +119,7 @@ No hay estado de dominio (clientes/pedidos/pagos) en contexto — vive disperso 
 ### Recetas y plantillas
 - **`recipes`**: `id_recipe` PK, `name`, `description`, `image_url` (Storage bucket `Recipes`), `is_active`.
 - **`recipe_ingredients`**: `id_recipe_ingredient` PK, `recipe_id` FK, `name`, `category` (`protein|carb|extra`).
-- **`order_templates`**: `id_template` PK, `name`, `description`, `meal_type` (`Lunch|Dinner`), `is_active`.
+- **`order_templates`**: `id_template` PK, `name`, `description`, `meal_type` (`Breakfast|Lunch|Dinner`), `is_active`.
 - **`order_template_days`**: `id_template_day` PK, `template_id` FK, `day_of_week`.
 - **`order_template_details`**: `id_template_detail` PK, `template_day_id` FK, `recipe_id` FK, `quantity`, `macro_modifiable` (bool, siempre `false`, sin uso real).
 
@@ -198,7 +198,7 @@ Permite que una orden "both" (almuerzo+cena) se empaque/entregue de forma indepe
 ### 7.2 Pedidos
 `src/pages/Orders.jsx` (real), `components/AddOrder.jsx`, `EditOrder.jsx`, `OrderAdjustments.jsx`, `orderUtils.js`, `useDayRecipes.js`, `useMacros.js`.
 
-- Un **pedido** = plan semanal de un cliente para una `classification` (Lunch/Dinner/both/Family), que se expande en `order_days` (por día) y `order_day_details` (por plato).
+- Un **pedido** = plan semanal de un cliente para una `classification` (Breakfast/Lunch/Dinner/both/Family), que se expande en `order_days` (por día) y `order_day_details` (por plato).
 - `AddOrder.jsx`: wizard de 5 pasos (Cliente → Menú → Ajustes → Pago → Confirmar). Reglas de negocio:
   - **Resolución de semana**: si se registra lunes/martes, la entrega es en la semana actual; cualquier otro día, la siguiente semana.
   - **Resolución de fecha de entrega**: un día de comida se asigna al día de ruta más cercano hacia atrás (ciclo domingo-primero).

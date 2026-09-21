@@ -1,5 +1,14 @@
 import { Zap } from 'lucide-react';
-import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT } from '../../orderUtils';
+import {
+  DAYS_ORDER,
+  DAY_LABELS,
+  DAY_SHORT,
+  MACRO_UNIT,
+  MEAL_META,
+  classificationLabel,
+  mealLabel,
+  mealTypesOf,
+} from '../../orderUtils';
 
 const StepConfirm = ({
   selectedClient,
@@ -12,8 +21,7 @@ const StepConfirm = ({
   selectedFamilyTemplate,
   resolvedRoute,
   expressMacros,
-  lunchMacros,
-  dinnerMacros,
+  macrosByType,
   expressRecipes,
   dayRecipes,
   ingredientOverrides,
@@ -50,18 +58,14 @@ const StepConfirm = ({
       <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Menú</p>
       <p className="text-sm text-slate-700">
         {isExpress
-          ? expressType === 'Lunch'
-            ? '☀️ Almuerzo Express'
-            : '🌙 Cena Express'
+          ? `${mealLabel(expressType)} Express`
           : familyClient
             ? selectedFamilyTemplate?.name
               ? `Familiar — ${selectedFamilyTemplate.name}`
               : 'Familiar'
-            : menuType === 'both'
-              ? 'Almuerzo + Cena'
-              : menuType === 'Lunch'
-                ? 'Solo Almuerzo'
-                : 'Solo Cena'}
+            : mealTypesOf(menuType).length > 1
+              ? classificationLabel(menuType)
+              : `Solo ${classificationLabel(menuType)}`}
       </p>
     </div>
 
@@ -106,25 +110,24 @@ const StepConfirm = ({
       <div>
         <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros</p>
         <p className="text-sm text-slate-700">
-          {expressType === 'Lunch' ? '☀️' : '🌙'} {expressMacros.protein_value} {MACRO_UNIT} prot · {expressMacros.carb_value} {MACRO_UNIT} carbos
+          {MEAL_META[expressType]?.emoji} {expressMacros.protein_value} {MACRO_UNIT} prot · {expressMacros.carb_value} {MACRO_UNIT} carbos
         </p>
       </div>
     )}
 
     {/* Personal macros */}
-    {!familyClient && !isExpress && (lunchMacros || dinnerMacros) && (
+    {!familyClient && !isExpress && mealTypesOf(menuType).some((t) => macrosByType[t]) && (
       <div>
         <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">Macros globales</p>
         <p className="text-sm text-slate-700">
-          {(menuType === 'Lunch' || menuType === 'both') && lunchMacros && (
-            <span>
-              ☀️ {lunchMacros.protein_value} {MACRO_UNIT} prot · {lunchMacros.carb_value} {MACRO_UNIT} carbos
-            </span>
-          )}
-          {(menuType === 'Dinner' || menuType === 'both') && dinnerMacros && (
-            <span className={menuType === 'both' ? 'ml-2' : ''}>
-              🌙 {dinnerMacros.protein_value} {MACRO_UNIT} prot · {dinnerMacros.carb_value} {MACRO_UNIT} carbos
-            </span>
+          {mealTypesOf(menuType).map(
+            (t, i) =>
+              macrosByType[t] && (
+                <span key={t} className={i > 0 ? 'ml-2' : ''}>
+                  {MEAL_META[t].emoji} {macrosByType[t].protein_value} {MACRO_UNIT} prot ·{' '}
+                  {macrosByType[t].carb_value} {MACRO_UNIT} carbos
+                </span>
+              )
           )}
         </p>
       </div>

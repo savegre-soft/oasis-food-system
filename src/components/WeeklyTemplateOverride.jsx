@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { CalendarClock, RotateCcw } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
-import { getWeekRange, getWeekOfMonth, toDateString } from './orderUtils';
+import {
+  getWeekRange,
+  getWeekOfMonth,
+  toDateString,
+  MEAL_TYPES as MEAL_TYPE_KEYS,
+  mealLabel,
+} from './orderUtils';
 
-const MEAL_TYPES = [
-  { key: 'Lunch', label: '☀️ Almuerzo' },
-  { key: 'Dinner', label: '🌙 Cena' },
-];
+const MEAL_TYPES = MEAL_TYPE_KEYS.map((key) => ({ key, label: mealLabel(key) }));
+const emptyByType = () => ({ Breakfast: null, Lunch: null, Dinner: null });
 
 // Tarjeta para que el staff vea/anule qué plantilla aplica automáticamente
 // el portal de clientes esta semana (RF nuevo, pedido explícito del usuario:
@@ -15,9 +19,9 @@ const MEAL_TYPES = [
 const WeeklyTemplateOverride = () => {
   const { supabase } = useApp();
   const [loading, setLoading] = useState(true);
-  const [templatesByType, setTemplatesByType] = useState({ Lunch: [], Dinner: [] });
-  const [autoByType, setAutoByType] = useState({ Lunch: null, Dinner: null });
-  const [overrideByType, setOverrideByType] = useState({ Lunch: null, Dinner: null });
+  const [templatesByType, setTemplatesByType] = useState({ Breakfast: [], Lunch: [], Dinner: [] });
+  const [autoByType, setAutoByType] = useState(emptyByType());
+  const [overrideByType, setOverrideByType] = useState(emptyByType());
 
   const { weekStart } = getWeekRange();
   const weekOfMonth = getWeekOfMonth(weekStart);
@@ -32,7 +36,7 @@ const WeeklyTemplateOverride = () => {
         .from('order_templates')
         .select('id_template, name, meal_type')
         .eq('is_active', true)
-        .in('meal_type', ['Lunch', 'Dinner'])
+        .in('meal_type', MEAL_TYPE_KEYS)
         .order('name'),
       supabase
         .schema('operations')
@@ -40,7 +44,7 @@ const WeeklyTemplateOverride = () => {
         .select('id_template, name, meal_type')
         .eq('is_active', true)
         .eq('week_of_month', weekOfMonth)
-        .in('meal_type', ['Lunch', 'Dinner']),
+        .in('meal_type', MEAL_TYPE_KEYS),
       supabase
         .schema('operations')
         .from('portal_template_overrides')
@@ -48,17 +52,17 @@ const WeeklyTemplateOverride = () => {
         .eq('week_start_date', weekStartStr),
     ]);
 
-    const byType = { Lunch: [], Dinner: [] };
+    const byType = { Breakfast: [], Lunch: [], Dinner: [] };
     (allTemplates ?? []).forEach((t) => byType[t.meal_type]?.push(t));
     setTemplatesByType(byType);
 
-    const auto = { Lunch: null, Dinner: null };
+    const auto = emptyByType();
     (autoTemplates ?? []).forEach((t) => {
       auto[t.meal_type] = t;
     });
     setAutoByType(auto);
 
-    const ov = { Lunch: null, Dinner: null };
+    const ov = emptyByType();
     (overrides ?? []).forEach((o) => {
       ov[o.meal_type] = { id_template: o.template_id, name: o.order_templates?.name };
     });
@@ -117,7 +121,7 @@ const WeeklyTemplateOverride = () => {
       {loading ? (
         <p className="text-sm text-slate-400">Cargando...</p>
       ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-3 gap-4">
           {MEAL_TYPES.map(({ key, label }) => {
             const effective = overrideByType[key] ?? autoByType[key];
             return (

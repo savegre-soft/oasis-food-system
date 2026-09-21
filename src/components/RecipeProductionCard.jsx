@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Archive } from 'lucide-react';
-import { MACRO_UNIT, DAY_LABELS } from './orderUtils';
+import { MACRO_UNIT, DAY_LABELS, mealLabel } from './orderUtils';
 
 const CATEGORY_STYLE = {
   protein: { badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' },
@@ -167,12 +167,16 @@ const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack
                       </span>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          meal.classification === 'Lunch'
-                            ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                            : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                          meal.classification === 'Breakfast'
+                            ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+                            : meal.classification === 'Lunch'
+                              ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                              : meal.classification === 'Dinner'
+                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                                : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
                         }`}
                       >
-                        {meal.classification === 'Lunch' ? '☀️ Almuerzo' : '🌙 Cena'}
+                        {mealLabel(meal.classification)}
                       </span>
                       {meal.id_order && (
                         <span className="text-xs font-mono text-slate-400 dark:text-slate-500">

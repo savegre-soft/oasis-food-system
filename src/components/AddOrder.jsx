@@ -15,6 +15,10 @@ import {
   toDateString,
   getDateForDay,
   STANDARD_MACRO,
+  MEAL_TYPES,
+  clientMacroKey,
+  mealTypesOf,
+  primaryMealType,
 } from './orderUtils';
 
 import StepClient from './orders/steps/StepClient';
@@ -43,14 +47,21 @@ const AddOrder = ({ onSuccess }) => {
 
   // Step 2 — Menu
   const [menuType, setMenuType] = useState(null);
-  const [lunchTemplates, setLunchTemplates] = useState([]);
-  const [dinnerTemplates, setDinnerTemplates] = useState([]);
-  const [selectedLunchTemplate, setSelectedLunchTemplate] = useState(null);
-  const [selectedDinnerTemplate, setSelectedDinnerTemplate] = useState(null);
+  const [templatesByType, setTemplatesByType] = useState({
+    Breakfast: [],
+    Lunch: [],
+    Dinner: [],
+  });
+  // Plantilla elegida por tiempo de comida: { Breakfast?, Lunch?, Dinner? }
+  const [selectedTemplates, setSelectedTemplates] = useState({});
   // Plantilla que corresponde a la semana en curso (auto u override del
   // staff, misma resolución que usa el portal de clientes) — se usa para
   // preseleccionar y para marcar el badge "Semana actual" en StepMenu.
-  const [weekTemplateIds, setWeekTemplateIds] = useState({ lunch: null, dinner: null });
+  const [weekTemplateIds, setWeekTemplateIds] = useState({
+    Breakfast: null,
+    Lunch: null,
+    Dinner: null,
+  });
   const [selectedFamilyTemplate, setSelectedFamilyTemplate] = useState(null);
 
   // Step 3 — Route / adjustments
@@ -116,8 +127,9 @@ const AddOrder = ({ onSuccess }) => {
     setLunchMacros,
     dinnerMacros,
     setDinnerMacros,
-    updateLunchMacro,
-    updateDinnerMacro,
+    breakfastMacros,
+    setBreakfastMacros,
+    getBaseMacros,
     updateDayMacro,
     resetDayMacro,
     resetAllDayMacros,
@@ -138,7 +150,8 @@ const AddOrder = ({ onSuccess }) => {
         .select(
           `id_client, name, client_type,
            lunch_macro:macro_profiles!clients_lunch_macro_profile_id_fkey(id_macro_profile,name,protein_value,carb_value),
-           dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey(id_macro_profile,name,protein_value,carb_value)`
+           dinner_macro:macro_profiles!clients_dinner_macro_profile_id_fkey(id_macro_profile,name,protein_value,carb_value),
+           breakfast_macro:macro_profiles!clients_breakfast_macro_profile_id_fkey(id_macro_profile,name,protein_value,carb_value)`
         )
         .order('name');
       setClients(data ?? []);
@@ -179,8 +192,7 @@ const AddOrder = ({ onSuccess }) => {
     if (!selectedClient) return;
     setStep(1);
     setMenuType(null);
-    setSelectedLunchTemplate(null);
-    setSelectedDinnerTemplate(null);
+    setSelectedTemplates({});
     setSelectedFamilyTemplate(null);
     setResolvedRoute(null);
     setRouteManuallyChanged(false);
@@ -200,8 +212,18 @@ const AddOrder = ({ onSuccess }) => {
     if (!selectedClient) return;
     const lm = selectedClient.lunch_macro;
     const dm = selectedClient.dinner_macro;
-    if (lm) setLunchMacros({ protein_value: lm.protein_value, carb_value: lm.carb_value });
-    if (dm) setDinnerMacros({ protein_value: dm.protein_value, carb_value: dm.carb_value });
+    const bm = selectedClient.breakfast_macro;
+    // Todo tiempo de comida del pedido debe tener macros: sin perfil, arranca en estándar.
+    setLunchMacros(
+      lm ? { protein_value: lm.protein_value, carb_value: lm.carb_value } : { ...STANDARD_MACRO }
+    );
+    setDinnerMacros(
+      dm ? { protein_value: dm.protein_value, carb_value: dm.carb_value } : { ...STANDARD_MACRO }
+    );
+    // El desayuno es opcional en el perfil del cliente: sin perfil, arranca en estándar.
+    setBreakfastMacros(
+      bm ? { protein_value: bm.protein_value, carb_value: bm.carb_value } : { ...STANDARD_MACRO }
+    );
   }, [selectedClient]);
 
   // Reset dayRecipes when switching express/normal
@@ -218,8 +240,7 @@ const AddOrder = ({ onSuccess }) => {
   // Auto-load expressMacros from client profile
   useEffect(() => {
     if (!selectedClient || !isExpress) return;
-    const macro =
-      expressType === 'Dinner' ? selectedClient.dinner_macro : selectedClient.lunch_macro;
+    const macro = selectedClient[clientMacroKey(expressType)];
     setExpressMacros(
       macro
         ? { protein_value: macro.protein_value, carb_value: macro.carb_value }
@@ -234,7 +255,7 @@ const AddOrder = ({ onSuccess }) => {
   useEffect(() => {
     if (!menuType || familyClient) return;
     (async () => {
-      const types = menuType === 'both' ? ['Lunch', 'Dinner'] : [menuType];
+      const types = mealTypesOf(menuType);
       const { data } = await supabase
         .schema('operations')
         .from('order_templates')
@@ -243,10 +264,11 @@ const AddOrder = ({ onSuccess }) => {
         )
         .in('meal_type', types)
         .eq('is_active', true);
-      const lunch = data?.filter((t) => t.meal_type === 'Lunch') ?? [];
-      const dinner = data?.filter((t) => t.meal_type === 'Dinner') ?? [];
-      setLunchTemplates(lunch);
-      setDinnerTemplates(dinner);
+      const byType = {};
+      MEAL_TYPES.forEach((t) => {
+        byType[t] = data?.filter((tmpl) => tmpl.meal_type === t) ?? [];
+      });
+      setTemplatesByType(byType);
 
       const { weekStart } = getWeekRange();
       const weekOfMonth = getWeekOfMonth(weekStart);
@@ -256,32 +278,37 @@ const AddOrder = ({ onSuccess }) => {
         .from('portal_template_overrides')
         .select('meal_type, template_id')
         .eq('week_start_date', weekStartStr);
-      const overrideLunchId = overrides?.find((o) => o.meal_type === 'Lunch')?.template_id;
-      const overrideDinnerId = overrides?.find((o) => o.meal_type === 'Dinner')?.template_id;
 
-      const resolvedLunch =
-        lunch.find((t) => t.id_template === overrideLunchId) ??
-        lunch.find((t) => t.week_of_month === weekOfMonth) ??
-        (lunch.length === 1 ? lunch[0] : null);
-      const resolvedDinner =
-        dinner.find((t) => t.id_template === overrideDinnerId) ??
-        dinner.find((t) => t.week_of_month === weekOfMonth) ??
-        (dinner.length === 1 ? dinner[0] : null);
-
-      setWeekTemplateIds({
-        lunch: resolvedLunch?.id_template ?? null,
-        dinner: resolvedDinner?.id_template ?? null,
+      const resolved = {};
+      types.forEach((t) => {
+        const list = byType[t];
+        const overrideId = overrides?.find((o) => o.meal_type === t)?.template_id;
+        resolved[t] =
+          list.find((tmpl) => tmpl.id_template === overrideId) ??
+          list.find((tmpl) => tmpl.week_of_month === weekOfMonth) ??
+          (list.length === 1 ? list[0] : null);
       });
 
-      if ((menuType === 'Lunch' || menuType === 'both') && resolvedLunch) setSelectedLunchTemplate(resolvedLunch);
-      if ((menuType === 'Dinner' || menuType === 'both') && resolvedDinner) setSelectedDinnerTemplate(resolvedDinner);
+      setWeekTemplateIds({
+        Breakfast: resolved.Breakfast?.id_template ?? null,
+        Lunch: resolved.Lunch?.id_template ?? null,
+        Dinner: resolved.Dinner?.id_template ?? null,
+      });
+
+      setSelectedTemplates((prev) => {
+        const next = { ...prev };
+        types.forEach((t) => {
+          if (resolved[t]) next[t] = resolved[t];
+        });
+        return next;
+      });
     })();
   }, [menuType, selectedClient]);
 
   // Auto-resolve route
   useEffect(() => {
     if (step !== 3 || !menuType || familyClient || routeManuallyChanged) return;
-    const preferredType = menuType === 'both' || extraCount >= 3 ? 'complete' : 'individual';
+    const preferredType = mealTypesOf(menuType).length > 1 || extraCount >= 3 ? 'complete' : 'individual';
     (async () => {
       let { data } = await supabase
         .schema('operations')
@@ -307,17 +334,15 @@ const AddOrder = ({ onSuccess }) => {
   // Build dayRecipes from personal templates
   useEffect(() => {
     if (familyClient) return;
-    if (!selectedLunchTemplate && !selectedDinnerTemplate) return;
+    const templates = mealTypesOf(menuType)
+      .map((type) => ({ tmpl: selectedTemplates[type], type }))
+      .filter(({ tmpl }) => tmpl);
+    if (!templates.length) return;
     const recipes = {};
     DAYS_ORDER.forEach((d) => {
       recipes[d] = [];
     });
-    const templates = [];
-    if ((menuType === 'Lunch' || menuType === 'both') && selectedLunchTemplate)
-      templates.push({ tmpl: selectedLunchTemplate, type: 'Lunch' });
-    if ((menuType === 'Dinner' || menuType === 'both') && selectedDinnerTemplate)
-      templates.push({ tmpl: selectedDinnerTemplate, type: 'Dinner' });
-    templates.forEach(({ tmpl }) => {
+    templates.forEach(({ tmpl, type }) => {
       (tmpl.order_template_days ?? []).forEach((tday) => {
         const day = tday.day_of_week;
         if (!recipes[day]) recipes[day] = [];
@@ -327,6 +352,8 @@ const AddOrder = ({ onSuccess }) => {
             recipe_name: det.recipes?.name ?? '',
             quantity: det.quantity,
             isExtra: false,
+            // Tiempo de comida al que pertenece (define los macros aplicados al guardar).
+            mealType: type,
           });
         });
       });
@@ -337,7 +364,7 @@ const AddOrder = ({ onSuccess }) => {
       .map((r) => r.recipe_id)
       .filter(Boolean);
     if (ids.length) fetchRecipeIngredients(ids);
-  }, [selectedLunchTemplate, selectedDinnerTemplate]);
+  }, [selectedTemplates]);
 
   // Build dayRecipes for family
   useEffect(() => {
@@ -371,7 +398,7 @@ const AddOrder = ({ onSuccess }) => {
     // Sugerencia inicial basada en el tipo de menú del pedido puntual — se
     // corrige más abajo en cuanto se sabe si el cliente ya tiene un pago
     // mensual con espacio disponible (señal más confiable que el menú).
-    const menuSuggestsMonthly = familyClient || menuType === 'both';
+    const menuSuggestsMonthly = familyClient || mealTypesOf(menuType).length > 1;
     setPaymentType(isExpress ? 'express' : menuSuggestsMonthly ? 'monthly' : 'weekly');
     setPaymentAmount('');
     setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -445,9 +472,7 @@ const AddOrder = ({ onSuccess }) => {
     if (step === 2) {
       if (isExpress) return expressRecipes.some((r) => r.recipe_id);
       if (!menuType) return false;
-      if (menuType === 'Lunch') return !!selectedLunchTemplate;
-      if (menuType === 'Dinner') return !!selectedDinnerTemplate;
-      return !!selectedLunchTemplate && !!selectedDinnerTemplate;
+      return mealTypesOf(menuType).every((t) => !!selectedTemplates[t]);
     }
     if (step === 4) {
       if (paymentLookupLoading) return false; // esperar a saber si hay un pago mensual reutilizable
@@ -487,8 +512,7 @@ const AddOrder = ({ onSuccess }) => {
     setSelectedClient(null);
     setClientSearch('');
     setMenuType(null);
-    setSelectedLunchTemplate(null);
-    setSelectedDinnerTemplate(null);
+    setSelectedTemplates({});
     setSelectedFamilyTemplate(null);
     setResolvedRoute(null);
     setRouteManuallyChanged(false);
@@ -536,21 +560,17 @@ const AddOrder = ({ onSuccess }) => {
       ? [expressType]
       : familyClient
         ? ['Family']
-        : menuType === 'both'
-          ? ['both']
-          : [menuType];
+        : [menuType];
     const routeDelDays = (resolvedRoute?.route_delivery_days ?? []).map((d) => d.day_of_week);
     const todayStr = new Date().toISOString().split('T')[0];
 
     for (const type of menuTypes) {
       const templateId =
-        type === 'Lunch'
-          ? selectedLunchTemplate?.id_template
-          : type === 'Dinner'
-            ? selectedDinnerTemplate?.id_template
-            : type === 'both'
-              ? (selectedLunchTemplate?.id_template ?? selectedDinnerTemplate?.id_template)
-              : selectedFamilyTemplate?.id_template;
+        type === 'Family'
+          ? selectedFamilyTemplate?.id_template
+          : mealTypesOf(type)
+              .map((t) => selectedTemplates[t]?.id_template)
+              .find(Boolean);
 
       const { data: orderData, error: orderError } = await supabase
         .schema('operations')
@@ -564,17 +584,16 @@ const AddOrder = ({ onSuccess }) => {
             route_id: isExpress ? null : (resolvedRoute?.id_route ?? null),
             classification: type,
             status: 'PENDING',
+            // La consulta de clientes solo trae el perfil embebido (no la columna
+            // *_macro_profile_id), por eso el id se toma del perfil.
             macro_profile_snapshot_id:
-              (type === 'Dinner'
-                ? selectedClient?.dinner_macro_profile_id
-                : selectedClient?.lunch_macro_profile_id) ?? null,
+              selectedClient?.[clientMacroKey(primaryMealType(type))]?.id_macro_profile ?? null,
             protein_snapshot: isExpress
               ? expressMacros.protein_value
-              : ((type === 'Dinner' ? dinnerMacros?.protein_value : lunchMacros?.protein_value) ??
-                null),
+              : (getBaseMacros(type)?.protein_value ?? null),
             carb_snapshot: isExpress
               ? expressMacros.carb_value
-              : ((type === 'Dinner' ? dinnerMacros?.carb_value : lunchMacros?.carb_value) ?? null),
+              : (getBaseMacros(type)?.carb_value ?? null),
           },
         ])
         .select('id_order')
@@ -624,9 +643,11 @@ const AddOrder = ({ onSuccess }) => {
           .from('order_day_details')
           .insert(
             detailsWithIdx.map(({ r, origIdx }) => {
+              // Cada receta usa los macros de su propio tiempo de comida; en un pedido
+              // combinado, las extras eligen con el toggle y el resto trae el de su plantilla.
               const effectiveType = r.isExtra
-                ? (extraMealTypes[`${day}-${origIdx}`] ?? type)
-                : type;
+                ? (extraMealTypes[`${day}-${origIdx}`] ?? primaryMealType(type))
+                : (r.mealType ?? primaryMealType(type));
               const eff = isExpress ? expressMacros : getEffectiveMacros(day, effectiveType);
               return {
                 order_day_id: dayData.id_order_day,
@@ -733,6 +754,12 @@ const AddOrder = ({ onSuccess }) => {
     if (onSuccess) onSuccess();
   };
 
+  const macrosByType = { Breakfast: breakfastMacros, Lunch: lunchMacros, Dinner: dinnerMacros };
+  const setMacrosFor = (type, updater) =>
+    (type === 'Breakfast' ? setBreakfastMacros : type === 'Dinner' ? setDinnerMacros : setLunchMacros)(
+      updater
+    );
+
   // ── Step label helpers ────────────────────────────────────────────────────────
   const stepLabels = familyClient ? FAMILY_STEPS : isExpress ? EXPRESS_STEPS : PERSONAL_STEPS;
   const displayStep = familyClient
@@ -817,12 +844,9 @@ const AddOrder = ({ onSuccess }) => {
           <StepMenu
             menuType={menuType}
             setMenuType={setMenuType}
-            lunchTemplates={lunchTemplates}
-            dinnerTemplates={dinnerTemplates}
-            selectedLunchTemplate={selectedLunchTemplate}
-            setSelectedLunchTemplate={setSelectedLunchTemplate}
-            selectedDinnerTemplate={selectedDinnerTemplate}
-            setSelectedDinnerTemplate={setSelectedDinnerTemplate}
+            templatesByType={templatesByType}
+            selectedTemplates={selectedTemplates}
+            onSelectTemplate={(type, tmpl) => setSelectedTemplates((p) => ({ ...p, [type]: tmpl }))}
             weekTemplateIds={weekTemplateIds}
           />
         )}
@@ -855,10 +879,8 @@ const AddOrder = ({ onSuccess }) => {
               setRouteManuallyChanged(true);
             }}
             showRouteChange={!familyClient}
-            lunchMacros={lunchMacros}
-            dinnerMacros={dinnerMacros}
-            onUpdateLunchMacro={updateLunchMacro}
-            onUpdateDinnerMacro={updateDinnerMacro}
+            macrosByType={macrosByType}
+            onUpdateMacro={(type, field, value) => setMacrosFor(type, (p) => ({ ...p, [field]: value }))}
             onResetAllDayMacros={resetAllDayMacros}
             getEffectiveMacros={getEffectiveMacros}
             isDayOverridden={isDayOverridden}
@@ -878,17 +900,15 @@ const AddOrder = ({ onSuccess }) => {
             onToggleDay={toggleDay}
             extraMealTypes={extraMealTypes}
             onExtraMealTypeChange={(key, cls) => setExtraMealTypes((p) => ({ ...p, [key]: cls }))}
-            clientLunchMacro={selectedClient?.lunch_macro}
-            clientDinnerMacro={selectedClient?.dinner_macro}
-            onApplyStandardLunch={() => setLunchMacros({ ...STANDARD_MACRO })}
-            onApplyStandardDinner={() => setDinnerMacros({ ...STANDARD_MACRO })}
-            onApplyClientLunch={() => {
-              const m = selectedClient?.lunch_macro;
-              if (m) setLunchMacros({ protein_value: m.protein_value, carb_value: m.carb_value });
+            clientMacros={{
+              Breakfast: selectedClient?.breakfast_macro,
+              Lunch: selectedClient?.lunch_macro,
+              Dinner: selectedClient?.dinner_macro,
             }}
-            onApplyClientDinner={() => {
-              const m = selectedClient?.dinner_macro;
-              if (m) setDinnerMacros({ protein_value: m.protein_value, carb_value: m.carb_value });
+            onApplyStandard={(type) => setMacrosFor(type, () => ({ ...STANDARD_MACRO }))}
+            onApplyClient={(type) => {
+              const m = selectedClient?.[clientMacroKey(type)];
+              if (m) setMacrosFor(type, () => ({ protein_value: m.protein_value, carb_value: m.carb_value }));
             }}
           />
         )}
@@ -926,8 +946,7 @@ const AddOrder = ({ onSuccess }) => {
             selectedFamilyTemplate={selectedFamilyTemplate}
             resolvedRoute={resolvedRoute}
             expressMacros={expressMacros}
-            lunchMacros={lunchMacros}
-            dinnerMacros={dinnerMacros}
+            macrosByType={macrosByType}
             expressRecipes={expressRecipes}
             dayRecipes={dayRecipes}
             ingredientOverrides={ingredientOverrides}
