@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import LogoUrl from '../assets/Oasis-logo.png';
+import Seo from '../components/public/Seo';
 import { WHATSAPP_LINK } from '../lib/siteContent';
 
 const Login = () => {
@@ -71,12 +72,25 @@ const Login = () => {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-oasis-cream">
+      <Seo
+        title="Login"
+        description="Ingresá a tu cuenta de Oasis para ver tus pedidos de comida saludable y repetir tus favoritos."
+        path="/login"
+        noindex
+      />
+
       {/* Panel izquierdo */}
       <div className="hidden lg:flex flex-col justify-between bg-oasis-olive-700 text-white p-12 relative overflow-hidden">
-        <span className="font-display italic text-9xl text-white/10 absolute -top-6 -left-4 select-none">
+        <span
+          aria-hidden="true"
+          className="font-display italic text-9xl text-white/10 absolute -top-6 -left-4 select-none"
+        >
           Oa
         </span>
-        <span className="font-display italic text-9xl text-white/10 absolute bottom-10 right-0 select-none">
+        <span
+          aria-hidden="true"
+          className="font-display italic text-9xl text-white/10 absolute bottom-10 right-0 select-none"
+        >
           sis
         </span>
 
@@ -116,10 +130,13 @@ const Login = () => {
 
           <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label className="text-sm font-medium text-oasis-ink/70">Correo electrónico</label>
+              <label htmlFor="login-email" className="text-sm font-medium text-oasis-ink/70">
+                Correo electrónico
+              </label>
               <div className="flex items-center mt-2 border border-oasis-olive-200 rounded-xl px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-oasis-olive-500 transition">
-                <Mail className="text-oasis-ink/30 mr-2" size={18} />
+                <Mail className="text-oasis-ink/30 mr-2" size={18} aria-hidden="true" />
                 <input
+                  id="login-email"
                   type="email"
                   placeholder="tu@correo.com"
                   className="w-full outline-none text-sm bg-transparent"
@@ -131,7 +148,9 @@ const Login = () => {
 
             <div>
               <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-oasis-ink/70">Contraseña</label>
+                <label htmlFor="login-password" className="text-sm font-medium text-oasis-ink/70">
+                  Contraseña
+                </label>
                 <Link
                   to="/forgot-password"
                   className="text-xs text-oasis-olive-600 hover:underline"
@@ -141,8 +160,9 @@ const Login = () => {
               </div>
 
               <div className="flex items-center mt-2 border border-oasis-olive-200 rounded-xl px-3 py-3 bg-white focus-within:ring-2 focus-within:ring-oasis-olive-500 transition">
-                <Lock className="text-oasis-ink/30 mr-2" size={18} />
+                <Lock className="text-oasis-ink/30 mr-2" size={18} aria-hidden="true" />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   className="w-full outline-none text-sm bg-transparent"
@@ -152,8 +172,8 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="ml-2 text-oasis-ink/40 hover:text-oasis-ink/70 transition"
-                  tabIndex={-1}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="ml-2 text-oasis-ink/70 hover:text-oasis-ink transition"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>

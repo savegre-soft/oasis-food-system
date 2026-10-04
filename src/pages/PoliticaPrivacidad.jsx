@@ -1,4 +1,5 @@
 import SectionBadge from '../components/public/SectionBadge';
+import Seo from '../components/public/Seo';
 
 const SECTIONS = [
   {
@@ -51,6 +52,13 @@ const SECTIONS = [
 const PoliticaPrivacidad = () => {
   return (
     <div>
+      <Seo
+        title="Política de privacidad"
+        description="Política de privacidad de Oasis: cómo tratamos tus datos personales al usar el sitio, escribirnos por WhatsApp o hacer un pedido."
+        path="/politica-privacidad"
+        noindex
+      />
+
       <section className="bg-oasis-olive-50 py-16">
         <div className="max-w-4xl mx-auto px-4 md:px-6">
           <span className="inline-block bg-oasis-butter text-oasis-butter-dark text-xs font-semibold px-3 py-1 rounded-full mb-4">
@@ -60,13 +68,13 @@ const PoliticaPrivacidad = () => {
           <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
             Política de privacidad
           </h1>
-          <p className="mt-3 text-sm text-oasis-ink/50">Última actualización: [fecha]</p>
+          <p className="mt-3 text-sm text-oasis-ink/70">Última actualización: [fecha]</p>
         </div>
       </section>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-[220px_1fr] gap-12">
         <aside className="hidden lg:block">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-oasis-ink/40 mb-4">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-oasis-ink/70 mb-4">
             En esta página
           </p>
           <ul className="space-y-2 text-sm">

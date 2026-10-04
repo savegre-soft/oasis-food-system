@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Seo from '../components/public/Seo';
 import { DELIVERY_ZONES, WHATSAPP_LINK } from '../lib/siteContent';
 
 const MOVE_ITEMS = [
@@ -36,6 +37,13 @@ const STATS = [
 const PublicAbout = () => {
   return (
     <div>
+      <Seo
+        title="Sobre nosotros"
+        description="Oasis prepara comida saludable y balanceada en la Zona Norte de Costa Rica desde hace 2 años: comida preparada, Well Shot y catering con entrega por ruta."
+        path="/nosotros"
+        keywords={['comida saludable Zona Norte', 'historia Oasis', 'catering y comida preparada']}
+      />
+
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12 items-center">
         <div>

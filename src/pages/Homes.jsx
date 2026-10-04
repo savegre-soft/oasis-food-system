@@ -6,6 +6,7 @@ import { Clock3, LayoutList, HeartHandshake, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Seo from '../components/public/Seo';
 import { DELIVERY_ZONES, INSTAGRAM_WELLSHOT, WHATSAPP_LINK } from '../lib/siteContent';
 
 const HELP_ITEMS = [
@@ -108,6 +109,13 @@ const Homes = () => {
 
   return (
     <div>
+      <Seo
+        title="Comida saludable preparada cada semana"
+        description="Comida preparada saludable y balanceada en la Zona Norte de Costa Rica. Pedí tu almuerzo con macros bajo control y recibilo en la puerta de tu casa por ruta de entrega."
+        path="/"
+        keywords={['almuerzos saludables', 'entrega de comida por ruta', 'macros bajo control']}
+      />
+
       {/* HERO */}
       <section className="bg-oasis-cream">
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-6 pb-4 text-center">
@@ -162,11 +170,11 @@ const Homes = () => {
             className="relative"
           >
             <PlaceholderImage tone="sand" className="aspect-square" caption="Foto: plato Oasis" />
-            <div className="absolute -top-4 -right-2 md:right-4 bg-white rounded-2xl shadow-lg px-4 py-3 text-sm">
-              <p className="text-oasis-ink/50 text-xs">Pedidos hasta el</p>
+            <div className="absolute -top-4 right-0 md:right-4 max-w-38 sm:max-w-none bg-white rounded-2xl shadow-lg px-4 py-3 text-sm">
+              <p className="text-oasis-ink/70 text-xs">Pedidos hasta el</p>
               <p className="font-semibold text-oasis-ink">viernes, 12 a.m.</p>
             </div>
-            <div className="absolute -bottom-4 left-2 md:-left-4 bg-oasis-olive-700 text-white rounded-2xl shadow-lg px-4 py-3 text-sm">
+            <div className="absolute -bottom-4 left-0 md:-left-4 max-w-38 sm:max-w-none bg-oasis-olive-700 text-white rounded-2xl shadow-lg px-4 py-3 text-sm">
               <p className="text-oasis-olive-200 text-xs tracking-wide uppercase">Entregas</p>
               <p className="font-semibold">Bajo pedido</p>
             </div>
@@ -398,7 +406,7 @@ const Homes = () => {
                   <span className="w-9 h-9 rounded-full bg-oasis-olive-200" />
                   <div>
                     <p className="text-sm font-semibold text-oasis-ink">Nombre del cliente</p>
-                    <p className="text-xs text-oasis-ink/50">Ciudad Quesada</p>
+                    <p className="text-xs text-oasis-ink/70">Ciudad Quesada</p>
                   </div>
                 </div>
               </div>

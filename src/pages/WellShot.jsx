@@ -1,5 +1,6 @@
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Seo from '../components/public/Seo';
 import { INSTAGRAM_WELLSHOT, WHATSAPP_LINK } from '../lib/siteContent';
 import { Leaf, Sparkles, ShoppingBag } from 'lucide-react';
 
@@ -58,6 +59,13 @@ const IMPACT = [
 const WellShot = () => {
   return (
     <div>
+      <Seo
+        title="Well Shot — shots funcionales saludables"
+        description="Well Shot by Oasis: shots funcionales con ingredientes naturales para bienestar, energía y cuidado de la piel. Reset, Energy Boost y Skin Glow, pedibles por WhatsApp."
+        path="/well-shot"
+        keywords={['shots funcionales', 'jugos saludables', 'bienestar natural']}
+      />
+
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12 items-center">
         <div>
@@ -144,7 +152,7 @@ const WellShot = () => {
                 </div>
 
                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-oasis-olive-100">
-                  <span className="text-oasis-ink/50 text-sm">₡ —</span>
+                  <span className="text-oasis-ink/70 text-sm">₡ —</span>
                   <a
                     href={WHATSAPP_LINK}
                     target="_blank"
@@ -178,12 +186,12 @@ const WellShot = () => {
             <div className="bg-white rounded-2xl p-5 border border-oasis-olive-100">
               <p className="font-semibold text-oasis-ink">Shot individual</p>
               <p className="text-sm text-oasis-ink/60 mt-1">Para tomar en el momento.</p>
-              <p className="text-oasis-ink/50 text-sm mt-3">₡ —</p>
+              <p className="text-oasis-ink/70 text-sm mt-3">₡ —</p>
             </div>
             <div className="bg-white rounded-2xl p-5 border border-oasis-olive-100">
               <p className="font-semibold text-oasis-ink">Presentación grande</p>
               <p className="text-sm text-oasis-ink/60 mt-1">Para tener en casa toda la semana.</p>
-              <p className="text-oasis-ink/50 text-sm mt-3">₡ —</p>
+              <p className="text-oasis-ink/70 text-sm mt-3">₡ —</p>
             </div>
           </div>
 

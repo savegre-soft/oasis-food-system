@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Seo from '../components/public/Seo';
 
 // Precio en vivo desde el combo/plato vinculado (si corresponde) — ver misma
 // lógica en PromotionsAdmin.jsx.
@@ -53,6 +54,17 @@ const Promotions = () => {
 
   return (
     <div>
+      <Seo
+        title="Promociones de comida saludable"
+        description="Promos de la semana en Oasis: combos de almuerzos saludables, Well Shot y snack bar a precio especial. Válidas hasta agotar existencias."
+        path="/promociones"
+        keywords={[
+          'promociones comida saludable',
+          'combos de almuerzo',
+          'ofertas comida preparada',
+        ]}
+      />
+
       {/* Header */}
       <section className="bg-oasis-olive-50 py-16 text-center">
         <div className="max-w-2xl mx-auto px-4">
@@ -68,10 +80,10 @@ const Promotions = () => {
       </section>
 
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-16">
-        {loading && <div className="text-center text-oasis-ink/50">Cargando promociones...</div>}
+        {loading && <div className="text-center text-oasis-ink/70">Cargando promociones...</div>}
 
         {!loading && promos.length === 0 && (
-          <div className="text-center text-oasis-ink/50 py-10">
+          <div className="text-center text-oasis-ink/70 py-10">
             No hay promociones activas en este momento. Volvé a revisar pronto.
           </div>
         )}

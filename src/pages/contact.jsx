@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, Instagram, MessageCircle, Truck, Clock3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
+import Seo from '../components/public/Seo';
 import {
   DELIVERY_ZONES,
   INSTAGRAM_OASIS,
@@ -120,6 +121,13 @@ const Contact = () => {
 
   return (
     <div>
+      <Seo
+        title="Contacto"
+        description="Contactá a Oasis para pedir comida saludable preparada o cotizar catering en la Zona Norte de Costa Rica. Respondemos por WhatsApp."
+        path="/contacto"
+        keywords={['contacto Oasis', 'pedidos WhatsApp', 'comida saludable Costa Rica']}
+      />
+
       {/* Header + form */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12">
         <div>
@@ -140,7 +148,7 @@ const Contact = () => {
                     <card.icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold tracking-wide uppercase text-oasis-ink/50">
+                    <p className="text-xs font-semibold tracking-wide uppercase text-oasis-ink/70">
                       {card.label}
                     </p>
                     <p className="text-sm text-oasis-ink mt-1 break-words">{card.value}</p>
@@ -179,8 +187,14 @@ const Contact = () => {
           ) : (
             <form className="grid sm:grid-cols-2 gap-5" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Nombre</label>
+                <label
+                  htmlFor="contact-name"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
+                  Nombre
+                </label>
                 <input
+                  id="contact-name"
                   type="text"
                   placeholder="Tu nombre"
                   value={name}
@@ -190,8 +204,14 @@ const Contact = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Teléfono</label>
+                <label
+                  htmlFor="contact-phone"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
+                  Teléfono
+                </label>
                 <input
+                  id="contact-phone"
                   type="tel"
                   placeholder="8888-8888"
                   value={phone}
@@ -201,10 +221,14 @@ const Contact = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">
+                <label
+                  htmlFor="contact-zone"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
                   Zona de entrega
                 </label>
                 <select
+                  id="contact-zone"
                   value={zone}
                   onChange={(e) => setZone(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
@@ -219,10 +243,14 @@ const Contact = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">
+                <label
+                  htmlFor="contact-interest"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
                   Me interesa
                 </label>
                 <input
+                  id="contact-interest"
                   type="text"
                   placeholder="Almuerzos, Well Shot, catering…"
                   value={interest}
@@ -232,8 +260,14 @@ const Contact = () => {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Mensaje</label>
+                <label
+                  htmlFor="contact-message"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
+                  Mensaje
+                </label>
                 <textarea
+                  id="contact-message"
                   rows="4"
                   placeholder="¿Alguna preferencia o alergia?"
                   value={message}

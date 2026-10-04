@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Seo from '../components/public/Seo';
 
 const SERVICES = [
   {
@@ -99,8 +100,11 @@ const CateringQuoteForm = () => {
   return (
     <form onSubmit={handleSubmit} className="grid sm:grid-cols-2 gap-5">
       <div>
-        <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Nombre</label>
+        <label htmlFor="catering-name" className="block text-sm font-medium text-oasis-ink/70 mb-2">
+          Nombre
+        </label>
         <input
+          id="catering-name"
           type="text"
           placeholder="Tu nombre"
           value={form.name}
@@ -110,8 +114,14 @@ const CateringQuoteForm = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Teléfono</label>
+        <label
+          htmlFor="catering-phone"
+          className="block text-sm font-medium text-oasis-ink/70 mb-2"
+        >
+          Teléfono
+        </label>
         <input
+          id="catering-phone"
           type="tel"
           placeholder="8888-8888"
           value={form.phone}
@@ -121,8 +131,11 @@ const CateringQuoteForm = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Fecha del evento</label>
+        <label htmlFor="catering-date" className="block text-sm font-medium text-oasis-ink/70 mb-2">
+          Fecha del evento
+        </label>
         <input
+          id="catering-date"
           type="date"
           value={form.eventDate}
           onChange={update('eventDate')}
@@ -131,8 +144,14 @@ const CateringQuoteForm = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Invitados</label>
+        <label
+          htmlFor="catering-guests"
+          className="block text-sm font-medium text-oasis-ink/70 mb-2"
+        >
+          Invitados
+        </label>
         <input
+          id="catering-guests"
           type="number"
           min="1"
           placeholder="Ej. 50"
@@ -143,8 +162,14 @@ const CateringQuoteForm = () => {
       </div>
 
       <div className="sm:col-span-2">
-        <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Tipo de evento</label>
+        <label
+          htmlFor="catering-event-type"
+          className="block text-sm font-medium text-oasis-ink/70 mb-2"
+        >
+          Tipo de evento
+        </label>
         <input
+          id="catering-event-type"
           type="text"
           placeholder="Corporativo, cumpleaños, boda…"
           value={form.eventType}
@@ -154,8 +179,14 @@ const CateringQuoteForm = () => {
       </div>
 
       <div className="sm:col-span-2">
-        <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Mensaje</label>
+        <label
+          htmlFor="catering-message"
+          className="block text-sm font-medium text-oasis-ink/70 mb-2"
+        >
+          Mensaje
+        </label>
         <textarea
+          id="catering-message"
           rows="4"
           placeholder="Contanos más detalles"
           value={form.message}
@@ -192,6 +223,17 @@ const CateringQuoteForm = () => {
 const Catering = () => {
   return (
     <div>
+      <Seo
+        title="Catering saludable para eventos"
+        description="Catering de comida saludable en la Zona Norte de Costa Rica: barras de comida, snack bar y bebidas para eventos corporativos y celebraciones. Cotizá tu evento por WhatsApp."
+        path="/catering"
+        keywords={[
+          'catering saludable',
+          'catering eventos Costa Rica',
+          'barra de comida saludable',
+        ]}
+      />
+
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16">
         <SectionBadge>Catering service</SectionBadge>

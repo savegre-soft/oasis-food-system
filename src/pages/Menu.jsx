@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import LeadForm from '../components/LeadForm';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Seo from '../components/public/Seo';
 import { getWeekRange } from '../components/orderUtils';
 import { WHATSAPP_LINK } from '../lib/siteContent';
 
@@ -36,8 +37,22 @@ const Menu = () => {
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
+  const closeButtonRef = useRef(null);
 
   const weekLabel = getWeekRange().label;
+
+  useEffect(() => {
+    if (!openModal) return;
+
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setOpenModal(false);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [openModal]);
 
   const loadRecipes = async () => {
     setLoading(true);
@@ -84,6 +99,13 @@ const Menu = () => {
 
   return (
     <div>
+      <Seo
+        title="Menú de la semana"
+        description="Menú semanal de comida preparada saludable en Costa Rica: almuerzos balanceados con proteína, carbohidrato y vegetales. Pedí por WhatsApp antes del viernes a medianoche."
+        path="/menu"
+        keywords={['menú semanal saludable', 'almuerzos balanceados', 'pedidos por WhatsApp']}
+      />
+
       {/* Header */}
       <section className="bg-oasis-olive-50 py-16 text-center relative overflow-hidden">
         <div className="max-w-3xl mx-auto px-4 relative">
@@ -116,7 +138,7 @@ const Menu = () => {
               </button>
             ))}
           </div>
-          <p className="text-sm text-oasis-ink/50">Semana del {weekLabel}</p>
+          <p className="text-sm text-oasis-ink/70">Semana del {weekLabel}</p>
         </div>
 
         <div className="max-w-md mb-10">
@@ -132,10 +154,10 @@ const Menu = () => {
           />
         </div>
 
-        {loading && <div className="text-center text-oasis-ink/50 py-10">Cargando menú...</div>}
+        {loading && <div className="text-center text-oasis-ink/70 py-10">Cargando menú...</div>}
 
         {!loading && recipes.length === 0 && (
-          <div className="text-center text-oasis-ink/50 py-10">
+          <div className="text-center text-oasis-ink/70 py-10">
             No encontramos platos con ese criterio.
           </div>
         )}
@@ -175,7 +197,7 @@ const Menu = () => {
                 </div>
 
                 <div className="flex items-center justify-between mt-5">
-                  <span className="text-oasis-ink/50 text-sm">₡ —</span>
+                  <span className="text-oasis-ink/70 text-sm">₡ —</span>
                   <button
                     onClick={() => openOrder(dish)}
                     className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white transition"
@@ -195,7 +217,7 @@ const Menu = () => {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-9 h-9 rounded-full text-sm font-medium transition ${
+                className={`w-10 h-10 rounded-full text-sm font-medium transition ${
                   page === p
                     ? 'bg-oasis-olive-700 text-white'
                     : 'bg-white border border-oasis-olive-200 text-oasis-ink/60 hover:border-oasis-olive-400'
@@ -241,16 +263,26 @@ const Menu = () => {
       {/* Modal */}
       {openModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-xl max-w-lg w-full relative p-8 md:p-10">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dish-modal-title"
+            className="bg-white rounded-3xl shadow-xl max-w-lg w-full relative p-8 md:p-10"
+          >
             <button
+              ref={closeButtonRef}
               onClick={() => setOpenModal(false)}
-              className="absolute top-4 right-4 text-oasis-ink/50 hover:text-oasis-ink text-xl"
+              aria-label="Cerrar"
+              className="absolute top-4 right-4 text-oasis-ink/70 hover:text-oasis-ink text-xl"
             >
               ✕
             </button>
 
             <div className="mb-6">
-              <h2 className="font-display text-2xl font-semibold text-oasis-ink">
+              <h2
+                id="dish-modal-title"
+                className="font-display text-2xl font-semibold text-oasis-ink"
+              >
                 {selectedDish ? `Interesado en: ${selectedDish.name}` : 'Quiero ser cliente'}
               </h2>
               <p className="mt-2 text-oasis-ink/60">

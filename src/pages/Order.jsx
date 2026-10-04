@@ -3,6 +3,7 @@ import { Minus, Plus } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
+import Seo from '../components/public/Seo';
 import { getWeekRange } from '../components/orderUtils';
 import { DELIVERY_ZONES, WHATSAPP_LINK } from '../lib/siteContent';
 
@@ -16,12 +17,13 @@ const WELL_SHOTS = [
   { key: 'wellshot-skin', name: 'Skin Glow', desc: 'Naranja, zanahoria, cúrcuma, jengibre' },
 ];
 
-const QtyControl = ({ value, onChange }) => (
+const QtyControl = ({ value, onChange, label }) => (
   <div className="flex items-center gap-3 bg-oasis-olive-50 rounded-full px-2 py-1">
     <button
       type="button"
       onClick={() => onChange(Math.max(0, value - 1))}
-      className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition"
+      aria-label={`Restar ${label}`}
+      className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition"
     >
       <Minus size={14} />
     </button>
@@ -29,7 +31,8 @@ const QtyControl = ({ value, onChange }) => (
     <button
       type="button"
       onClick={() => onChange(value + 1)}
-      className="w-7 h-7 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition"
+      aria-label={`Sumar ${label}`}
+      className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition"
     >
       <Plus size={14} />
     </button>
@@ -169,6 +172,13 @@ const Order = () => {
 
   return (
     <div>
+      <Seo
+        title="Armá tu pedido"
+        description="Armá tu pedido de comida saludable preparada en Oasis: elegí almuerzos y Well Shot, confirmá tu zona de entrega y enviá tu pedido por WhatsApp."
+        path="/ordenar"
+        keywords={['pedir comida saludable', 'armar pedido online', 'entrega bajo pedido']}
+      />
+
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-14">
         <SectionBadge>Hacé tu pedido</SectionBadge>
         <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
@@ -189,7 +199,7 @@ const Order = () => {
             <div>
               <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-4">Almuerzos</h2>
 
-              {loading && <p className="text-oasis-ink/50 text-sm">Cargando menú...</p>}
+              {loading && <p className="text-oasis-ink/70 text-sm">Cargando menú...</p>}
 
               <div className="space-y-3">
                 {recipes.map((dish) => {
@@ -204,9 +214,13 @@ const Order = () => {
                         {dish.description && (
                           <p className="text-sm text-oasis-ink/60 truncate">{dish.description}</p>
                         )}
-                        <p className="text-xs text-oasis-ink/40 mt-1">₡ —</p>
+                        <p className="text-xs text-oasis-ink/70 mt-1">₡ —</p>
                       </div>
-                      <QtyControl value={quantities[key] ?? 0} onChange={(v) => setQty(key, v)} />
+                      <QtyControl
+                        value={quantities[key] ?? 0}
+                        onChange={(v) => setQty(key, v)}
+                        label={dish.name}
+                      />
                     </div>
                   );
                 })}
@@ -225,11 +239,12 @@ const Order = () => {
                     <div className="min-w-0">
                       <p className="font-semibold text-oasis-ink">{shot.name}</p>
                       <p className="text-sm text-oasis-ink/60 truncate">{shot.desc}</p>
-                      <p className="text-xs text-oasis-ink/40 mt-1">₡ —</p>
+                      <p className="text-xs text-oasis-ink/70 mt-1">₡ —</p>
                     </div>
                     <QtyControl
                       value={quantities[shot.key] ?? 0}
                       onChange={(v) => setQty(shot.key, v)}
+                      label={shot.name}
                     />
                   </div>
                 ))}
@@ -242,7 +257,7 @@ const Order = () => {
             <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-4">Tu pedido</h2>
 
             {cartItems.length === 0 ? (
-              <p className="text-sm text-oasis-ink/50">Todavía no agregaste platos.</p>
+              <p className="text-sm text-oasis-ink/70">Todavía no agregaste platos.</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {cartItems.map((item) => (
@@ -250,7 +265,7 @@ const Order = () => {
                     <span>
                       {item.qty} × {item.name}
                     </span>
-                    <span className="text-oasis-ink/40">₡ —</span>
+                    <span className="text-oasis-ink/70">₡ —</span>
                   </li>
                 ))}
               </ul>
@@ -263,8 +278,14 @@ const Order = () => {
 
             <div className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Nombre</label>
+                <label
+                  htmlFor="order-name"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
+                  Nombre
+                </label>
                 <input
+                  id="order-name"
                   type="text"
                   placeholder="Tu nombre"
                   value={name}
@@ -274,10 +295,14 @@ const Order = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">
+                <label
+                  htmlFor="order-zone"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
                   Zona de entrega
                 </label>
                 <select
+                  id="order-zone"
                   value={zone}
                   onChange={(e) => setZone(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
@@ -292,19 +317,29 @@ const Order = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">
+                <label
+                  htmlFor="order-delivery-day"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
                   Día de entrega
                 </label>
                 <input
+                  id="order-delivery-day"
                   disabled
                   value="Según la ruta de tu zona"
-                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-oasis-olive-100/50 text-oasis-ink/50 cursor-not-allowed"
+                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-oasis-olive-100/50 text-oasis-ink/70 cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Notas</label>
+                <label
+                  htmlFor="order-notes"
+                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                >
+                  Notas
+                </label>
                 <textarea
+                  id="order-notes"
                   rows="3"
                   placeholder="Alergias, preferencias, dirección…"
                   value={notes}
@@ -320,7 +355,7 @@ const Order = () => {
               >
                 {submitting ? 'Enviando...' : 'Enviar pedido por WhatsApp'}
               </button>
-              <p className="text-xs text-oasis-ink/50 text-center">
+              <p className="text-xs text-oasis-ink/70 text-center">
                 Te confirmamos el pedido y el total por WhatsApp.
               </p>
             </div>
