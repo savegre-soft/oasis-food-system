@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import SectionBadge from '../components/public/SectionBadge';
+import PlaceholderImage from '../components/public/PlaceholderImage';
 
 // Precio en vivo desde el combo/plato vinculado (si corresponde) — ver misma
 // lógica en PromotionsAdmin.jsx.
@@ -15,6 +17,8 @@ const getDisplayPrice = (promo) => {
   }
   return promo.price_label;
 };
+
+const TONES = ['sage', 'butter', 'rose', 'sand'];
 
 const Promotions = () => {
   const { supabase } = useApp();
@@ -45,83 +49,165 @@ const Promotions = () => {
     loadPromotions();
   }, [supabase]);
 
+  const [featured, ...rest] = promos;
+
   return (
-    <div className="py-16">
+    <div>
       {/* Header */}
-      <div className="text-center mb-14">
-        <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">Promociones Especiales</h1>
-        <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
-          Aprovecha nuestras ofertas exclusivas y disfruta más sabor por menos precio.
-        </p>
-      </div>
-
-      {loading && <div className="text-center text-slate-500">Cargando promociones...</div>}
-
-      {!loading && promos.length === 0 && (
-        <div className="text-center text-slate-500 py-10">
-          No hay promociones activas en este momento. Volvé a revisar pronto.
+      <section className="bg-oasis-olive-50 py-16 text-center">
+        <div className="max-w-2xl mx-auto px-4">
+          <SectionBadge>Promociones</SectionBadge>
+          <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
+            Promos de la semana
+          </h1>
+          <p className="mt-4 text-oasis-ink/70">
+            Aprovechá nuestras promociones vigentes. Válidas hasta agotar existencias o según fecha
+            indicada.
+          </p>
         </div>
-      )}
+      </section>
 
-      {/* Promo Cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {promos.map((promo, index) => (
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-16">
+        {loading && <div className="text-center text-oasis-ink/50">Cargando promociones...</div>}
+
+        {!loading && promos.length === 0 && (
+          <div className="text-center text-oasis-ink/50 py-10">
+            No hay promociones activas en este momento. Volvé a revisar pronto.
+          </div>
+        )}
+
+        {/* Promo destacada */}
+        {featured && (
           <motion.div
-            key={promo.id_promotion}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.15 }}
-            viewport={{ once: true }}
-            className="relative bg-white rounded-3xl shadow-md hover:shadow-xl transition overflow-hidden flex flex-col"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-oasis-olive-700 rounded-3xl overflow-hidden grid md:grid-cols-2 mb-10"
           >
-            {promo.image_url && (
-              <img src={promo.image_url} alt={promo.title} className="w-full h-48 object-cover" />
-            )}
+            <div className="p-8 md:p-10 text-white">
+              {featured.badge && (
+                <span className="inline-block bg-oasis-terracotta text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                  {featured.badge}
+                </span>
+              )}
+              <h2 className="font-display text-3xl font-semibold">{featured.title}</h2>
+              {featured.description && (
+                <p className="mt-3 text-oasis-olive-100">{featured.description}</p>
+              )}
 
-            {promo.badge && (
-              <span className="absolute top-4 right-4 bg-emerald-600 text-white text-xs px-3 py-1 rounded-full shadow">
-                {promo.badge}
-              </span>
-            )}
-
-            <div className="p-8 flex flex-col justify-between flex-1">
-              <div>
-                <h3 className="text-xl font-semibold text-emerald-700 mb-3">{promo.title}</h3>
-                {promo.description && (
-                  <p className="text-slate-600 text-sm mb-6">{promo.description}</p>
+              <div className="mt-6 flex items-center gap-3">
+                {getDisplayPrice(featured) && (
+                  <span className="text-2xl font-bold">{getDisplayPrice(featured)}</span>
                 )}
               </div>
 
-              <div className="flex items-center justify-between mt-6">
-                {getDisplayPrice(promo) && (
-                  <span className="text-2xl font-bold text-emerald-800">{getDisplayPrice(promo)}</span>
-                )}
-
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/ordenar"
-                  className="bg-emerald-600 text-white px-5 py-2 rounded-xl font-medium hover:bg-emerald-700 hover:scale-105 transition"
+                  className="bg-white text-oasis-olive-700 px-6 py-2.5 rounded-full font-semibold hover:bg-oasis-cream transition"
                 >
-                  Ordenar
+                  Pedir esta promo
+                </Link>
+                <Link
+                  to="/contacto"
+                  className="border-2 border-white/60 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-white/10 transition"
+                >
+                  Ver condiciones
                 </Link>
               </div>
             </div>
+
+            {featured.image_url ? (
+              <img
+                src={featured.image_url}
+                alt={featured.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <PlaceholderImage
+                tone="olive"
+                rounded="rounded-none"
+                className="min-h-55"
+                caption="Foto: promo destacada"
+              />
+            )}
           </motion.div>
-        ))}
+        )}
+
+        {/* Resto de promos */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {rest.map((promo, index) => (
+            <motion.div
+              key={promo.id_promotion}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden"
+            >
+              {promo.image_url ? (
+                <img src={promo.image_url} alt={promo.title} className="w-full h-40 object-cover" />
+              ) : (
+                <PlaceholderImage
+                  tone={TONES[index % TONES.length]}
+                  rounded="rounded-none"
+                  className="h-40"
+                />
+              )}
+
+              <div className="p-6">
+                {promo.badge && (
+                  <span className="text-xs font-semibold text-oasis-terracotta-dark uppercase tracking-wide">
+                    {promo.badge}
+                  </span>
+                )}
+                <h3 className="font-semibold text-oasis-ink mt-1">{promo.title}</h3>
+                {promo.description && (
+                  <p className="text-oasis-ink/60 text-sm mt-2">{promo.description}</p>
+                )}
+                {promo.validity && (
+                  <p className="text-xs text-oasis-terracotta-dark mt-3">
+                    ● Válida: {promo.validity}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between mt-5">
+                  {getDisplayPrice(promo) && (
+                    <span className="font-semibold text-oasis-ink">{getDisplayPrice(promo)}</span>
+                  )}
+                  <Link
+                    to="/ordenar"
+                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white transition"
+                  >
+                    Pedir
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Condiciones */}
+        <div className="mt-10 bg-oasis-olive-50 rounded-2xl p-6 text-sm text-oasis-ink/60">
+          <p className="font-semibold text-oasis-ink mb-1">Condiciones</p>
+          Promociones no acumulables. Aplican para pedidos realizados antes del cierre del viernes a
+          medianoche y en las zonas de entrega disponibles.
+        </div>
       </div>
 
       {/* Bottom CTA */}
-      <div className="mt-20 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-emerald-800">
+      <section className="bg-oasis-olive-800 text-white py-16 text-center">
+        <h2 className="font-display text-2xl md:text-3xl font-semibold">
           ¡No dejes pasar estas ofertas!
         </h2>
-        <p className="mt-3 text-slate-600">Promociones válidas por tiempo limitado.</p>
+        <p className="mt-3 text-oasis-olive-200">Promociones válidas por tiempo limitado.</p>
         <Link
           to="/menu"
-          className="inline-block mt-6 bg-gradient-to-r from-emerald-600 to-teal-500 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 transition"
+          className="inline-block mt-6 bg-white text-oasis-olive-700 px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-oasis-cream transition"
         >
           Ver Menú Completo
         </Link>
-      </div>
+      </section>
     </div>
   );
 };

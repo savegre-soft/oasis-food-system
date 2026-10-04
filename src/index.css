@@ -1,10 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: 'Fraunces', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-oasis-cream: #faf6ec;
+  --color-oasis-cream-dark: #f1ecdc;
+  --color-oasis-paper: #fdfbf5;
+
+  --color-oasis-olive-50: #eef1e1;
+  --color-oasis-olive-100: #dde3c6;
+  --color-oasis-olive-200: #c3ce9f;
+  --color-oasis-olive-300: #a7b878;
+  --color-oasis-olive-400: #899f52;
+  --color-oasis-olive-500: #6e8338;
+  --color-oasis-olive-600: #596b2c;
+  --color-oasis-olive-700: #475426;
+  --color-oasis-olive-800: #343c1b;
+  --color-oasis-olive-900: #242a13;
+
+  --color-oasis-ink: #2a2a1f;
+  --color-oasis-terracotta: #d9733e;
+  --color-oasis-terracotta-dark: #c25f2d;
+  --color-oasis-rose: #f3dcda;
+  --color-oasis-rose-dark: #a8554a;
+  --color-oasis-butter: #f6e7b8;
+  --color-oasis-butter-dark: #b98a2d;
+  --color-oasis-sand: #e9d9c3;
+  --color-oasis-sage: #dbe2c9;
+}
 
 html,
 body {
   overflow-y: auto;
   height: auto;
+  font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
 }
 
 .bg-primary {

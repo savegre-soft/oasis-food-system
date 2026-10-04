@@ -1,31 +1,79 @@
 import { useState } from 'react';
-// eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
-import { motion } from 'framer-motion';
+import { ChevronDown, Instagram, MessageCircle, Truck, Clock3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import SectionBadge from '../components/public/SectionBadge';
+import {
+  DELIVERY_ZONES,
+  INSTAGRAM_OASIS,
+  INSTAGRAM_WELLSHOT,
+  ORDER_CUTOFF,
+  WHATSAPP_LINK,
+} from '../lib/siteContent';
 
-// Antes era un componente puramente presentacional que dependía de un
-// `onSubmit` por props — en App.jsx se renderiza sin esa prop, así que el
-// formulario nunca persistía nada. Ahora guarda cada mensaje en `operations
-// .leads` (source='contacto'), visible desde la bandeja interna "Prospectos"
-// (RF-PUB-03, docs/v2/02_REQUERIMIENTOS_SITIO_PUBLICO.md).
-const Contact = ({
-  title = 'Contáctanos',
-  description = '¿Tenés alguna duda? Escribinos y te respondemos a la brevedad.',
-  location = '',
-  phone = '',
-  schedule = '',
-}) => {
+const FAQS = [
+  {
+    q: '¿Hasta cuándo puedo hacer mi pedido?',
+    a: 'Cerramos pedidos los viernes a medianoche para la semana siguiente.',
+  },
+  {
+    q: '¿A qué zonas entregan?',
+    a: `Entregamos en ${DELIVERY_ZONES.join(', ')}.`,
+  },
+  {
+    q: '¿Tengo que suscribirme?',
+    a: 'No. Podés pedir por semana, sin suscripciones ni compromisos.',
+  },
+  {
+    q: '¿Cómo pago?',
+    a: 'Coordinamos el método de pago por WhatsApp al confirmar tu pedido.',
+  },
+];
+
+const INFO_CARDS = [
+  {
+    icon: MessageCircle,
+    label: 'WhatsApp',
+    value: 'wa.me/message/ZYFLIBTMILUPK1',
+    href: WHATSAPP_LINK,
+  },
+  {
+    icon: Instagram,
+    label: 'Instagram',
+    value: `${INSTAGRAM_OASIS.handle} · ${INSTAGRAM_WELLSHOT.handle}`,
+    href: INSTAGRAM_OASIS.url,
+  },
+  { icon: Truck, label: 'Entregas', value: DELIVERY_ZONES.join(' · ') },
+  { icon: Clock3, label: 'Pedidos', value: ORDER_CUTOFF },
+];
+
+const FaqItem = ({ item, open, onToggle }) => (
+  <div className="border-b border-oasis-olive-200 py-5">
+    <button onClick={onToggle} className="w-full flex items-center justify-between text-left gap-4">
+      <span className="font-semibold text-oasis-ink">{item.q}</span>
+      <ChevronDown
+        size={18}
+        className={`flex-none text-oasis-olive-600 transition-transform ${open ? 'rotate-180' : ''}`}
+      />
+    </button>
+    {open && <p className="mt-3 text-sm text-oasis-ink/60">{item.a}</p>}
+  </div>
+);
+
+const Contact = () => {
   const { supabase } = useApp();
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [zone, setZone] = useState('');
+  const [interest, setInterest] = useState('');
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [openFaq, setOpenFaq] = useState(0);
 
-  const canSubmit = name.trim() !== '' && message.trim() !== '';
+  const canSubmit = name.trim() !== '' && phone.trim() !== '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,14 +87,22 @@ const Contact = ({
     setLoading(true);
     setError('');
 
+    const details = [
+      zone && `Zona de entrega: ${zone}`,
+      interest && `Le interesa: ${interest}`,
+      message && `Mensaje: ${message}`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
     const { error: insertError } = await supabase
       .schema('operations')
       .from('leads')
       .insert([
         {
           name: name.trim(),
-          email: email.trim() || null,
-          message: message.trim(),
+          phone: phone.trim(),
+          message: details || null,
           source: 'contacto',
         },
       ]);
@@ -63,76 +119,134 @@ const Contact = ({
   };
 
   return (
-    <div className="py-16 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          {title && <h1 className="text-4xl md:text-5xl font-bold text-emerald-800">{title}</h1>}
+    <div>
+      {/* Header + form */}
+      <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12">
+        <div>
+          <SectionBadge>Contacto</SectionBadge>
+          <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
+            Hablemos de tu próximo pedido
+          </h1>
+          <p className="mt-4 text-oasis-ink/70 max-w-md">
+            La forma más rápida de pedir es por WhatsApp. También podés dejarnos tus datos y te
+            escribimos.
+          </p>
 
-          {description && <p className="mt-4 text-slate-600">{description}</p>}
-        </motion.div>
+          <div className="mt-8 grid sm:grid-cols-2 gap-4">
+            {INFO_CARDS.map((card) => {
+              const content = (
+                <div className="bg-white rounded-2xl border border-oasis-olive-100 p-5 flex items-start gap-3 h-full">
+                  <span className="flex-none w-9 h-9 rounded-full bg-oasis-olive-100 text-oasis-olive-700 flex items-center justify-center">
+                    <card.icon size={16} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold tracking-wide uppercase text-oasis-ink/50">
+                      {card.label}
+                    </p>
+                    <p className="text-sm text-oasis-ink mt-1 break-words">{card.value}</p>
+                  </div>
+                </div>
+              );
 
-        {/* Form Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="bg-white shadow-xl rounded-3xl p-8 md:p-12"
-        >
+              return card.href ? (
+                <a
+                  key={card.label}
+                  href={card.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:shadow-md transition rounded-2xl"
+                >
+                  {content}
+                </a>
+              ) : (
+                <div key={card.label}>{content}</div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10">
+          <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-1">
+            Quiero ser cliente
+          </h2>
+          <p className="text-sm text-oasis-ink/60 mb-6">Dejanos tus datos y te contactamos.</p>
+
           {done ? (
-            <div className="text-center py-6">
-              <h3 className="text-xl font-semibold text-emerald-700 mb-2">¡Mensaje enviado!</h3>
-              <p className="text-slate-600">Te vamos a responder a la brevedad.</p>
+            <div className="text-center py-10">
+              <h3 className="font-semibold text-oasis-ink mb-2">¡Mensaje enviado!</h3>
+              <p className="text-oasis-ink/60 text-sm">Te vamos a responder a la brevedad.</p>
             </div>
           ) : (
-            <form className="grid gap-6" onSubmit={handleSubmit}>
+            <form className="grid sm:grid-cols-2 gap-5" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Nombre</label>
+                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Nombre</label>
                 <input
                   type="text"
                   placeholder="Tu nombre"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Correo Electrónico <span className="text-slate-400 font-normal">(opcional)</span>
+                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Teléfono</label>
+                <input
+                  type="tel"
+                  placeholder="8888-8888"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">
+                  Zona de entrega
+                </label>
+                <select
+                  value={zone}
+                  onChange={(e) => setZone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
+                >
+                  <option value="">Elegí tu zona</option>
+                  {DELIVERY_ZONES.map((z) => (
+                    <option key={z} value={z}>
+                      {z}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">
+                  Me interesa
                 </label>
                 <input
-                  type="email"
-                  placeholder="correo@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                  type="text"
+                  placeholder="Almuerzos, Well Shot, catering…"
+                  value={interest}
+                  onChange={(e) => setInterest(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Mensaje</label>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-oasis-ink/70 mb-2">Mensaje</label>
                 <textarea
-                  rows="5"
-                  placeholder="Escribe tu mensaje aquí..."
+                  rows="4"
+                  placeholder="¿Alguna preferencia o alergia?"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition resize-none"
                 />
               </div>
 
-              {/* Honeypot */}
               <div className="absolute left-[-9999px]" aria-hidden="true">
                 <label htmlFor="website">Sitio web</label>
                 <input
                   type="text"
                   id="website"
-                  name="website"
                   tabIndex={-1}
                   autoComplete="off"
                   value={honeypot}
@@ -140,45 +254,40 @@ const Contact = ({
                 />
               </div>
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
               <button
                 type="submit"
                 disabled={!canSubmit || loading}
-                className="mt-4 bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3 rounded-2xl font-semibold shadow-lg hover:scale-105 hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Enviando...' : 'Enviar Mensaje'}
+                {loading ? 'Enviando...' : 'Enviar'}
               </button>
             </form>
           )}
-        </motion.div>
+        </div>
+      </section>
 
-        {/* Extra Info */}
-        {(location || phone || schedule) && (
-          <div className="mt-12 grid md:grid-cols-3 gap-6 text-center">
-            {location && (
-              <div className="bg-emerald-50 rounded-2xl p-6">
-                <h3 className="font-semibold text-emerald-700 mb-2">📍 Ubicación</h3>
-                <p className="text-sm text-slate-600">{location}</p>
-              </div>
-            )}
+      {/* FAQ */}
+      <section className="bg-oasis-olive-50 py-20">
+        <div className="max-w-4xl mx-auto px-4 md:px-6">
+          <SectionBadge>FAQ</SectionBadge>
+          <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3 mb-8">
+            Preguntas frecuentes
+          </h2>
 
-            {phone && (
-              <div className="bg-emerald-50 rounded-2xl p-6">
-                <h3 className="font-semibold text-emerald-700 mb-2">📞 Teléfono</h3>
-                <p className="text-sm text-slate-600">{phone}</p>
-              </div>
-            )}
-
-            {schedule && (
-              <div className="bg-emerald-50 rounded-2xl p-6">
-                <h3 className="font-semibold text-emerald-700 mb-2">⏰ Horario</h3>
-                <p className="text-sm text-slate-600">{schedule}</p>
-              </div>
-            )}
+          <div>
+            {FAQS.map((item, i) => (
+              <FaqItem
+                key={item.q}
+                item={item}
+                open={openFaq === i}
+                onToggle={() => setOpenFaq(openFaq === i ? -1 : i)}
+              />
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
     </div>
   );
 };

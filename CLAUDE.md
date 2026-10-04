@@ -39,9 +39,15 @@
 |---|---|
 | `/` | Home público |
 | `/menu` | Menú público |
-| `/contacto` | Formulario de contacto |
+| `/well-shot` | Shots funcionales Well Shot by Oasis |
+| `/catering` | Catering service + cotizador de eventos |
 | `/promociones` | Página de promociones |
-| `/ordenar` | Orden pública de cliente |
+| `/nosotros` | Sobre nosotros (público — distinto del `/about` privado) |
+| `/contacto` | Formulario de contacto + FAQ |
+| `/ordenar` | Armar pedido (carrito + envío por WhatsApp) |
+| `/politica-privacidad` | Política de privacidad |
+
+Diseño del sitio público: paleta verde oliva/crema definida como tokens Tailwind v4 (`@theme` en `src/index.css`, prefijo `oasis-*`) + tipografía `font-display` (Fraunces) para títulos. Contenido de marca (WhatsApp, Instagram, zonas de entrega, links de nav) centralizado en `src/lib/siteContent.js`. Componentes compartidos en `src/components/public/` (`SectionBadge`, `PlaceholderImage`, `PublicFooter`).
 
 ---
 
