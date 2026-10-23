@@ -6,19 +6,25 @@
 import { motion } from 'framer-motion';
 import { fadeUp, staggerContainer, viewportOnce } from '../../lib/motion';
 
-// Revela un bloque al entrar en viewport (fundido + desplazamiento).
+// Revela un bloque (fundido + desplazamiento).
 // `as` permite cambiar la etiqueta (p. ej. "section", "li", "ul").
-export const Reveal = ({ as = 'div', variants = fadeUp, className = '', children, ...rest }) => {
+// `inView` (por defecto true) usa scroll-reveal; con inView={false} anima al
+// montar — necesario para contenido principal que se pagina o carga async
+// (si no, el whileInView con once:true deja ocultas las tandas siguientes).
+export const Reveal = ({
+  as = 'div',
+  variants = fadeUp,
+  inView = true,
+  className = '',
+  children,
+  ...rest
+}) => {
   const Tag = motion[as] ?? motion.div;
+  const trigger = inView
+    ? { whileInView: 'show', viewport: viewportOnce }
+    : { animate: 'show' };
   return (
-    <Tag
-      variants={variants}
-      initial="hidden"
-      whileInView="show"
-      viewport={viewportOnce}
-      className={className}
-      {...rest}
-    >
+    <Tag variants={variants} initial="hidden" {...trigger} className={className} {...rest}>
       {children}
     </Tag>
   );
@@ -29,17 +35,20 @@ export const Stagger = ({
   as = 'div',
   stagger = 0.08,
   delayChildren = 0,
+  inView = true,
   className = '',
   children,
   ...rest
 }) => {
   const Tag = motion[as] ?? motion.div;
+  const trigger = inView
+    ? { whileInView: 'show', viewport: viewportOnce }
+    : { animate: 'show' };
   return (
     <Tag
       variants={staggerContainer(stagger, delayChildren)}
       initial="hidden"
-      whileInView="show"
-      viewport={viewportOnce}
+      {...trigger}
       className={className}
       {...rest}
     >
