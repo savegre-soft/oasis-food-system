@@ -55,11 +55,14 @@ const formatWeekLabel = (start, end) => {
 const Menu = () => {
   const { supabase } = useApp();
 
-  // menu = { Lunch: plantilla|null, Dinner: plantilla|null }
-  const [menu, setMenu] = useState({ Lunch: null, Dinner: null });
+  // Plantillas crudas (Lunch/Dinner de todas las semanas) + overrides de la
+  // semana activa. El menú de cada semana se resuelve en render.
+  const [templates, setTemplates] = useState([]);
+  const [overrides, setOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [meal, setMeal] = useState('Lunch');
+  const [week, setWeek] = useState(null); // week_of_month elegida (null = semana activa)
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
@@ -67,7 +70,7 @@ const Menu = () => {
   const dialogRef = useRef(null);
 
   const { weekStart, weekEnd } = getWeekRange();
-  const weekLabel = formatWeekLabel(weekStart, weekEnd);
+  const currentWeekOfMonth = getWeekOfMonth(weekStart);
 
   useEffect(() => {
     if (!openModal) return;
@@ -119,7 +122,6 @@ const Menu = () => {
     const load = async () => {
       setLoading(true);
 
-      const weekOfMonth = getWeekOfMonth(weekStart);
       const weekStartStr = toDateString(weekStart);
 
       const [tplRes, ovrRes] = await Promise.all([
@@ -147,22 +149,14 @@ const Menu = () => {
         return;
       }
 
-      const templates = tplRes.data ?? [];
-      const overrides = {};
+      const ovr = {};
       (ovrRes.data ?? []).forEach((o) => {
-        overrides[o.meal_type] = o.template_id;
+        ovr[o.meal_type] = o.template_id;
       });
 
-      const resolve = (mealType) => {
-        const effectiveId =
-          overrides[mealType] ??
-          templates.find((t) => t.meal_type === mealType && t.week_of_month === weekOfMonth)
-            ?.id_template;
-        return templates.find((t) => t.id_template === effectiveId) ?? null;
-      };
-
       setLoadError('');
-      setMenu({ Lunch: resolve('Lunch'), Dinner: resolve('Dinner') });
+      setTemplates(tplRes.data ?? []);
+      setOverrides(ovr);
       setLoading(false);
     };
 
@@ -174,10 +168,31 @@ const Menu = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
-  const availableMeals = MEALS.filter((m) => menu[m]);
+  const effectiveWeek = week ?? currentWeekOfMonth;
+
+  // Semanas con al menos una plantilla (week_of_month), ordenadas.
+  const weeks = [...new Set(templates.map((t) => t.week_of_month))]
+    .filter((w) => w != null)
+    .sort((a, b) => a - b);
+
+  // Plantilla efectiva para (semana, tiempo de comida). El override puntual solo
+  // aplica a la semana activa; en el resto se usa la plantilla por week_of_month.
+  const templateFor = (wk, mealType) => {
+    if (wk === currentWeekOfMonth && overrides[mealType]) {
+      return templates.find((t) => t.id_template === overrides[mealType]) ?? null;
+    }
+    return templates.find((t) => t.week_of_month === wk && t.meal_type === mealType) ?? null;
+  };
+
+  const availableMeals = MEALS.filter((m) => templateFor(effectiveWeek, m));
   // Tiempo de comida efectivo a mostrar (cae al disponible si el activo no tiene menú).
-  const activeMeal = menu[meal] ? meal : availableMeals[0];
-  const cards = cardsOf(menu[activeMeal]);
+  const activeMeal = templateFor(effectiveWeek, meal) ? meal : availableMeals[0];
+  const cards = cardsOf(templateFor(effectiveWeek, activeMeal));
+
+  const isCurrentWeek = effectiveWeek === currentWeekOfMonth;
+  const weekLabel = isCurrentWeek
+    ? `Semana del ${formatWeekLabel(weekStart, weekEnd)}`
+    : `Semana ${effectiveWeek} del mes`;
 
   const openOrder = (dish) => {
     setSelectedDish(dish);
@@ -200,8 +215,7 @@ const Menu = () => {
           <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
             Cada menú está pensado para cuidarte
           </h1>
-          <p className="mt-4 text-oasis-ink/70">Semana del {weekLabel}</p>
-          <p className="mt-2 text-sm text-oasis-ink/60">
+          <p className="mt-4 text-oasis-ink/70">
             Elegí tus platos y hacé tu pedido por WhatsApp. Cerramos pedidos los viernes a
             medianoche.
           </p>
@@ -218,17 +232,54 @@ const Menu = () => {
           </div>
         )}
 
-        {!loading && !loadError && availableMeals.length === 0 && (
+        {!loading && !loadError && weeks.length === 0 && (
           <div className="text-center text-oasis-ink/70 py-10">
-            Todavía no hay un menú publicado para esta semana. Escribinos por WhatsApp y con gusto
-            te contamos qué hay disponible.
+            Todavía no hay un menú publicado. Escribinos por WhatsApp y con gusto te contamos qué
+            hay disponible.
           </div>
         )}
 
-        {!loading && !loadError && availableMeals.length > 0 && (
+        {!loading && !loadError && weeks.length > 0 && (
           <>
-            {/* Pestañas Almuerzos / Cenas */}
-            <div className="flex justify-center gap-2 mb-10">
+            {/* Selector de semana — permite ver el menú de las otras semanas */}
+            {weeks.length > 1 && (
+              <div className="flex flex-wrap justify-center gap-2 mb-4">
+                {weeks.map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => setWeek(w)}
+                    aria-pressed={effectiveWeek === w}
+                    className={`px-4 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
+                      effectiveWeek === w
+                        ? 'bg-oasis-olive-700 text-white border-oasis-olive-700'
+                        : 'bg-white text-oasis-ink/70 border-oasis-olive-200 hover:border-oasis-olive-400'
+                    }`}
+                  >
+                    Semana {w}
+                    {w === currentWeekOfMonth && (
+                      <span
+                        className={`ml-1.5 text-[10px] uppercase tracking-wide ${
+                          effectiveWeek === w ? 'text-oasis-olive-200' : 'text-oasis-olive-500'
+                        }`}
+                      >
+                        · actual
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-center text-sm text-oasis-ink/60 mb-10">{weekLabel}</p>
+
+            {availableMeals.length === 0 ? (
+              <div className="text-center text-oasis-ink/70 py-10">
+                No hay menú publicado para esta semana todavía.
+              </div>
+            ) : (
+              <>
+                {/* Pestañas Almuerzos / Cenas */}
+                <div className="flex justify-center gap-2 mb-10">
               {availableMeals.map((m) => (
                 <button
                   key={m}
@@ -303,6 +354,8 @@ const Menu = () => {
                 ))}
               </motion.div>
             </AnimatePresence>
+              </>
+            )}
           </>
         )}
       </div>
