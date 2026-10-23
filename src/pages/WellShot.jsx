@@ -1,5 +1,5 @@
 import SectionBadge from '../components/public/SectionBadge';
-import PlaceholderImage from '../components/public/PlaceholderImage';
+import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { scaleIn } from '../lib/motion';
@@ -10,6 +10,7 @@ const FLAVORS = [
   {
     key: 'reset',
     tone: 'butter',
+    img: '/photos/wellshot/4.png',
     tag: 'Bienestar',
     name: 'RESET',
     desc: 'Ideal después de comidas pesadas o días de cansancio',
@@ -23,6 +24,7 @@ const FLAVORS = [
   {
     key: 'energy',
     tone: 'rose',
+    img: '/photos/wellshot/2.png',
     tag: 'Energía',
     name: 'ENERGY BOOST',
     desc: 'Ideal antes de entrenar o para aumentar el enfoque',
@@ -36,6 +38,7 @@ const FLAVORS = [
   {
     key: 'skin',
     tone: 'sand',
+    img: '/photos/wellshot/3.png',
     tag: 'Cuidado de la piel',
     name: 'SKIN GLOW',
     desc: 'Ideal para empezar el día con energía natural',
@@ -106,7 +109,13 @@ const WellShot = () => {
         </Reveal>
 
         <Reveal variants={scaleIn}>
-          <PlaceholderImage tone="butter" className="aspect-square" caption="Foto: Well Shot" />
+          <Photo
+            src="/photos/wellshot/5.png"
+            alt="Los tres Well Shot by Oasis con jengibre, remolacha y zanahoria"
+            className="aspect-638/821"
+            loading="eager"
+            fetchPriority="high"
+          />
         </Reveal>
       </section>
 
@@ -125,10 +134,10 @@ const WellShot = () => {
                 whileHover={{ y: -8 }}
                 className="bg-white rounded-3xl p-7 shadow-sm hover:shadow-xl transition-shadow flex flex-col"
               >
-                <PlaceholderImage
-                  tone={flavor.tone}
-                  className="aspect-4/5 mb-6"
-                  caption={flavor.name}
+                <Photo
+                  src={flavor.img}
+                  alt={`Well Shot ${flavor.name}`}
+                  className="aspect-3/4 mb-6"
                 />
 
                 <span className="inline-block self-start bg-oasis-olive-100 text-oasis-olive-700 text-xs font-semibold px-3 py-1 rounded-full">
@@ -178,7 +187,11 @@ const WellShot = () => {
       {/* PRESENTACIONES */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
         <Reveal variants={scaleIn}>
-          <PlaceholderImage tone="sand" className="aspect-4/3" />
+          <Photo
+            src="/photos/wellshot/1.png"
+            alt="Well Shot en presentación grande y shot individual, para hoy o toda la semana"
+            className="aspect-446/596"
+          />
         </Reveal>
 
         <Reveal>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { scaleIn } from '../lib/motion';
@@ -258,14 +259,13 @@ const Catering = () => {
           </div>
         </Reveal>
 
-        <Stagger className="mt-12 grid md:grid-cols-2 gap-6">
-          <StaggerItem variants={scaleIn}>
-            <PlaceholderImage tone="sage" className="aspect-4/3" caption="Foto: barra de evento" />
-          </StaggerItem>
-          <StaggerItem variants={scaleIn}>
-            <PlaceholderImage tone="sand" className="aspect-4/3" caption="Foto: equipo sirviendo" />
-          </StaggerItem>
-        </Stagger>
+        <Reveal variants={scaleIn} className="mt-12 flex justify-center">
+          <Photo
+            src="/photos/oasis/catering.png"
+            alt="Mesa de catering Oasis: panadería, cupcakes y pastel para eventos"
+            className="aspect-683/854 w-full max-w-md"
+          />
+        </Reveal>
       </section>
 
       {/* SERVICIOS */}

@@ -6,6 +6,7 @@ import { Clock3, LayoutList, HeartHandshake, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { EASE, scaleIn } from '../lib/motion';
@@ -176,7 +177,13 @@ const Homes = () => {
             transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
             className="relative"
           >
-            <PlaceholderImage tone="sand" className="aspect-square" caption="Foto: plato Oasis" />
+            <Photo
+              src="/photos/oasis/almuerzos.png"
+              alt="Cuatro almuerzos Oasis en bowls: vegetales, proteína y arroz"
+              className="aspect-679/852"
+              loading="eager"
+              fetchPriority="high"
+            />
             {/* Tarjetas flotantes: oscilación lenta y sutil para dar vida al hero. */}
             <motion.div
               animate={{ y: [0, -8, 0] }}
@@ -213,7 +220,11 @@ const Homes = () => {
       {/* 3 COSAS EN LAS QUE TE AYUDA */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
         <Reveal variants={scaleIn}>
-          <PlaceholderImage tone="olive" className="aspect-4/3" caption="Foto: plato Oasis" />
+          <Photo
+            src="/photos/oasis/menu.png"
+            alt="Variedad de platos Oasis: pastas, arroces, pollo y ensaladas"
+            className="aspect-637/856"
+          />
         </Reveal>
 
         <div>
@@ -324,7 +335,11 @@ const Homes = () => {
       <section className="bg-oasis-terracotta/10">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
           <Reveal variants={scaleIn} className="lg:order-2">
-            <PlaceholderImage tone="butter" className="aspect-4/3" caption="Well Shot by Oasis" />
+            <Photo
+              src="/photos/wellshot/5.png"
+              alt="Los tres Well Shot by Oasis: Reset, Energy Boost y Skin Glow con sus ingredientes"
+              className="aspect-638/821"
+            />
           </Reveal>
 
           <Reveal>

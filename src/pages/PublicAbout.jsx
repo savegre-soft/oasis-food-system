@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { scaleIn } from '../lib/motion';
@@ -59,15 +60,12 @@ const PublicAbout = () => {
           </p>
         </Reveal>
 
-        <Reveal variants={scaleIn} className="relative">
-          <PlaceholderImage tone="olive" className="aspect-4/3" caption="Foto: Oasis" />
-          <div className="absolute -bottom-6 left-4 bg-oasis-olive-700 text-white rounded-2xl shadow-lg px-5 py-4 text-center">
-            <p className="font-display text-3xl font-semibold">2</p>
-            <p className="text-xs text-oasis-olive-200 uppercase tracking-wide">Años</p>
-            <p className="text-xs italic text-oasis-olive-200 mt-1 max-w-36">
-              Gracias por ser parte de esta historia
-            </p>
-          </div>
+        <Reveal variants={scaleIn}>
+          <Photo
+            src="/photos/oasis/nosotros.png"
+            alt="Clienta de Oasis sosteniendo un bowl — 2 años cuidando a la Zona Norte"
+            className="aspect-812/755"
+          />
         </Reveal>
       </section>
 
