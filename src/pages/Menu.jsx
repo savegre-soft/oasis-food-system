@@ -205,8 +205,14 @@ const Menu = () => {
           </div>
         )}
 
-        {/* Grid */}
-        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" stagger={0.05}>
+        {/* Grid — anima al montar (no scroll-reveal) y re-anima al cambiar de
+            página con key={page}, para que las tandas paginadas siempre se vean. */}
+        <Stagger
+          key={page}
+          inView={false}
+          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          stagger={0.05}
+        >
           {recipes.map((dish, index) => (
             <StaggerItem
               key={dish.id_recipe}
