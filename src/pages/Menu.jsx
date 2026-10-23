@@ -6,7 +6,6 @@ import LeadForm from '../components/LeadForm';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
-import { Stagger, StaggerItem } from '../components/public/Motion';
 import { EASE } from '../lib/motion';
 import { getWeekRange } from '../components/orderUtils';
 import { WHATSAPP_LINK } from '../lib/siteContent';
@@ -205,19 +204,13 @@ const Menu = () => {
           </div>
         )}
 
-        {/* Grid — anima al montar (no scroll-reveal) y re-anima al cambiar de
-            página con key={page}, para que las tandas paginadas siempre se vean. */}
-        <Stagger
-          key={page}
-          inView={false}
-          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
-          stagger={0.05}
-        >
+        {/* Grid de platos — sin animación de entrada: contenido principal que se
+            pagina, debe verse siempre. Solo se conserva el hover (CSS). */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {recipes.map((dish, index) => (
-            <StaggerItem
+            <div
               key={dish.id_recipe}
-              whileHover={{ y: -6 }}
-              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-xl hover:border-oasis-olive-200 transition"
+              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-xl hover:border-oasis-olive-200 hover:-translate-y-1.5 transition"
             >
               <div className="overflow-hidden">
                 {dish.image_url ? (
@@ -254,9 +247,9 @@ const Menu = () => {
                   </button>
                 </div>
               </div>
-            </StaggerItem>
+            </div>
           ))}
-        </Stagger>
+        </div>
 
         {/* Paginación */}
         {totalPages > 1 && (
