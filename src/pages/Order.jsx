@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- motion se usa como <motion.button> abajo
+import { motion } from 'framer-motion';
 import { Minus, Plus } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import Seo from '../components/public/Seo';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { getWeekRange } from '../components/orderUtils';
 import { DELIVERY_ZONES, WHATSAPP_LINK } from '../lib/siteContent';
 
@@ -19,23 +22,33 @@ const WELL_SHOTS = [
 
 const QtyControl = ({ value, onChange, label }) => (
   <div className="flex items-center gap-3 bg-oasis-olive-50 rounded-full px-2 py-1">
-    <button
+    <motion.button
       type="button"
+      whileTap={{ scale: 0.85 }}
       onClick={() => onChange(Math.max(0, value - 1))}
       aria-label={`Restar ${label}`}
-      className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition"
+      className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition-colors"
     >
       <Minus size={14} />
-    </button>
-    <span className="w-5 text-center text-sm font-semibold text-oasis-ink">{value}</span>
-    <button
+    </motion.button>
+    <motion.span
+      key={value}
+      initial={{ scale: 1.3 }}
+      animate={{ scale: 1 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+      className="w-5 text-center text-sm font-semibold text-oasis-ink"
+    >
+      {value}
+    </motion.span>
+    <motion.button
       type="button"
+      whileTap={{ scale: 0.85 }}
       onClick={() => onChange(value + 1)}
       aria-label={`Sumar ${label}`}
-      className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition"
+      className="w-9 h-9 rounded-full bg-white flex items-center justify-center text-oasis-olive-700 hover:bg-oasis-olive-100 transition-colors"
     >
       <Plus size={14} />
-    </button>
+    </motion.button>
   </div>
 );
 
@@ -180,15 +193,21 @@ const Order = () => {
       />
 
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-14">
-        <SectionBadge>Hacé tu pedido</SectionBadge>
-        <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
-          Armá tu pedido
-        </h1>
+        <Reveal>
+          <SectionBadge>Hacé tu pedido</SectionBadge>
+          <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
+            Armá tu pedido
+          </h1>
 
-        <div className="mt-6 bg-oasis-olive-700 text-white rounded-2xl px-5 py-3 text-sm inline-flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-white" />
-          Pedidos para la semana del {weekLabel} — cerramos el viernes a medianoche
-        </div>
+          <div className="mt-6 bg-oasis-olive-700 text-white rounded-2xl px-5 py-3 text-sm inline-flex items-center gap-2">
+            <motion.span
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-1.5 h-1.5 rounded-full bg-white"
+            />
+            Pedidos para la semana del {weekLabel} — cerramos el viernes a medianoche
+          </div>
+        </Reveal>
 
         <form
           onSubmit={handleSubmit}
@@ -201,54 +220,52 @@ const Order = () => {
 
               {loading && <p className="text-oasis-ink/70 text-sm">Cargando menú...</p>}
 
-              <div className="space-y-3">
+              <Stagger className="space-y-3" stagger={0.05}>
                 {recipes.map((dish) => {
                   const key = `recipe-${dish.id_recipe}`;
                   return (
-                    <div
+                    <StaggerItem
                       key={key}
-                      className="flex items-center justify-between gap-4 bg-white border border-oasis-olive-100 rounded-2xl px-5 py-4"
+                      className="flex items-center justify-between gap-4 bg-white border border-oasis-olive-100 rounded-2xl px-5 py-4 transition-colors hover:border-oasis-olive-300"
                     >
                       <div className="min-w-0">
                         <p className="font-semibold text-oasis-ink">{dish.name}</p>
                         {dish.description && (
                           <p className="text-sm text-oasis-ink/60 truncate">{dish.description}</p>
                         )}
-                        <p className="text-xs text-oasis-ink/70 mt-1">₡ —</p>
                       </div>
                       <QtyControl
                         value={quantities[key] ?? 0}
                         onChange={(v) => setQty(key, v)}
                         label={dish.name}
                       />
-                    </div>
+                    </StaggerItem>
                   );
                 })}
-              </div>
+              </Stagger>
             </div>
 
             <div>
               <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-4">Well Shot</h2>
 
-              <div className="space-y-3">
+              <Stagger className="space-y-3" stagger={0.05}>
                 {WELL_SHOTS.map((shot) => (
-                  <div
+                  <StaggerItem
                     key={shot.key}
-                    className="flex items-center justify-between gap-4 bg-white border border-oasis-olive-100 rounded-2xl px-5 py-4"
+                    className="flex items-center justify-between gap-4 bg-white border border-oasis-olive-100 rounded-2xl px-5 py-4 transition-colors hover:border-oasis-olive-300"
                   >
                     <div className="min-w-0">
                       <p className="font-semibold text-oasis-ink">{shot.name}</p>
                       <p className="text-sm text-oasis-ink/60 truncate">{shot.desc}</p>
-                      <p className="text-xs text-oasis-ink/70 mt-1">₡ —</p>
                     </div>
                     <QtyControl
                       value={quantities[shot.key] ?? 0}
                       onChange={(v) => setQty(shot.key, v)}
                       label={shot.name}
                     />
-                  </div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             </div>
           </div>
 
@@ -261,20 +278,20 @@ const Order = () => {
             ) : (
               <ul className="space-y-2 text-sm">
                 {cartItems.map((item) => (
-                  <li key={item.key} className="flex justify-between text-oasis-ink/80">
-                    <span>
-                      {item.qty} × {item.name}
-                    </span>
-                    <span className="text-oasis-ink/70">₡ —</span>
+                  <li key={item.key} className="text-oasis-ink/80">
+                    {item.qty} × {item.name}
                   </li>
                 ))}
               </ul>
             )}
 
-            <div className="flex justify-between items-center mt-5 pt-5 border-t border-oasis-olive-200 font-semibold text-oasis-ink">
-              <span>Total</span>
-              <span>₡ —</span>
+            <div className="flex justify-between items-center mt-5 pt-5 border-t border-oasis-olive-200 text-sm">
+              <span className="font-semibold text-oasis-ink">Total de platos</span>
+              <span className="font-semibold text-oasis-ink">{totalItems}</span>
             </div>
+            <p className="mt-2 text-xs text-oasis-ink/60">
+              Te confirmamos el total en colones por WhatsApp.
+            </p>
 
             <div className="mt-6 space-y-4">
               <div>
@@ -348,13 +365,15 @@ const Order = () => {
                 />
               </div>
 
-              <button
+              <motion.button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition disabled:opacity-50"
+                whileHover={submitting ? undefined : { y: -2 }}
+                whileTap={submitting ? undefined : { scale: 0.98 }}
+                className="w-full bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition-colors disabled:opacity-50"
               >
                 {submitting ? 'Enviando...' : 'Enviar pedido por WhatsApp'}
-              </button>
+              </motion.button>
               <p className="text-xs text-oasis-ink/70 text-center">
                 Te confirmamos el pedido y el total por WhatsApp.
               </p>

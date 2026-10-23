@@ -105,7 +105,7 @@ const PublicFooter = () => {
             </li>
             <li>
               <Link to="/login" className="hover:text-white transition">
-                Login clientes
+                Login Interno
               </Link>
             </li>
             <li>
@@ -118,8 +118,14 @@ const PublicFooter = () => {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="max-w-6xl mx-auto px-6 py-5 text-xs text-oasis-olive-300 text-center">
-          © {year} Oasis · Comida preparada & Catering Service
+        <div className="max-w-6xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs text-oasis-olive-300 text-center">
+          <span>© {year} Oasis · Comida preparada & Catering Service</span>
+          <a
+            href="https://oasis-meals.com/login"
+            className="hover:text-white transition"
+          >
+            Iniciar sesión
+          </a>
         </div>
       </div>
     </footer>

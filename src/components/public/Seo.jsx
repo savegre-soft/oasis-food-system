@@ -21,7 +21,7 @@ const BASE_KEYWORDS = [
  * comparten el mismo <title> y no hay preview al compartir un link por
  * WhatsApp/Instagram (los canales reales del negocio).
  */
-const Seo = ({ title, description, path = '/', keywords = [], noindex = false }) => {
+const Seo = ({ title, description, path = '/', keywords = [], noindex = false, jsonLd = null }) => {
   const fullTitle = `${title} · ${SITE_NAME}`;
   const url = `${SITE_URL}${path}`;
   const allKeywords = [...new Set([...keywords, ...BASE_KEYWORDS])].join(', ');
@@ -46,6 +46,10 @@ const Seo = ({ title, description, path = '/', keywords = [], noindex = false })
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={DEFAULT_OG_IMAGE} />
+
+      {/* Datos estructurados (JSON-LD) — habilita rich results y mejora el SEO
+          local. Cada página puede inyectar su propio esquema vía `jsonLd`. */}
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
     </Helmet>
   );
 };

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -144,18 +144,27 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
-  /** @type {AppContextValue} */
-  const value = {
-    supabase,
-    session,
-    user,
-    loading,
-    isAuthenticated: !!session,
-    theme,
-    isDark,
-    setTheme,
-    toggleTheme,
-  };
+  /**
+   * Memoizado para no recrear el objeto en cada render: sin esto, cada evento
+   * de auth (p. ej. el refresh de token que Supabase dispara al recuperar el
+   * foco de la pestaña) cambiaría la referencia de `value` y volvería a
+   * renderizar a TODOS los consumidores del contexto.
+   * @type {AppContextValue}
+   */
+  const value = useMemo(
+    () => ({
+      supabase,
+      session,
+      user,
+      loading,
+      isAuthenticated: !!session,
+      theme,
+      isDark,
+      setTheme,
+      toggleTheme,
+    }),
+    [session, user, loading, theme, isDark, setTheme, toggleTheme]
+  );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

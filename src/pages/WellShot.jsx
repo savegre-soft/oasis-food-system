@@ -1,6 +1,8 @@
 import SectionBadge from '../components/public/SectionBadge';
-import PlaceholderImage from '../components/public/PlaceholderImage';
+import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
+import { scaleIn } from '../lib/motion';
 import { INSTAGRAM_WELLSHOT, WHATSAPP_LINK } from '../lib/siteContent';
 import { Leaf, Sparkles, ShoppingBag } from 'lucide-react';
 
@@ -8,6 +10,7 @@ const FLAVORS = [
   {
     key: 'reset',
     tone: 'butter',
+    img: '/photos/wellshot/4.png',
     tag: 'Bienestar',
     name: 'RESET',
     desc: 'Ideal después de comidas pesadas o días de cansancio',
@@ -21,6 +24,7 @@ const FLAVORS = [
   {
     key: 'energy',
     tone: 'rose',
+    img: '/photos/wellshot/2.png',
     tag: 'Energía',
     name: 'ENERGY BOOST',
     desc: 'Ideal antes de entrenar o para aumentar el enfoque',
@@ -34,6 +38,7 @@ const FLAVORS = [
   {
     key: 'skin',
     tone: 'sand',
+    img: '/photos/wellshot/3.png',
     tag: 'Cuidado de la piel',
     name: 'SKIN GLOW',
     desc: 'Ideal para empezar el día con energía natural',
@@ -68,7 +73,7 @@ const WellShot = () => {
 
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12 items-center">
-        <div>
+        <Reveal>
           <span className="inline-block bg-oasis-terracotta text-white text-xs font-semibold px-3 py-1 rounded-full">
             NUEVO
           </span>
@@ -88,7 +93,7 @@ const WellShot = () => {
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noreferrer"
-              className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 transition"
+              className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
             >
               Pedir por WhatsApp
             </a>
@@ -96,14 +101,22 @@ const WellShot = () => {
               href={INSTAGRAM_WELLSHOT.url}
               target="_blank"
               rel="noreferrer"
-              className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-50 transition"
+              className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-50 hover:-translate-y-0.5 active:translate-y-0 transition-all"
             >
               Seguir {INSTAGRAM_WELLSHOT.handle}
             </a>
           </div>
-        </div>
+        </Reveal>
 
-        <PlaceholderImage tone="butter" className="aspect-square" caption="Foto: Well Shot" />
+        <Reveal variants={scaleIn}>
+          <Photo
+            src="/photos/wellshot/5.png"
+            alt="Los tres Well Shot by Oasis con jengibre, remolacha y zanahoria"
+            className="aspect-638/821"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </Reveal>
       </section>
 
       {/* SABORES */}
@@ -114,13 +127,17 @@ const WellShot = () => {
             Un shot para cada necesidad
           </h2>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-6 text-left">
+          <Stagger className="mt-12 grid md:grid-cols-3 gap-6 text-left" stagger={0.12}>
             {FLAVORS.map((flavor) => (
-              <div key={flavor.key} className="bg-white rounded-3xl p-7 shadow-sm flex flex-col">
-                <PlaceholderImage
-                  tone={flavor.tone}
-                  className="aspect-[4/5] mb-6"
-                  caption={flavor.name}
+              <StaggerItem
+                key={flavor.key}
+                whileHover={{ y: -8 }}
+                className="bg-white rounded-3xl p-7 shadow-sm hover:shadow-xl transition-shadow flex flex-col"
+              >
+                <Photo
+                  src={flavor.img}
+                  alt={`Well Shot ${flavor.name}`}
+                  className="aspect-3/4 mb-6"
                 />
 
                 <span className="inline-block self-start bg-oasis-olive-100 text-oasis-olive-700 text-xs font-semibold px-3 py-1 rounded-full">
@@ -151,28 +168,33 @@ const WellShot = () => {
                   ))}
                 </div>
 
-                <div className="flex items-center justify-between mt-6 pt-5 border-t border-oasis-olive-100">
-                  <span className="text-oasis-ink/70 text-sm">₡ —</span>
+                <div className="flex items-center justify-end mt-6 pt-5 border-t border-oasis-olive-100">
                   <a
                     href={WHATSAPP_LINK}
                     target="_blank"
                     rel="noreferrer"
-                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white transition"
+                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
                   >
                     Pedir
                   </a>
                 </div>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* PRESENTACIONES */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
-        <PlaceholderImage tone="sand" className="aspect-[4/3]" />
+        <Reveal variants={scaleIn}>
+          <Photo
+            src="/photos/wellshot/1.png"
+            alt="Well Shot en presentación grande y shot individual, para hoy o toda la semana"
+            className="aspect-446/596"
+          />
+        </Reveal>
 
-        <div>
+        <Reveal>
           <SectionBadge>Presentaciones</SectionBadge>
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
             Para <span className="italic text-oasis-terracotta">hoy</span> o toda la{' '}
@@ -183,15 +205,13 @@ const WellShot = () => {
           </p>
 
           <div className="mt-8 grid sm:grid-cols-2 gap-4">
-            <div className="bg-white rounded-2xl p-5 border border-oasis-olive-100">
+            <div className="bg-white rounded-2xl p-5 border border-oasis-olive-100 transition-all hover:-translate-y-1 hover:shadow-md hover:border-oasis-olive-200">
               <p className="font-semibold text-oasis-ink">Shot individual</p>
               <p className="text-sm text-oasis-ink/60 mt-1">Para tomar en el momento.</p>
-              <p className="text-oasis-ink/70 text-sm mt-3">₡ —</p>
             </div>
-            <div className="bg-white rounded-2xl p-5 border border-oasis-olive-100">
+            <div className="bg-white rounded-2xl p-5 border border-oasis-olive-100 transition-all hover:-translate-y-1 hover:shadow-md hover:border-oasis-olive-200">
               <p className="font-semibold text-oasis-ink">Presentación grande</p>
               <p className="text-sm text-oasis-ink/60 mt-1">Para tener en casa toda la semana.</p>
-              <p className="text-oasis-ink/70 text-sm mt-3">₡ —</p>
             </div>
           </div>
 
@@ -199,11 +219,11 @@ const WellShot = () => {
             href={WHATSAPP_LINK}
             target="_blank"
             rel="noreferrer"
-            className="inline-block mt-8 bg-oasis-olive-600 text-white px-8 py-3.5 rounded-full font-semibold hover:bg-oasis-olive-700 transition"
+            className="inline-block mt-8 bg-oasis-olive-600 text-white px-8 py-3.5 rounded-full font-semibold hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
           >
             Pedir por WhatsApp
           </a>
-        </div>
+        </Reveal>
       </section>
 
       {/* IMPACTO */}
@@ -214,15 +234,15 @@ const WellShot = () => {
             <h2 className="font-display text-3xl font-semibold">gran impacto</h2>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-8">
+          <Stagger className="grid sm:grid-cols-3 gap-8" stagger={0.1}>
             {IMPACT.map((item) => (
-              <div key={item.title}>
+              <StaggerItem key={item.title}>
                 <item.icon className="text-oasis-olive-300 mb-2" size={22} />
                 <p className="font-semibold">{item.title}</p>
                 <p className="text-oasis-olive-200 text-sm mt-1">{item.desc}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
     </div>

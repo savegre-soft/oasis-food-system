@@ -6,8 +6,16 @@ import { Clock3, LayoutList, HeartHandshake, ArrowRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
+import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
-import { DELIVERY_ZONES, INSTAGRAM_WELLSHOT, WHATSAPP_LINK } from '../lib/siteContent';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
+import { EASE, scaleIn } from '../lib/motion';
+import {
+  BUSINESS_JSON_LD,
+  DELIVERY_ZONES,
+  INSTAGRAM_WELLSHOT,
+  WHATSAPP_LINK,
+} from '../lib/siteContent';
 
 const HELP_ITEMS = [
   {
@@ -69,11 +77,10 @@ const MORE_SERVICES = [
   },
 ];
 
-const TESTIMONIALS = [
-  'Pegar aquí una reseña real de cliente — tomar de los highlights "Clientes" de Instagram.',
-  'Pegar aquí una reseña real de cliente — tomar de los highlights "Clientes" de Instagram.',
-  'Pegar aquí una reseña real de cliente — tomar de los highlights "Clientes" de Instagram.',
-];
+// Reseñas reales de clientes. Mientras esté vacío, la sección NO se renderiza
+// (preferimos ocultarla a mostrar testimonios de relleno). Para activarla,
+// agregá objetos: { quote: 'Reseña…', name: 'Nombre', city: 'Ciudad Quesada' }.
+const TESTIMONIALS = [];
 
 const MENU_TONES = ['sage', 'sand', 'olive', 'rose'];
 
@@ -114,6 +121,7 @@ const Homes = () => {
         description="Comida preparada saludable y balanceada en la Zona Norte de Costa Rica. Pedí tu almuerzo con macros bajo control y recibilo en la puerta de tu casa por ruta de entrega."
         path="/"
         keywords={['almuerzos saludables', 'entrega de comida por ruta', 'macros bajo control']}
+        jsonLd={BUSINESS_JSON_LD}
       />
 
       {/* HERO */}
@@ -128,7 +136,7 @@ const Homes = () => {
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, ease: EASE }}
           >
             <h1 className="font-display text-4xl md:text-6xl font-semibold text-oasis-ink leading-[1.05]">
               Comida saludable, lista cada semana.
@@ -142,7 +150,7 @@ const Homes = () => {
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <Link
                 to="/menu"
-                className="bg-oasis-olive-600 text-white px-8 py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition text-center"
+                className="bg-oasis-olive-600 text-white px-8 py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 transition-all text-center"
               >
                 Ver menú
               </Link>
@@ -150,7 +158,7 @@ const Homes = () => {
                 href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noreferrer"
-                className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-8 py-3.5 rounded-full font-semibold hover:bg-oasis-olive-50 transition text-center"
+                className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-8 py-3.5 rounded-full font-semibold hover:bg-oasis-olive-50 hover:-translate-y-0.5 active:translate-y-0 transition-all text-center"
               >
                 Pedir por WhatsApp
               </a>
@@ -166,48 +174,67 @@ const Homes = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
             className="relative"
           >
-            <PlaceholderImage tone="sand" className="aspect-square" caption="Foto: plato Oasis" />
-            <div className="absolute -top-4 right-0 md:right-4 max-w-38 sm:max-w-none bg-white rounded-2xl shadow-lg px-4 py-3 text-sm">
+            <Photo
+              src="/photos/oasis/almuerzos.png"
+              alt="Cuatro almuerzos Oasis en bowls: vegetales, proteína y arroz"
+              className="aspect-679/852"
+              loading="eager"
+              fetchPriority="high"
+            />
+            {/* Tarjetas flotantes: oscilación lenta y sutil para dar vida al hero. */}
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -top-4 right-0 md:right-4 max-w-38 sm:max-w-none bg-white rounded-2xl shadow-lg px-4 py-3 text-sm"
+            >
               <p className="text-oasis-ink/70 text-xs">Pedidos hasta el</p>
               <p className="font-semibold text-oasis-ink">viernes, 12 a.m.</p>
-            </div>
-            <div className="absolute -bottom-4 left-0 md:-left-4 max-w-38 sm:max-w-none bg-oasis-olive-700 text-white rounded-2xl shadow-lg px-4 py-3 text-sm">
+            </motion.div>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
+              className="absolute -bottom-4 left-0 md:-left-4 max-w-38 sm:max-w-none bg-oasis-olive-700 text-white rounded-2xl shadow-lg px-4 py-3 text-sm"
+            >
               <p className="text-oasis-olive-200 text-xs tracking-wide uppercase">Entregas</p>
               <p className="font-semibold">Bajo pedido</p>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
 
-        {/* Zonas de entrega */}
+        {/* Zonas de entrega — marquee continuo (el contenido se duplica para un bucle perfecto) */}
         <div className="bg-oasis-olive-700 text-white py-3 overflow-hidden">
-          <p className="text-center text-sm font-medium tracking-wide">
-            Entregamos en {DELIVERY_ZONES.join(' ✦ ')}
-          </p>
+          <div className="flex w-max animate-marquee" aria-hidden="true">
+            {[0, 1].map((dup) => (
+              <p key={dup} className="text-sm font-medium tracking-wide whitespace-nowrap px-6">
+                Entregamos en {DELIVERY_ZONES.join(' ✦ ')} ✦{' '}
+              </p>
+            ))}
+          </div>
+          <p className="sr-only">Entregamos en {DELIVERY_ZONES.join(', ')}</p>
         </div>
       </section>
 
       {/* 3 COSAS EN LAS QUE TE AYUDA */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
-        <PlaceholderImage tone="olive" className="aspect-4/3" caption="Foto: plato Oasis" />
+        <Reveal variants={scaleIn}>
+          <Photo
+            src="/photos/oasis/menu.png"
+            alt="Variedad de platos Oasis: pastas, arroces, pollo y ensaladas"
+            className="aspect-637/856"
+          />
+        </Reveal>
 
         <div>
-          <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mb-8">
+          <Reveal as="h2" className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mb-8">
             3 cosas en las que te ayuda Oasis
-          </h2>
+          </Reveal>
 
-          <div className="space-y-6">
+          <Stagger className="space-y-6">
             {HELP_ITEMS.map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                className="flex gap-4"
-              >
+              <StaggerItem key={item.title} className="flex gap-4">
                 <span className="flex-none w-9 h-9 rounded-full bg-oasis-olive-600 text-white flex items-center justify-center font-semibold text-sm">
                   {i + 1}
                 </span>
@@ -215,9 +242,9 @@ const Homes = () => {
                   <p className="font-semibold text-oasis-ink">{item.title}</p>
                   <p className="text-oasis-ink/60 text-sm mt-1">{item.desc}</p>
                 </div>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -232,15 +259,19 @@ const Homes = () => {
             Sin cocinar, sin complicarte. Vos elegís, nosotros cocinamos y te lo llevamos.
           </p>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-6 text-left">
+          <Stagger className="mt-12 grid md:grid-cols-3 gap-6 text-left" stagger={0.12}>
             {STEPS.map((step) => (
-              <div key={step.n} className="bg-oasis-olive-700/60 rounded-2xl p-7">
+              <StaggerItem
+                key={step.n}
+                whileHover={{ y: -6 }}
+                className="bg-oasis-olive-700/60 rounded-2xl p-7 transition-colors hover:bg-oasis-olive-700"
+              >
                 <span className="font-display text-3xl text-oasis-olive-300">{step.n}</span>
                 <p className="font-semibold text-lg mt-3">{step.title}</p>
                 <p className="text-oasis-olive-200 text-sm mt-2">{step.desc}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
 
           <p className="mt-10 text-sm text-oasis-olive-300">
             Cerramos pedidos los viernes a medianoche
@@ -266,22 +297,28 @@ const Homes = () => {
           </Link>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {(recipes.length ? recipes : [1, 2, 3, 4]).map((dish, i) => (
-            <div key={dish?.id_recipe ?? i} className="flex flex-col">
-              {dish?.image_url ? (
-                <img
-                  src={dish.image_url}
-                  alt={dish.name}
-                  className="w-full aspect-square object-cover rounded-2xl"
-                />
-              ) : (
-                <PlaceholderImage
-                  tone={MENU_TONES[i % MENU_TONES.length]}
-                  className="aspect-square"
-                  caption={dish?.name ? `Foto: ${dish.name}` : undefined}
-                />
-              )}
+            <StaggerItem
+              key={dish?.id_recipe ?? i}
+              whileHover={{ y: -6 }}
+              className="flex flex-col group"
+            >
+              <div className="overflow-hidden rounded-2xl">
+                {dish?.image_url ? (
+                  <img
+                    src={dish.image_url}
+                    alt={dish.name}
+                    className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <PlaceholderImage
+                    tone={MENU_TONES[i % MENU_TONES.length]}
+                    className="aspect-square transition-transform duration-500 group-hover:scale-105"
+                    caption={dish?.name ? `Foto: ${dish.name}` : undefined}
+                  />
+                )}
+              </div>
               <p className="text-xs text-oasis-olive-600 font-semibold uppercase tracking-wide mt-3">
                 Almuerzo
               </p>
@@ -289,21 +326,23 @@ const Homes = () => {
               {dish?.description && (
                 <p className="text-sm text-oasis-ink/60 mt-1 line-clamp-2">{dish.description}</p>
               )}
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       {/* WELL SHOT TEASER */}
       <section className="bg-oasis-terracotta/10">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
-          <PlaceholderImage
-            tone="butter"
-            className="aspect-4/3 lg:order-2"
-            caption="Well Shot by Oasis"
-          />
+          <Reveal variants={scaleIn} className="lg:order-2">
+            <Photo
+              src="/photos/wellshot/5.png"
+              alt="Los tres Well Shot by Oasis: Reset, Energy Boost y Skin Glow con sus ingredientes"
+              className="aspect-638/821"
+            />
+          </Reveal>
 
-          <div>
+          <Reveal>
             <span className="inline-block bg-oasis-terracotta text-white text-xs font-semibold px-3 py-1 rounded-full">
               NUEVO
             </span>
@@ -342,7 +381,7 @@ const Homes = () => {
                 href={WHATSAPP_LINK}
                 target="_blank"
                 rel="noreferrer"
-                className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 transition"
+                className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
               >
                 Pedir por WhatsApp
               </a>
@@ -350,12 +389,12 @@ const Homes = () => {
                 href={INSTAGRAM_WELLSHOT.url}
                 target="_blank"
                 rel="noreferrer"
-                className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-50 transition"
+                className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-50 hover:-translate-y-0.5 active:translate-y-0 transition-all"
               >
                 Seguir {INSTAGRAM_WELLSHOT.handle}
               </a>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
@@ -366,58 +405,67 @@ const Homes = () => {
           Snack bar, jugos y catering
         </h2>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <Stagger className="grid md:grid-cols-3 gap-6" stagger={0.12}>
           {MORE_SERVICES.map((service) => (
-            <Link
-              key={service.title}
-              to={service.to}
-              className="group rounded-3xl overflow-hidden border border-oasis-olive-100 hover:shadow-lg transition"
-            >
-              <PlaceholderImage
-                tone={service.tone}
-                rounded="rounded-none"
-                className="aspect-4/3"
-                caption={service.caption}
-              />
-              <div className="p-6">
-                <p className="font-semibold text-oasis-ink group-hover:text-oasis-olive-700 transition">
-                  {service.title}
-                </p>
-                <p className="text-sm text-oasis-ink/60 mt-1">{service.desc}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* TESTIMONIOS */}
-      <section className="bg-oasis-olive-50 py-20">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 text-center">
-          <p className="text-oasis-ink/60 italic">Lo que dicen nuestros</p>
-          <h2 className="font-display text-3xl md:text-4xl italic text-oasis-olive-700">
-            clientes
-          </h2>
-
-          <div className="mt-12 grid md:grid-cols-3 gap-6 text-left">
-            {TESTIMONIALS.map((quote, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm">
-                <p className="text-oasis-ink/70 text-sm italic">"{quote}"</p>
-                <div className="mt-5 flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-full bg-oasis-olive-200" />
-                  <div>
-                    <p className="text-sm font-semibold text-oasis-ink">Nombre del cliente</p>
-                    <p className="text-xs text-oasis-ink/70">Ciudad Quesada</p>
-                  </div>
+            <StaggerItem key={service.title} whileHover={{ y: -8 }} className="h-full">
+              <Link
+                to={service.to}
+                className="group block h-full rounded-3xl overflow-hidden border border-oasis-olive-100 hover:shadow-xl hover:border-oasis-olive-200 transition"
+              >
+                <div className="overflow-hidden">
+                  <PlaceholderImage
+                    tone={service.tone}
+                    rounded="rounded-none"
+                    className="aspect-4/3 transition-transform duration-500 group-hover:scale-105"
+                    caption={service.caption}
+                  />
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                <div className="p-6">
+                  <p className="font-semibold text-oasis-ink group-hover:text-oasis-olive-700 transition-colors">
+                    {service.title}
+                  </p>
+                  <p className="text-sm text-oasis-ink/60 mt-1">{service.desc}</p>
+                </div>
+              </Link>
+            </StaggerItem>
+          ))}
+        </Stagger>
       </section>
+
+      {/* TESTIMONIOS — solo se muestra cuando hay reseñas reales cargadas */}
+      {TESTIMONIALS.length > 0 && (
+        <section className="bg-oasis-olive-50 py-20">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 text-center">
+            <p className="text-oasis-ink/60 italic">Lo que dicen nuestros</p>
+            <h2 className="font-display text-3xl md:text-4xl italic text-oasis-olive-700">
+              clientes
+            </h2>
+
+            <Stagger className="mt-12 grid md:grid-cols-3 gap-6 text-left">
+              {TESTIMONIALS.map((t, i) => (
+                <StaggerItem
+                  key={i}
+                  whileHover={{ y: -4 }}
+                  className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <p className="text-oasis-ink/70 text-sm italic">"{t.quote}"</p>
+                  <div className="mt-5 flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-full bg-oasis-olive-200" />
+                    <div>
+                      <p className="text-sm font-semibold text-oasis-ink">{t.name}</p>
+                      {t.city && <p className="text-xs text-oasis-ink/70">{t.city}</p>}
+                    </div>
+                  </div>
+                </StaggerItem>
+              ))}
+            </Stagger>
+          </div>
+        </section>
+      )}
 
       {/* CTA FINAL */}
       <section className="bg-oasis-olive-700 text-white py-20 text-center">
-        <div className="max-w-2xl mx-auto px-4 md:px-6">
+        <Reveal className="max-w-2xl mx-auto px-4 md:px-6">
           <h2 className="font-display text-3xl md:text-4xl font-semibold">
             No se trata de hacerlo perfecto, se trata de empezar.
           </h2>
@@ -427,7 +475,7 @@ const Homes = () => {
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
             <Link
               to="/ordenar"
-              className="bg-white text-oasis-olive-700 px-8 py-3.5 rounded-full font-semibold shadow-md hover:bg-oasis-cream transition"
+              className="bg-white text-oasis-olive-700 px-8 py-3.5 rounded-full font-semibold shadow-md hover:bg-oasis-cream hover:-translate-y-0.5 active:translate-y-0 transition-all"
             >
               Quiero ser cliente
             </Link>
@@ -435,12 +483,12 @@ const Homes = () => {
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noreferrer"
-              className="border-2 border-white/60 text-white px-8 py-3.5 rounded-full font-semibold hover:bg-white/10 transition"
+              className="border-2 border-white/60 text-white px-8 py-3.5 rounded-full font-semibold hover:bg-white/10 hover:-translate-y-0.5 active:translate-y-0 transition-all"
             >
               Escribinos por WhatsApp
             </a>
           </div>
-        </div>
+        </Reveal>
       </section>
     </div>
   );
