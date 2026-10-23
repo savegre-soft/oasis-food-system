@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import LeadForm from '../components/LeadForm';
 import SectionBadge from '../components/public/SectionBadge';
+import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
 import { EASE } from '../lib/motion';
 import {
@@ -18,24 +19,32 @@ import { WHATSAPP_LINK } from '../lib/siteContent';
 
 // Tiempos de comida que se muestran en el menú público (el desayuno no entra acá).
 const MEALS = ['Lunch', 'Dinner'];
+const TONES = ['sage', 'sand', 'olive', 'rose', 'butter'];
 
-// Convierte una plantilla (con días anidados) en una lista ordenada por día,
-// cada uno con sus platos. Días sin platos se omiten.
-const daysOf = (template) => {
+// Convierte una plantilla (con días anidados) en tarjetas de plato, una por
+// receta, en orden de día. Cada tarjeta lleva el día como etiqueta.
+const cardsOf = (template) => {
   if (!template) return [];
   const byDay = {};
   (template.order_template_days ?? []).forEach((d) => {
     const dishes = (d.order_template_details ?? [])
       .map((det) => det.recipes)
       .filter(Boolean)
-      .map((r) => ({ id: r.id_recipe, name: r.name, description: r.description }));
+      .map((r) => ({
+        id: r.id_recipe,
+        name: r.name,
+        description: r.description,
+        image_url: r.image_url,
+      }));
     if (dishes.length) byDay[d.day_of_week] = dishes;
   });
-  return DAYS_ORDER.filter((d) => byDay[d]?.length).map((d) => ({
-    day: d,
-    label: DAY_LABELS[d],
-    dishes: byDay[d],
-  }));
+  return DAYS_ORDER.filter((d) => byDay[d]?.length).flatMap((d) =>
+    byDay[d].map((dish, i) => ({
+      key: `${d}-${dish.id ?? i}`,
+      dayLabel: DAY_LABELS[d],
+      dish,
+    }))
+  );
 };
 
 const formatWeekLabel = (start, end) => {
@@ -168,7 +177,7 @@ const Menu = () => {
   const availableMeals = MEALS.filter((m) => menu[m]);
   // Tiempo de comida efectivo a mostrar (cae al disponible si el activo no tiene menú).
   const activeMeal = menu[meal] ? meal : availableMeals[0];
-  const days = daysOf(menu[activeMeal]);
+  const cards = cardsOf(menu[activeMeal]);
 
   const openOrder = (dish) => {
     setSelectedDish(dish);
@@ -199,7 +208,7 @@ const Menu = () => {
         </div>
       </section>
 
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-14">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-14">
         {loading && <div className="text-center text-oasis-ink/70 py-10">Cargando menú...</div>}
 
         {!loading && loadError && (
@@ -236,7 +245,8 @@ const Menu = () => {
               ))}
             </div>
 
-            {/* Menú del tiempo de comida activo, por día */}
+            {/* Menú del tiempo de comida activo — vista de tarjetas (una por plato,
+                con su día como etiqueta). Muestra la foto de la receta si existe. */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeMeal}
@@ -244,36 +254,50 @@ const Menu = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.25, ease: EASE }}
-                className="space-y-4"
+                className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {days.map(({ day, label, dishes }) => (
+                {cards.map(({ key, dayLabel, dish }, index) => (
                   <div
-                    key={day}
-                    className="bg-white rounded-2xl border border-oasis-olive-100 p-5 sm:p-6 transition-colors hover:border-oasis-olive-200"
+                    key={key}
+                    className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-xl hover:border-oasis-olive-200 hover:-translate-y-1.5 transition"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-oasis-olive-600 mb-4">
-                      {label}
-                    </p>
-                    <div className="space-y-3">
-                      {dishes.map((dish, i) => (
-                        <div
-                          key={`${day}-${dish.id ?? i}`}
-                          className="flex items-center justify-between gap-4 border-t border-oasis-olive-50 pt-3 first:border-0 first:pt-0"
+                    <div className="relative overflow-hidden">
+                      {dish.image_url ? (
+                        <img
+                          src={dish.image_url}
+                          alt={dish.name}
+                          loading="lazy"
+                          className="w-full aspect-4/3 object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <PlaceholderImage
+                          tone={TONES[index % TONES.length]}
+                          rounded="rounded-none"
+                          className="aspect-4/3 transition-transform duration-500 group-hover:scale-105"
+                        />
+                      )}
+                      <span className="absolute top-3 left-3 bg-oasis-olive-700 text-white text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full shadow-sm">
+                        {dayLabel}
+                      </span>
+                    </div>
+
+                    <div className="p-5 flex flex-col flex-1 justify-between">
+                      <div>
+                        <h3 className="font-semibold text-oasis-ink">{dish.name}</h3>
+                        {dish.description && (
+                          <p className="text-sm text-oasis-ink/60 mt-1 line-clamp-2">
+                            {dish.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex justify-end mt-4">
+                        <button
+                          onClick={() => openOrder(dish)}
+                          className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
                         >
-                          <div className="min-w-0">
-                            <p className="font-semibold text-oasis-ink">{dish.name}</p>
-                            {dish.description && (
-                              <p className="text-sm text-oasis-ink/60 mt-0.5">{dish.description}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => openOrder(dish)}
-                            className="flex-none bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
-                          >
-                            Pedir
-                          </button>
-                        </div>
-                      ))}
+                          Pedir
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
