@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
-import PlaceholderImage from '../components/public/PlaceholderImage';
 import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
@@ -9,13 +8,25 @@ import { scaleIn } from '../lib/motion';
 
 const SERVICES = [
   {
-    tone: 'sage',
+    img: '/photos/catherin/1.png',
     title: 'Barra de eventos',
     desc: 'Estaciones de comida servidas por nuestro equipo.',
   },
-  { tone: 'rose', title: 'Snack bar', desc: 'Bowls de yogurt, frutas, toppings y bocadillos.' },
-  { tone: 'butter', title: 'Bebidas y Well Shot', desc: 'Jugos naturales y shots funcionales.' },
-  { tone: 'sand', title: 'Menús de temporada', desc: 'Menú navideño y fechas especiales.' },
+  {
+    img: '/photos/catherin/3.png',
+    title: 'Snack bar',
+    desc: 'Bowls de yogurt, frutas, toppings y bocadillos.',
+  },
+  {
+    img: '/photos/wellshot/5.png',
+    title: 'Bebidas y Well Shot',
+    desc: 'Jugos naturales y shots funcionales.',
+  },
+  {
+    img: '/photos/catherin/4-navidad.png',
+    title: 'Menús de temporada',
+    desc: 'Menú navideño y fechas especiales.',
+  },
 ];
 
 const STEPS = [
@@ -259,13 +270,22 @@ const Catering = () => {
           </div>
         </Reveal>
 
-        <Reveal variants={scaleIn} className="mt-12 flex justify-center">
-          <Photo
-            src="/photos/oasis/catering.png"
-            alt="Mesa de catering Oasis: panadería, cupcakes y pastel para eventos"
-            className="aspect-683/854 w-full max-w-md"
-          />
-        </Reveal>
+        <Stagger className="mt-12 grid md:grid-cols-2 gap-6 items-center" stagger={0.1}>
+          <StaggerItem variants={scaleIn}>
+            <Photo
+              src="/photos/oasis/catering.png"
+              alt="Mesa de catering Oasis: panadería, cupcakes y pastel para eventos"
+              className="aspect-683/854"
+            />
+          </StaggerItem>
+          <StaggerItem variants={scaleIn}>
+            <Photo
+              src="/photos/catherin/2.png"
+              alt="Bowls de ensalada con pollo y aderezo servidos en un evento Oasis"
+              className="aspect-square"
+            />
+          </StaggerItem>
+        </Stagger>
       </section>
 
       {/* SERVICIOS */}
@@ -280,10 +300,10 @@ const Catering = () => {
             {SERVICES.map((service) => (
               <StaggerItem key={service.title} whileHover={{ y: -6 }} className="group">
                 <div className="overflow-hidden rounded-3xl">
-                  <PlaceholderImage
-                    tone={service.tone}
+                  <Photo
+                    src={service.img}
+                    alt={service.title}
                     className="aspect-square transition-transform duration-500 group-hover:scale-105"
-                    caption={`Foto: ${service.title}`}
                   />
                 </div>
                 <p className="font-semibold text-oasis-ink mt-4">{service.title}</p>
