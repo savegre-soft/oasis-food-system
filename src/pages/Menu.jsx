@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
@@ -12,30 +12,41 @@ import { WHATSAPP_LINK } from '../lib/siteContent';
 
 const PAGE_SIZE = 8;
 
+// Categorías del menú. Se derivan del nombre de la receta porque `recipes` aún
+// no tiene un campo de categoría poblado (`meal_type` está en null). Cuando se
+// poblen esas categorías en la DB, `categoryOf` puede pasar a leer el campo.
 const FILTERS = [
   { key: 'Todos', label: 'Todos' },
   { key: 'Almuerzos', label: 'Almuerzos' },
-  { key: 'Bowls', label: 'Bowls' },
-  { key: 'Snack bar', label: 'Snack bar' },
-  { key: 'Well Shot', label: 'Well Shot' },
+  { key: 'Desayunos', label: 'Desayunos' },
+  { key: 'Por porción', label: 'Por porción' },
 ];
+
+// Clasifica una receta por heurística sobre el nombre:
+// - "Por porción": ítems a granel ("500g de pollo mechado", etc.)
+// - "Desayunos":  combos de huevo/tortilla ("3 tortillas, 3 huevos…")
+// - "Almuerzos":  el resto (platos completos)
+const categoryOf = (dish) => {
+  const name = (dish?.name || '').trim();
+  if (/^\d+\s*g\b/i.test(name) || /\b\d{3}\s*g\b/i.test(name)) return 'Por porción';
+  if (/tortilla/i.test(name) || (/huevos/i.test(name) && /pl[áa]tano/i.test(name))) {
+    return 'Desayunos';
+  }
+  return 'Almuerzos';
+};
 
 const TONES = ['sage', 'sand', 'olive', 'rose', 'butter'];
 
 const Menu = () => {
   const { supabase } = useApp();
 
-  const [recipes, setRecipes] = useState([]);
+  const [allRecipes, setAllRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
   const [search, setSearch] = useState('');
-  // `recipes` no tiene categoría propia todavía (Almuerzos/Bowls/Snack bar/Well
-  // Shot viven en tablas distintas) — los chips quedan visuales hasta que el
-  // modelo de datos público soporte esa taxonomía.
   const [filter, setFilter] = useState('Todos');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
@@ -84,45 +95,70 @@ const Menu = () => {
     };
   }, [openModal]);
 
-  const loadRecipes = async () => {
-    setLoading(true);
+  // Se cargan TODAS las recetas activas una sola vez (son pocas) y el filtrado,
+  // la búsqueda y la paginación se hacen en cliente. Así los chips de categoría
+  // funcionan de verdad y la búsqueda es instantánea, sin ir al servidor en cada
+  // tecla.
+  useEffect(() => {
+    let active = true;
 
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
+    const loadRecipes = async () => {
+      setLoading(true);
 
-    let query = supabase
-      .schema('operations')
-      .from('recipes')
-      .select('*', { count: 'exact' })
-      .eq('is_active', true)
-      .order('id_recipe', { ascending: false })
-      .range(from, to);
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('recipes')
+        .select('*')
+        .eq('is_active', true)
+        .order('id_recipe', { ascending: false });
 
-    if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
-    }
+      if (!active) return;
 
-    const { data, error, count } = await query;
+      if (error) {
+        console.error(error);
+        setLoadError(error.message || 'No se pudo cargar el menú.');
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
-      console.error(error);
-      setLoadError(error.message || 'No se pudo cargar el menú.');
+      setLoadError('');
+      setAllRecipes(data ?? []);
       setLoading(false);
-      return;
-    }
+    };
 
-    setLoadError('');
-    setRecipes(data);
-    setTotal(count);
-    setLoading(false);
+    loadRecipes();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
+  // Recetas tras aplicar categoría + búsqueda.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allRecipes.filter((dish) => {
+      const matchCategory = filter === 'Todos' || categoryOf(dish) === filter;
+      const matchSearch =
+        !q ||
+        (dish.name || '').toLowerCase().includes(q) ||
+        (dish.description || '').toLowerCase().includes(q);
+      return matchCategory && matchSearch;
+    });
+  }, [allRecipes, filter, search]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Cambiar de filtro o búsqueda vuelve a la primera página (se hace en los
+  // handlers para no llamar a setState dentro de un efecto).
+  const selectFilter = (key) => {
+    setFilter(key);
+    setPage(1);
   };
 
-  useEffect(() => {
-    loadRecipes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, search]);
-
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const onSearchChange = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const openOrder = (dish) => {
     setSelectedDish(dish);
@@ -159,7 +195,7 @@ const Menu = () => {
             {FILTERS.map((f) => (
               <button
                 key={f.key}
-                onClick={() => setFilter(f.key)}
+                onClick={() => selectFilter(f.key)}
                 aria-pressed={filter === f.key}
                 className={`px-4 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
                   filter === f.key
@@ -179,10 +215,7 @@ const Menu = () => {
             type="text"
             placeholder="Buscar platos..."
             value={search}
-            onChange={(e) => {
-              setPage(1);
-              setSearch(e.target.value);
-            }}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="w-full px-4 py-3 border border-oasis-olive-200 rounded-xl focus:ring-2 focus:ring-oasis-olive-500 outline-none bg-white"
           />
         </div>
@@ -196,9 +229,9 @@ const Menu = () => {
           </div>
         )}
 
-        {!loading && !loadError && recipes.length === 0 && (
+        {!loading && !loadError && filtered.length === 0 && (
           <div className="text-center text-oasis-ink/70 py-10">
-            {search
+            {search || filter !== 'Todos'
               ? 'No encontramos platos con ese criterio.'
               : 'Todavía no hay platos activos en el menú. Activá recetas desde el panel de administración.'}
           </div>
@@ -207,7 +240,7 @@ const Menu = () => {
         {/* Grid de platos — sin animación de entrada: contenido principal que se
             pagina, debe verse siempre. Solo se conserva el hover (CSS). */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recipes.map((dish, index) => (
+          {pageItems.map((dish, index) => (
             <div
               key={dish.id_recipe}
               className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-xl hover:border-oasis-olive-200 hover:-translate-y-1.5 transition"

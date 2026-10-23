@@ -17,6 +17,7 @@ export const NAV_LINKS = [
   { name: 'Inicio', path: '/' },
   { name: 'Menú', path: '/menu' },
   { name: 'Well Shot', path: '/well-shot' },
+  { name: 'Catering', path: '/catering' },
   { name: 'Promociones', path: '/promociones' },
   { name: 'Nosotros', path: '/nosotros' },
   { name: 'Contacto', path: '/contacto' },
