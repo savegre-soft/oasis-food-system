@@ -105,7 +105,7 @@ const PublicFooter = () => {
             </li>
             <li>
               <Link to="/login" className="hover:text-white transition">
-                Login clientes
+                Login Interno
               </Link>
             </li>
             <li>
