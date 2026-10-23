@@ -28,6 +28,7 @@ const Menu = () => {
 
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const [search, setSearch] = useState('');
   // `recipes` no tiene categoría propia todavía (Almuerzos/Bowls/Snack bar/Well
@@ -106,10 +107,12 @@ const Menu = () => {
 
     if (error) {
       console.error(error);
+      setLoadError(error.message || 'No se pudo cargar el menú.');
       setLoading(false);
       return;
     }
 
+    setLoadError('');
     setRecipes(data);
     setTotal(count);
     setLoading(false);
@@ -187,9 +190,18 @@ const Menu = () => {
 
         {loading && <div className="text-center text-oasis-ink/70 py-10">Cargando menú...</div>}
 
-        {!loading && recipes.length === 0 && (
+        {!loading && loadError && (
+          <div className="text-center py-10">
+            <p className="text-red-600 font-medium">No se pudo cargar el menú.</p>
+            <p className="text-oasis-ink/60 text-sm mt-1">{loadError}</p>
+          </div>
+        )}
+
+        {!loading && !loadError && recipes.length === 0 && (
           <div className="text-center text-oasis-ink/70 py-10">
-            No encontramos platos con ese criterio.
+            {search
+              ? 'No encontramos platos con ese criterio.'
+              : 'Todavía no hay platos activos en el menú. Activá recetas desde el panel de administración.'}
           </div>
         )}
 
