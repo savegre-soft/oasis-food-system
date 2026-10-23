@@ -6,7 +6,7 @@ import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import Seo from '../components/public/Seo';
-import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
+import { Reveal } from '../components/public/Motion';
 import { getWeekRange } from '../components/orderUtils';
 import { DELIVERY_ZONES, WHATSAPP_LINK } from '../lib/siteContent';
 
@@ -220,11 +220,11 @@ const Order = () => {
 
               {loading && <p className="text-oasis-ink/70 text-sm">Cargando menú...</p>}
 
-              <Stagger className="space-y-3" stagger={0.05}>
+              <div className="space-y-3">
                 {recipes.map((dish) => {
                   const key = `recipe-${dish.id_recipe}`;
                   return (
-                    <StaggerItem
+                    <div
                       key={key}
                       className="flex items-center justify-between gap-4 bg-white border border-oasis-olive-100 rounded-2xl px-5 py-4 transition-colors hover:border-oasis-olive-300"
                     >
@@ -239,18 +239,18 @@ const Order = () => {
                         onChange={(v) => setQty(key, v)}
                         label={dish.name}
                       />
-                    </StaggerItem>
+                    </div>
                   );
                 })}
-              </Stagger>
+              </div>
             </div>
 
             <div>
               <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-4">Well Shot</h2>
 
-              <Stagger className="space-y-3" stagger={0.05}>
+              <div className="space-y-3">
                 {WELL_SHOTS.map((shot) => (
-                  <StaggerItem
+                  <div
                     key={shot.key}
                     className="flex items-center justify-between gap-4 bg-white border border-oasis-olive-100 rounded-2xl px-5 py-4 transition-colors hover:border-oasis-olive-300"
                   >
@@ -263,9 +263,9 @@ const Order = () => {
                       onChange={(v) => setQty(shot.key, v)}
                       label={shot.name}
                     />
-                  </StaggerItem>
+                  </div>
                 ))}
-              </Stagger>
+              </div>
             </div>
           </div>
 
