@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
+import { scaleIn } from '../lib/motion';
 
 const SERVICES = [
   {
@@ -212,7 +214,7 @@ const CateringQuoteForm = () => {
       <button
         type="submit"
         disabled={!canSubmit || loading}
-        className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
       >
         {loading ? 'Enviando...' : 'Enviar solicitud'}
       </button>
@@ -236,28 +238,34 @@ const Catering = () => {
 
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16">
-        <SectionBadge>Catering service</SectionBadge>
-        <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3 max-w-2xl">
-          Comida saludable para tus eventos
-        </h1>
-        <p className="mt-4 text-oasis-ink/70 max-w-xl">
-          Barras de comida, snack bar y bebidas para eventos corporativos, celebraciones y
-          reuniones. Nosotros cocinamos, montamos y servimos.
-        </p>
+        <Reveal>
+          <SectionBadge>Catering service</SectionBadge>
+          <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3 max-w-2xl">
+            Comida saludable para tus eventos
+          </h1>
+          <p className="mt-4 text-oasis-ink/70 max-w-xl">
+            Barras de comida, snack bar y bebidas para eventos corporativos, celebraciones y
+            reuniones. Nosotros cocinamos, montamos y servimos.
+          </p>
 
-        <div className="mt-8 flex flex-wrap gap-4">
-          <a
-            href="#cotizar"
-            className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 transition"
-          >
-            Cotizar mi evento
-          </a>
-        </div>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <a
+              href="#cotizar"
+              className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+            >
+              Cotizar mi evento
+            </a>
+          </div>
+        </Reveal>
 
-        <div className="mt-12 grid md:grid-cols-2 gap-6">
-          <PlaceholderImage tone="sage" className="aspect-[4/3]" caption="Foto: barra de evento" />
-          <PlaceholderImage tone="sand" className="aspect-[4/3]" caption="Foto: equipo sirviendo" />
-        </div>
+        <Stagger className="mt-12 grid md:grid-cols-2 gap-6">
+          <StaggerItem variants={scaleIn}>
+            <PlaceholderImage tone="sage" className="aspect-4/3" caption="Foto: barra de evento" />
+          </StaggerItem>
+          <StaggerItem variants={scaleIn}>
+            <PlaceholderImage tone="sand" className="aspect-4/3" caption="Foto: equipo sirviendo" />
+          </StaggerItem>
+        </Stagger>
       </section>
 
       {/* SERVICIOS */}
@@ -268,19 +276,21 @@ const Catering = () => {
             Lo que podemos llevar a tu evento
           </h2>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" stagger={0.1}>
             {SERVICES.map((service) => (
-              <div key={service.title}>
-                <PlaceholderImage
-                  tone={service.tone}
-                  className="aspect-square"
-                  caption={`Foto: ${service.title}`}
-                />
+              <StaggerItem key={service.title} whileHover={{ y: -6 }} className="group">
+                <div className="overflow-hidden rounded-3xl">
+                  <PlaceholderImage
+                    tone={service.tone}
+                    className="aspect-square transition-transform duration-500 group-hover:scale-105"
+                    caption={`Foto: ${service.title}`}
+                  />
+                </div>
                 <p className="font-semibold text-oasis-ink mt-4">{service.title}</p>
                 <p className="text-sm text-oasis-ink/60 mt-1">{service.desc}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -289,24 +299,24 @@ const Catering = () => {
         <div className="max-w-6xl mx-auto px-4 md:px-6">
           <h2 className="font-display text-3xl md:text-4xl font-semibold">¿Cómo funciona?</h2>
 
-          <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <Stagger className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8" stagger={0.12}>
             {STEPS.map((step) => (
-              <div key={step.n} className="border-t border-white/20 pt-5">
+              <StaggerItem key={step.n} className="border-t border-white/20 pt-5">
                 <span className="font-display text-2xl text-oasis-olive-300">{step.n}</span>
                 <p className="font-semibold mt-2">{step.title}</p>
                 <p className="text-oasis-olive-200 text-sm mt-1">{step.desc}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* COTIZADOR */}
       <section
         id="cotizar"
-        className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-[1fr_1.3fr] gap-12"
+        className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-[1fr_1.3fr] gap-12 scroll-mt-24"
       >
-        <div>
+        <Reveal>
           <SectionBadge>Cotizá tu evento</SectionBadge>
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
             Contanos qué tenés en mente
@@ -314,11 +324,11 @@ const Catering = () => {
           <p className="mt-4 text-oasis-ink/70">
             Te respondemos por WhatsApp con una propuesta a la medida.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
+        <Reveal variants={scaleIn} className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
           <CateringQuoteForm />
-        </div>
+        </Reveal>
       </section>
     </div>
   );

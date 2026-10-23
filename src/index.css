@@ -39,8 +39,50 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Scroll suave para anclas internas del sitio público (p. ej. #cotizar). */
+html {
+  scroll-behavior: smooth;
+}
+
 .font-display {
   font-family: var(--font-display);
+}
+
+/* Marquee continuo para la barra de zonas de entrega (Home). El contenido se
+   duplica en el markup para que el bucle sea perfecto a -50%. */
+@keyframes oasis-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: oasis-marquee 22s linear infinite;
+}
+
+/* Respetar la preferencia de menos movimiento: sin scroll suave forzado,
+   sin marquee y sin animaciones/transiciones largas. framer-motion ya se
+   neutraliza vía <MotionConfig reducedMotion="user">; esto cubre el resto. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-marquee {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .bg-primary {

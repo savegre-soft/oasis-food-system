@@ -1,8 +1,12 @@
 import { useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- motion se usa como <motion.*> abajo
+import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Instagram, MessageCircle, Truck, Clock3 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import Seo from '../components/public/Seo';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
+import { EASE } from '../lib/motion';
 import {
   DELIVERY_ZONES,
   INSTAGRAM_OASIS,
@@ -49,14 +53,30 @@ const INFO_CARDS = [
 
 const FaqItem = ({ item, open, onToggle }) => (
   <div className="border-b border-oasis-olive-200 py-5">
-    <button onClick={onToggle} className="w-full flex items-center justify-between text-left gap-4">
+    <button
+      onClick={onToggle}
+      aria-expanded={open}
+      className="w-full flex items-center justify-between text-left gap-4"
+    >
       <span className="font-semibold text-oasis-ink">{item.q}</span>
       <ChevronDown
         size={18}
-        className={`flex-none text-oasis-olive-600 transition-transform ${open ? 'rotate-180' : ''}`}
+        className={`flex-none text-oasis-olive-600 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
       />
     </button>
-    {open && <p className="mt-3 text-sm text-oasis-ink/60">{item.a}</p>}
+    <AnimatePresence initial={false}>
+      {open && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: EASE }}
+          className="overflow-hidden"
+        >
+          <p className="mt-3 text-sm text-oasis-ink/60">{item.a}</p>
+        </motion.div>
+      )}
+    </AnimatePresence>
   </div>
 );
 
@@ -130,7 +150,7 @@ const Contact = () => {
 
       {/* Header + form */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12">
-        <div>
+        <Reveal>
           <SectionBadge>Contacto</SectionBadge>
           <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
             Hablemos de tu próximo pedido
@@ -140,7 +160,7 @@ const Contact = () => {
             escribimos.
           </p>
 
-          <div className="mt-8 grid sm:grid-cols-2 gap-4">
+          <Stagger className="mt-8 grid sm:grid-cols-2 gap-4" stagger={0.09}>
             {INFO_CARDS.map((card) => {
               const content = (
                 <div className="bg-white rounded-2xl border border-oasis-olive-100 p-5 flex items-start gap-3 h-full">
@@ -151,29 +171,32 @@ const Contact = () => {
                     <p className="text-xs font-semibold tracking-wide uppercase text-oasis-ink/70">
                       {card.label}
                     </p>
-                    <p className="text-sm text-oasis-ink mt-1 break-words">{card.value}</p>
+                    <p className="text-sm text-oasis-ink mt-1 wrap-break-word">{card.value}</p>
                   </div>
                 </div>
               );
 
               return card.href ? (
-                <a
-                  key={card.label}
-                  href={card.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:shadow-md transition rounded-2xl"
-                >
-                  {content}
-                </a>
+                <StaggerItem key={card.label} whileHover={{ y: -4 }} className="h-full">
+                  <a
+                    href={card.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block h-full hover:shadow-md transition-shadow rounded-2xl"
+                  >
+                    {content}
+                  </a>
+                </StaggerItem>
               ) : (
-                <div key={card.label}>{content}</div>
+                <StaggerItem key={card.label} className="h-full">
+                  {content}
+                </StaggerItem>
               );
             })}
-          </div>
-        </div>
+          </Stagger>
+        </Reveal>
 
-        <div className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10">
+        <Reveal className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10">
           <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-1">
             Quiero ser cliente
           </h2>
@@ -293,13 +316,13 @@ const Contact = () => {
               <button
                 type="submit"
                 disabled={!canSubmit || loading}
-                className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
                 {loading ? 'Enviando...' : 'Enviar'}
               </button>
             </form>
           )}
-        </div>
+        </Reveal>
       </section>
 
       {/* FAQ */}

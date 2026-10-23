@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
+import { scaleIn } from '../lib/motion';
 import { DELIVERY_ZONES, WHATSAPP_LINK } from '../lib/siteContent';
 
 const MOVE_ITEMS = [
@@ -46,7 +48,7 @@ const PublicAbout = () => {
 
       {/* HERO */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-2 gap-12 items-center">
-        <div>
+        <Reveal>
           <SectionBadge>Sobre nosotros</SectionBadge>
           <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
             Comida que te cuida, hecha con <span className="italic text-oasis-olive-600">amor</span>
@@ -55,18 +57,18 @@ const PublicAbout = () => {
             Oasis nació para que comer saludable deje de ser una preocupación. Preparamos comida
             deliciosa y balanceada y la llevamos a tu puerta en la Zona Norte de Costa Rica.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="relative">
-          <PlaceholderImage tone="olive" className="aspect-[4/3]" caption="Foto: Oasis" />
+        <Reveal variants={scaleIn} className="relative">
+          <PlaceholderImage tone="olive" className="aspect-4/3" caption="Foto: Oasis" />
           <div className="absolute -bottom-6 left-4 bg-oasis-olive-700 text-white rounded-2xl shadow-lg px-5 py-4 text-center">
             <p className="font-display text-3xl font-semibold">2</p>
             <p className="text-xs text-oasis-olive-200 uppercase tracking-wide">Años</p>
-            <p className="text-xs italic text-oasis-olive-200 mt-1 max-w-[9rem]">
+            <p className="text-xs italic text-oasis-olive-200 mt-1 max-w-36">
               Gracias por ser parte de esta historia
             </p>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* LO QUE NOS MUEVE */}
@@ -77,29 +79,33 @@ const PublicAbout = () => {
             Más que comida, tranquilidad
           </h2>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <Stagger className="grid md:grid-cols-3 gap-6" stagger={0.12}>
             {MOVE_ITEMS.map((item) => (
-              <div key={item.n} className="bg-white rounded-2xl p-7 shadow-sm">
+              <StaggerItem
+                key={item.n}
+                whileHover={{ y: -6 }}
+                className="bg-white rounded-2xl p-7 shadow-sm hover:shadow-md transition-shadow"
+              >
                 <span className="font-display text-3xl text-oasis-olive-300">{item.n}</span>
                 <p className="font-semibold text-oasis-ink mt-3">{item.title}</p>
                 <p className="text-sm text-oasis-ink/60 mt-2">{item.desc}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* LO QUE HACEMOS */}
       <section className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
-        <div className="grid grid-cols-2 gap-4">
+        <Reveal variants={scaleIn} className="grid grid-cols-2 gap-4">
           <PlaceholderImage
             tone="sand"
-            className="aspect-[3/4] col-span-1 row-span-2"
+            className="aspect-3/4 col-span-1 row-span-2"
             caption="Foto: cocina / equipo"
           />
           <PlaceholderImage tone="olive" className="aspect-square" caption="Foto: catering" />
           <PlaceholderImage tone="butter" className="aspect-square" caption="Foto: Well Shot" />
-        </div>
+        </Reveal>
 
         <div>
           <SectionBadge>Lo que hacemos</SectionBadge>
@@ -107,50 +113,55 @@ const PublicAbout = () => {
             Tres formas de comer mejor
           </h2>
 
-          <div className="divide-y divide-oasis-olive-100">
+          <Stagger className="divide-y divide-oasis-olive-100" stagger={0.1}>
             {WHAT_WE_DO.map((item) => (
-              <div key={item.title} className="py-5 border-l-2 border-oasis-terracotta pl-5">
+              <StaggerItem
+                key={item.title}
+                className="py-5 border-l-2 border-oasis-terracotta pl-5 transition-[padding] hover:pl-6"
+              >
                 <p className="font-semibold text-oasis-ink">{item.title}</p>
                 <p className="text-sm text-oasis-ink/60 mt-1">{item.desc}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
       {/* STATS */}
       <section className="bg-oasis-olive-800 text-white py-16">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 grid sm:grid-cols-3 gap-8">
+        <Stagger className="max-w-6xl mx-auto px-4 md:px-6 grid sm:grid-cols-3 gap-8" stagger={0.12}>
           {STATS.map((stat) => (
-            <div key={stat.value}>
+            <StaggerItem key={stat.value}>
               <p className="font-display text-3xl font-semibold">{stat.value}</p>
               <p className="text-oasis-olive-200 text-sm mt-1">{stat.label}</p>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       {/* CTA */}
       <section className="py-20 text-center">
-        <h2 className="font-display text-2xl md:text-3xl font-semibold text-oasis-ink">
-          ¿Te unís a la familia Oasis?
-        </h2>
-        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-          <Link
-            to="/menu"
-            className="bg-oasis-olive-600 text-white px-8 py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 transition"
-          >
-            Ver menú
-          </Link>
-          <a
-            href={WHATSAPP_LINK}
-            target="_blank"
-            rel="noreferrer"
-            className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-8 py-3.5 rounded-full font-semibold hover:bg-oasis-olive-50 transition"
-          >
-            Escribinos
-          </a>
-        </div>
+        <Reveal>
+          <h2 className="font-display text-2xl md:text-3xl font-semibold text-oasis-ink">
+            ¿Te unís a la familia Oasis?
+          </h2>
+          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+            <Link
+              to="/menu"
+              className="bg-oasis-olive-600 text-white px-8 py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+            >
+              Ver menú
+            </Link>
+            <a
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noreferrer"
+              className="border-2 border-oasis-olive-600 text-oasis-olive-700 px-8 py-3.5 rounded-full font-semibold hover:bg-oasis-olive-50 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+            >
+              Escribinos
+            </a>
+          </div>
+        </Reveal>
       </section>
     </div>
   );

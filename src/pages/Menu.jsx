@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import LeadForm from '../components/LeadForm';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
+import { Stagger, StaggerItem } from '../components/public/Motion';
+import { EASE } from '../lib/motion';
 import { getWeekRange } from '../components/orderUtils';
 import { WHATSAPP_LINK } from '../lib/siteContent';
 
@@ -38,20 +40,48 @@ const Menu = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
   const closeButtonRef = useRef(null);
+  const dialogRef = useRef(null);
 
   const weekLabel = getWeekRange().label;
 
   useEffect(() => {
     if (!openModal) return;
 
+    // Recordar qué tenía el foco para devolvérselo al cerrar.
+    const previouslyFocused = document.activeElement;
     closeButtonRef.current?.focus();
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setOpenModal(false);
+      if (e.key === 'Escape') {
+        setOpenModal(false);
+        return;
+      }
+
+      // Focus trap: mantener el tabulador dentro del diálogo.
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
   }, [openModal]);
 
   const loadRecipes = async () => {
@@ -128,7 +158,8 @@ const Menu = () => {
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition ${
+                aria-pressed={filter === f.key}
+                className={`px-4 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
                   filter === f.key
                     ? 'bg-oasis-olive-700 text-white border-oasis-olive-700'
                     : 'bg-white text-oasis-ink/70 border-oasis-olive-200 hover:border-oasis-olive-400'
@@ -163,29 +194,29 @@ const Menu = () => {
         )}
 
         {/* Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6" stagger={0.05}>
           {recipes.map((dish, index) => (
-            <motion.div
+            <StaggerItem
               key={dish.id_recipe}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.04 }}
-              className="bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-lg transition"
+              whileHover={{ y: -6 }}
+              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-xl hover:border-oasis-olive-200 transition"
             >
-              {dish.image_url ? (
-                <img
-                  src={dish.image_url}
-                  alt={dish.name}
-                  className="w-full aspect-square object-cover"
-                />
-              ) : (
-                <PlaceholderImage
-                  tone={TONES[index % TONES.length]}
-                  rounded="rounded-none"
-                  className="aspect-square"
-                  caption={`Foto: ${dish.name}`}
-                />
-              )}
+              <div className="overflow-hidden">
+                {dish.image_url ? (
+                  <img
+                    src={dish.image_url}
+                    alt={dish.name}
+                    className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <PlaceholderImage
+                    tone={TONES[index % TONES.length]}
+                    rounded="rounded-none"
+                    className="aspect-square transition-transform duration-500 group-hover:scale-105"
+                    caption={`Foto: ${dish.name}`}
+                  />
+                )}
+              </div>
 
               <div className="p-5 flex flex-col flex-1 justify-between">
                 <div>
@@ -196,19 +227,18 @@ const Menu = () => {
                   <p className="text-oasis-ink/60 text-sm mt-1 line-clamp-2">{dish.description}</p>
                 </div>
 
-                <div className="flex items-center justify-between mt-5">
-                  <span className="text-oasis-ink/70 text-sm">₡ —</span>
+                <div className="flex items-center justify-end mt-5">
                   <button
                     onClick={() => openOrder(dish)}
-                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white transition"
+                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
                   >
                     Pedir
                   </button>
                 </div>
               </div>
-            </motion.div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
 
         {/* Paginación */}
         {totalPages > 1 && (
@@ -253,7 +283,7 @@ const Menu = () => {
             href={WHATSAPP_LINK}
             target="_blank"
             rel="noreferrer"
-            className="bg-white text-oasis-olive-700 px-7 py-3.5 rounded-full font-semibold hover:bg-oasis-cream transition text-center whitespace-nowrap"
+            className="bg-white text-oasis-olive-700 px-7 py-3.5 rounded-full font-semibold hover:bg-oasis-cream hover:-translate-y-0.5 active:translate-y-0 transition-all text-center whitespace-nowrap"
           >
             Pedir por WhatsApp
           </a>
@@ -261,42 +291,57 @@ const Menu = () => {
       </section>
 
       {/* Modal */}
-      {openModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="dish-modal-title"
-            className="bg-white rounded-3xl shadow-xl max-w-lg w-full relative p-8 md:p-10"
+      <AnimatePresence>
+        {openModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setOpenModal(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           >
-            <button
-              ref={closeButtonRef}
-              onClick={() => setOpenModal(false)}
-              aria-label="Cerrar"
-              className="absolute top-4 right-4 text-oasis-ink/70 hover:text-oasis-ink text-xl"
+            <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dish-modal-title"
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 16 }}
+              transition={{ duration: 0.3, ease: EASE }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-xl max-w-lg w-full relative p-8 md:p-10"
             >
-              ✕
-            </button>
-
-            <div className="mb-6">
-              <h2
-                id="dish-modal-title"
-                className="font-display text-2xl font-semibold text-oasis-ink"
+              <button
+                ref={closeButtonRef}
+                onClick={() => setOpenModal(false)}
+                aria-label="Cerrar"
+                className="absolute top-4 right-4 text-oasis-ink/70 hover:text-oasis-ink text-xl transition-transform hover:rotate-90"
               >
-                {selectedDish ? `Interesado en: ${selectedDish.name}` : 'Quiero ser cliente'}
-              </h2>
-              <p className="mt-2 text-oasis-ink/60">
-                Dejanos tu información y te contactamos para armar tu pedido.
-              </p>
-            </div>
+                ✕
+              </button>
 
-            <LeadForm
-              initialComment={selectedDish ? `Interesado en: ${selectedDish.name}` : ''}
-              onSuccess={() => setOpenModal(false)}
-            />
-          </div>
-        </div>
-      )}
+              <div className="mb-6">
+                <h2
+                  id="dish-modal-title"
+                  className="font-display text-2xl font-semibold text-oasis-ink"
+                >
+                  {selectedDish ? `Interesado en: ${selectedDish.name}` : 'Quiero ser cliente'}
+                </h2>
+                <p className="mt-2 text-oasis-ink/60">
+                  Dejanos tu información y te contactamos para armar tu pedido.
+                </p>
+              </div>
+
+              <LeadForm
+                initialComment={selectedDish ? `Interesado en: ${selectedDish.name}` : ''}
+                onSuccess={() => setOpenModal(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

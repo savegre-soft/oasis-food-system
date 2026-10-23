@@ -6,6 +6,7 @@ import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
+import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 
 // Precio en vivo desde el combo/plato vinculado (si corresponde) — ver misma
 // lógica en PromotionsAdmin.jsx.
@@ -116,13 +117,13 @@ const Promotions = () => {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/ordenar"
-                  className="bg-white text-oasis-olive-700 px-6 py-2.5 rounded-full font-semibold hover:bg-oasis-cream transition"
+                  className="bg-white text-oasis-olive-700 px-6 py-2.5 rounded-full font-semibold hover:bg-oasis-cream hover:-translate-y-0.5 active:translate-y-0 transition-all"
                 >
                   Pedir esta promo
                 </Link>
                 <Link
                   to="/contacto"
-                  className="border-2 border-white/60 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-white/10 transition"
+                  className="border-2 border-white/60 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-white/10 hover:-translate-y-0.5 active:translate-y-0 transition-all"
                 >
                   Ver condiciones
                 </Link>
@@ -147,25 +148,28 @@ const Promotions = () => {
         )}
 
         {/* Resto de promos */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" stagger={0.1}>
           {rest.map((promo, index) => (
-            <motion.div
+            <StaggerItem
               key={promo.id_promotion}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden"
+              whileHover={{ y: -6 }}
+              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden hover:shadow-xl hover:border-oasis-olive-200 transition"
             >
-              {promo.image_url ? (
-                <img src={promo.image_url} alt={promo.title} className="w-full h-40 object-cover" />
-              ) : (
-                <PlaceholderImage
-                  tone={TONES[index % TONES.length]}
-                  rounded="rounded-none"
-                  className="h-40"
-                />
-              )}
+              <div className="overflow-hidden h-40">
+                {promo.image_url ? (
+                  <img
+                    src={promo.image_url}
+                    alt={promo.title}
+                    className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <PlaceholderImage
+                    tone={TONES[index % TONES.length]}
+                    rounded="rounded-none"
+                    className="h-40 transition-transform duration-500 group-hover:scale-105"
+                  />
+                )}
+              </div>
 
               <div className="p-6">
                 {promo.badge && (
@@ -189,15 +193,15 @@ const Promotions = () => {
                   )}
                   <Link
                     to="/ordenar"
-                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white transition"
+                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
                   >
                     Pedir
                   </Link>
                 </div>
               </div>
-            </motion.div>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
 
         {/* Condiciones */}
         <div className="mt-10 bg-oasis-olive-50 rounded-2xl p-6 text-sm text-oasis-ink/60">
@@ -209,16 +213,18 @@ const Promotions = () => {
 
       {/* Bottom CTA */}
       <section className="bg-oasis-olive-800 text-white py-16 text-center">
-        <h2 className="font-display text-2xl md:text-3xl font-semibold">
-          ¡No dejes pasar estas ofertas!
-        </h2>
-        <p className="mt-3 text-oasis-olive-200">Promociones válidas por tiempo limitado.</p>
-        <Link
-          to="/menu"
-          className="inline-block mt-6 bg-white text-oasis-olive-700 px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-oasis-cream transition"
-        >
-          Ver Menú Completo
-        </Link>
+        <Reveal>
+          <h2 className="font-display text-2xl md:text-3xl font-semibold">
+            ¡No dejes pasar estas ofertas!
+          </h2>
+          <p className="mt-3 text-oasis-olive-200">Promociones válidas por tiempo limitado.</p>
+          <Link
+            to="/menu"
+            className="inline-block mt-6 bg-white text-oasis-olive-700 px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-oasis-cream hover:-translate-y-0.5 active:translate-y-0 transition-all"
+          >
+            Ver Menú Completo
+          </Link>
+        </Reveal>
       </section>
     </div>
   );
