@@ -11,6 +11,10 @@ import PublicLayout from './layout/PublicLayout';
 import Main from './pages/Main';
 import Contact from './pages/contact';
 import Promotions from './pages/Promotions';
+import WellShot from './pages/WellShot';
+import Catering from './pages/Catering';
+import PublicAbout from './pages/PublicAbout';
+import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 import Customers from './pages/customers';
 import Order from './pages/Order';
 import Deliveries from './pages/Deliveries';
@@ -78,6 +82,10 @@ export default function App() {
             <Route path="/contacto" element={<Contact />} />
             <Route path="/promociones" element={<Promotions />} />
             <Route path="/ordenar" element={<Order />} />
+            <Route path="/well-shot" element={<WellShot />} />
+            <Route path="/catering" element={<Catering />} />
+            <Route path="/nosotros" element={<PublicAbout />} />
+            <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
           </Route>
           <Route element={<PortalLayout />}>
             <Route path="/portal/:token" element={<CustomerPortal />} />
