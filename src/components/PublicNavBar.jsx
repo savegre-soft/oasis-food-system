@@ -62,6 +62,8 @@ const PublicNavBar = () => {
           ))}
         </nav>
 
+        {/* Botón "Ordenar" oculto de momento (a pedido). Para restaurarlo,
+            descomentar este bloque y el equivalente del menú móvil de abajo.
         <div className="hidden lg:flex items-center gap-4">
           <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }}>
             <Link
@@ -72,6 +74,7 @@ const PublicNavBar = () => {
             </Link>
           </motion.div>
         </div>
+        */}
 
         {/* Mobile Button */}
         <button
@@ -113,6 +116,7 @@ const PublicNavBar = () => {
                 </NavLink>
               ))}
 
+              {/* Botón "Ordenar" oculto de momento (a pedido).
               <Link
                 to="/ordenar"
                 onClick={() => setOpen(false)}
@@ -120,6 +124,7 @@ const PublicNavBar = () => {
               >
                 Ordenar
               </Link>
+              */}
             </div>
           </motion.div>
         )}
