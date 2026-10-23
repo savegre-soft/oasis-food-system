@@ -1,59 +1,64 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 // eslint-disable-next-line no-unused-vars -- used as <motion.div> below; no-unused-vars doesn't see JSX member-expression usage here
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import LeadForm from '../components/LeadForm';
 import SectionBadge from '../components/public/SectionBadge';
-import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
 import { EASE } from '../lib/motion';
-import { getWeekRange } from '../components/orderUtils';
+import {
+  getWeekRange,
+  getWeekOfMonth,
+  toDateString,
+  DAYS_ORDER,
+  DAY_LABELS,
+  mealLabel,
+} from '../components/orderUtils';
 import { WHATSAPP_LINK } from '../lib/siteContent';
 
-const PAGE_SIZE = 8;
+// Tiempos de comida que se muestran en el menú público (el desayuno no entra acá).
+const MEALS = ['Lunch', 'Dinner'];
 
-// Categorías del menú. Se derivan del nombre de la receta porque `recipes` aún
-// no tiene un campo de categoría poblado (`meal_type` está en null). Cuando se
-// poblen esas categorías en la DB, `categoryOf` puede pasar a leer el campo.
-const FILTERS = [
-  { key: 'Todos', label: 'Todos' },
-  { key: 'Almuerzos', label: 'Almuerzos' },
-  { key: 'Desayunos', label: 'Desayunos' },
-  { key: 'Por porción', label: 'Por porción' },
-];
-
-// Clasifica una receta por heurística sobre el nombre:
-// - "Por porción": ítems a granel ("500g de pollo mechado", etc.)
-// - "Desayunos":  combos de huevo/tortilla ("3 tortillas, 3 huevos…")
-// - "Almuerzos":  el resto (platos completos)
-const categoryOf = (dish) => {
-  const name = (dish?.name || '').trim();
-  if (/^\d+\s*g\b/i.test(name) || /\b\d{3}\s*g\b/i.test(name)) return 'Por porción';
-  if (/tortilla/i.test(name) || (/huevos/i.test(name) && /pl[áa]tano/i.test(name))) {
-    return 'Desayunos';
-  }
-  return 'Almuerzos';
+// Convierte una plantilla (con días anidados) en una lista ordenada por día,
+// cada uno con sus platos. Días sin platos se omiten.
+const daysOf = (template) => {
+  if (!template) return [];
+  const byDay = {};
+  (template.order_template_days ?? []).forEach((d) => {
+    const dishes = (d.order_template_details ?? [])
+      .map((det) => det.recipes)
+      .filter(Boolean)
+      .map((r) => ({ id: r.id_recipe, name: r.name, description: r.description }));
+    if (dishes.length) byDay[d.day_of_week] = dishes;
+  });
+  return DAYS_ORDER.filter((d) => byDay[d]?.length).map((d) => ({
+    day: d,
+    label: DAY_LABELS[d],
+    dishes: byDay[d],
+  }));
 };
 
-const TONES = ['sage', 'sand', 'olive', 'rose', 'butter'];
+const formatWeekLabel = (start, end) => {
+  const fmt = (d) => d.toLocaleDateString('es-CR', { day: 'numeric', month: 'long' });
+  return `${fmt(start)} al ${fmt(end)}`;
+};
 
 const Menu = () => {
   const { supabase } = useApp();
 
-  const [allRecipes, setAllRecipes] = useState([]);
+  // menu = { Lunch: plantilla|null, Dinner: plantilla|null }
+  const [menu, setMenu] = useState({ Lunch: null, Dinner: null });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('Todos');
-  const [page, setPage] = useState(1);
+  const [meal, setMeal] = useState('Lunch');
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
   const closeButtonRef = useRef(null);
   const dialogRef = useRef(null);
 
-  const weekLabel = getWeekRange().label;
+  const { weekStart, weekEnd } = getWeekRange();
+  const weekLabel = formatWeekLabel(weekStart, weekEnd);
 
   useEffect(() => {
     if (!openModal) return;
@@ -95,70 +100,75 @@ const Menu = () => {
     };
   }, [openModal]);
 
-  // Se cargan TODAS las recetas activas una sola vez (son pocas) y el filtrado,
-  // la búsqueda y la paginación se hacen en cliente. Así los chips de categoría
-  // funcionan de verdad y la búsqueda es instantánea, sin ir al servidor en cada
-  // tecla.
+  // Resuelve el menú de la semana activa. Para cada tiempo de comida la plantilla
+  // efectiva es el override puntual de la semana (portal_template_overrides) o,
+  // si no hay, la plantilla automática por week_of_month. Misma lógica que usa
+  // el portal de clientes / el asistente interno.
   useEffect(() => {
     let active = true;
 
-    const loadRecipes = async () => {
+    const load = async () => {
       setLoading(true);
 
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('recipes')
-        .select('*')
-        .eq('is_active', true)
-        .order('id_recipe', { ascending: false });
+      const weekOfMonth = getWeekOfMonth(weekStart);
+      const weekStartStr = toDateString(weekStart);
+
+      const [tplRes, ovrRes] = await Promise.all([
+        supabase
+          .schema('operations')
+          .from('order_templates')
+          .select(
+            'id_template, meal_type, week_of_month, order_template_days(day_of_week, order_template_details(quantity, recipes(id_recipe, name, description, image_url)))'
+          )
+          .in('meal_type', MEALS)
+          .eq('is_active', true),
+        supabase
+          .schema('operations')
+          .from('portal_template_overrides')
+          .select('meal_type, template_id')
+          .eq('week_start_date', weekStartStr),
+      ]);
 
       if (!active) return;
 
-      if (error) {
-        console.error(error);
-        setLoadError(error.message || 'No se pudo cargar el menú.');
+      if (tplRes.error) {
+        console.error(tplRes.error);
+        setLoadError(tplRes.error.message || 'No se pudo cargar el menú.');
         setLoading(false);
         return;
       }
 
+      const templates = tplRes.data ?? [];
+      const overrides = {};
+      (ovrRes.data ?? []).forEach((o) => {
+        overrides[o.meal_type] = o.template_id;
+      });
+
+      const resolve = (mealType) => {
+        const effectiveId =
+          overrides[mealType] ??
+          templates.find((t) => t.meal_type === mealType && t.week_of_month === weekOfMonth)
+            ?.id_template;
+        return templates.find((t) => t.id_template === effectiveId) ?? null;
+      };
+
       setLoadError('');
-      setAllRecipes(data ?? []);
+      setMenu({ Lunch: resolve('Lunch'), Dinner: resolve('Dinner') });
       setLoading(false);
     };
 
-    loadRecipes();
+    load();
     return () => {
       active = false;
     };
+    // weekStart es estable durante la sesión (misma semana); solo depende de supabase.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
-  // Recetas tras aplicar categoría + búsqueda.
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return allRecipes.filter((dish) => {
-      const matchCategory = filter === 'Todos' || categoryOf(dish) === filter;
-      const matchSearch =
-        !q ||
-        (dish.name || '').toLowerCase().includes(q) ||
-        (dish.description || '').toLowerCase().includes(q);
-      return matchCategory && matchSearch;
-    });
-  }, [allRecipes, filter, search]);
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // Cambiar de filtro o búsqueda vuelve a la primera página (se hace en los
-  // handlers para no llamar a setState dentro de un efecto).
-  const selectFilter = (key) => {
-    setFilter(key);
-    setPage(1);
-  };
-
-  const onSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
+  const availableMeals = MEALS.filter((m) => menu[m]);
+  // Tiempo de comida efectivo a mostrar (cae al disponible si el activo no tiene menú).
+  const activeMeal = menu[meal] ? meal : availableMeals[0];
+  const days = daysOf(menu[activeMeal]);
 
   const openOrder = (dish) => {
     setSelectedDish(dish);
@@ -169,9 +179,9 @@ const Menu = () => {
     <div>
       <Seo
         title="Menú de la semana"
-        description="Menú semanal de comida preparada saludable en Costa Rica: almuerzos balanceados con proteína, carbohidrato y vegetales. Pedí por WhatsApp antes del viernes a medianoche."
+        description="Menú semanal de comida preparada saludable en Costa Rica: almuerzos y cenas balanceados con proteína, carbohidrato y vegetales. Pedí por WhatsApp antes del viernes a medianoche."
         path="/menu"
-        keywords={['menú semanal saludable', 'almuerzos balanceados', 'pedidos por WhatsApp']}
+        keywords={['menú semanal saludable', 'almuerzos y cenas balanceados', 'pedidos por WhatsApp']}
       />
 
       {/* Header */}
@@ -181,45 +191,15 @@ const Menu = () => {
           <h1 className="font-display text-4xl md:text-5xl font-semibold text-oasis-ink mt-3">
             Cada menú está pensado para cuidarte
           </h1>
-          <p className="mt-4 text-oasis-ink/70">
+          <p className="mt-4 text-oasis-ink/70">Semana del {weekLabel}</p>
+          <p className="mt-2 text-sm text-oasis-ink/60">
             Elegí tus platos y hacé tu pedido por WhatsApp. Cerramos pedidos los viernes a
             medianoche.
           </p>
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-14">
-        {/* Filtros */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
-          <div className="flex flex-wrap gap-2">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => selectFilter(f.key)}
-                aria-pressed={filter === f.key}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-all active:scale-95 ${
-                  filter === f.key
-                    ? 'bg-oasis-olive-700 text-white border-oasis-olive-700'
-                    : 'bg-white text-oasis-ink/70 border-oasis-olive-200 hover:border-oasis-olive-400'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-sm text-oasis-ink/70">Semana del {weekLabel}</p>
-        </div>
-
-        <div className="max-w-md mb-10">
-          <input
-            type="text"
-            placeholder="Buscar platos..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full px-4 py-3 border border-oasis-olive-200 rounded-xl focus:ring-2 focus:ring-oasis-olive-500 outline-none bg-white"
-          />
-        </div>
-
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-14">
         {loading && <div className="text-center text-oasis-ink/70 py-10">Cargando menú...</div>}
 
         {!loading && loadError && (
@@ -229,78 +209,77 @@ const Menu = () => {
           </div>
         )}
 
-        {!loading && !loadError && filtered.length === 0 && (
+        {!loading && !loadError && availableMeals.length === 0 && (
           <div className="text-center text-oasis-ink/70 py-10">
-            {search || filter !== 'Todos'
-              ? 'No encontramos platos con ese criterio.'
-              : 'Todavía no hay platos activos en el menú. Activá recetas desde el panel de administración.'}
+            Todavía no hay un menú publicado para esta semana. Escribinos por WhatsApp y con gusto
+            te contamos qué hay disponible.
           </div>
         )}
 
-        {/* Grid de platos — sin animación de entrada: contenido principal que se
-            pagina, debe verse siempre. Solo se conserva el hover (CSS). */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {pageItems.map((dish, index) => (
-            <div
-              key={dish.id_recipe}
-              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden flex flex-col hover:shadow-xl hover:border-oasis-olive-200 hover:-translate-y-1.5 transition"
-            >
-              <div className="overflow-hidden">
-                {dish.image_url ? (
-                  <img
-                    src={dish.image_url}
-                    alt={dish.name}
-                    className="w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <PlaceholderImage
-                    tone={TONES[index % TONES.length]}
-                    rounded="rounded-none"
-                    className="aspect-square transition-transform duration-500 group-hover:scale-105"
-                    caption={`Foto: ${dish.name}`}
-                  />
-                )}
-              </div>
-
-              <div className="p-5 flex flex-col flex-1 justify-between">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-oasis-olive-600">
-                    Almuerzo
-                  </span>
-                  <h3 className="font-semibold text-oasis-ink mt-1">{dish.name}</h3>
-                  <p className="text-oasis-ink/60 text-sm mt-1 line-clamp-2">{dish.description}</p>
-                </div>
-
-                <div className="flex items-center justify-end mt-5">
-                  <button
-                    onClick={() => openOrder(dish)}
-                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
-                  >
-                    Pedir
-                  </button>
-                </div>
-              </div>
+        {!loading && !loadError && availableMeals.length > 0 && (
+          <>
+            {/* Pestañas Almuerzos / Cenas */}
+            <div className="flex justify-center gap-2 mb-10">
+              {availableMeals.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMeal(m)}
+                  aria-pressed={activeMeal === m}
+                  className={`px-5 py-2.5 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
+                    activeMeal === m
+                      ? 'bg-oasis-olive-700 text-white border-oasis-olive-700'
+                      : 'bg-white text-oasis-ink/70 border-oasis-olive-200 hover:border-oasis-olive-400'
+                  }`}
+                >
+                  {mealLabel(m)}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-10">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-10 h-10 rounded-full text-sm font-medium transition ${
-                  page === p
-                    ? 'bg-oasis-olive-700 text-white'
-                    : 'bg-white border border-oasis-olive-200 text-oasis-ink/60 hover:border-oasis-olive-400'
-                }`}
+            {/* Menú del tiempo de comida activo, por día */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeMeal}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: EASE }}
+                className="space-y-4"
               >
-                {p}
-              </button>
-            ))}
-          </div>
+                {days.map(({ day, label, dishes }) => (
+                  <div
+                    key={day}
+                    className="bg-white rounded-2xl border border-oasis-olive-100 p-5 sm:p-6 transition-colors hover:border-oasis-olive-200"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.15em] text-oasis-olive-600 mb-4">
+                      {label}
+                    </p>
+                    <div className="space-y-3">
+                      {dishes.map((dish, i) => (
+                        <div
+                          key={`${day}-${dish.id ?? i}`}
+                          className="flex items-center justify-between gap-4 border-t border-oasis-olive-50 pt-3 first:border-0 first:pt-0"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-semibold text-oasis-ink">{dish.name}</p>
+                            {dish.description && (
+                              <p className="text-sm text-oasis-ink/60 mt-0.5">{dish.description}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => openOrder(dish)}
+                            className="flex-none bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                          >
+                            Pedir
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          </>
         )}
       </div>
 
