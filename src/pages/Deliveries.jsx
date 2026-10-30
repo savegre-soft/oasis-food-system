@@ -3,7 +3,7 @@ import { Truck, Printer } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 import ProductionPrintReport from '../components/ProductionPrintReport';
-import KitchenPipeline from '../components/KitchenPipeline';
+import KitchenPipeline, { KitchenStageTabs } from '../components/KitchenPipeline';
 import { useOrderDayActions } from '../hooks/useOrderDayActions';
 
 import { DAYS_ORDER as DAY_ORDER, DAY_LABELS, cycleIdx, getAbsoluteDate, toDateString } from '../components/orderUtils';
@@ -81,22 +81,22 @@ const SlotButton = ({ slot, isActive, onSelect }) => {
   });
 
   const cls =
-    'flex flex-col items-center px-5 py-2 rounded-lg text-sm font-medium transition ' +
+    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ' +
     (isActive
-      ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white'
+      ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white'
       : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200');
 
   return (
     <button onClick={() => onSelect(slot)} className={cls}>
       <span>{slot.label}</span>
-      <span className="text-xs font-normal opacity-60">{delivLabel}</span>
+      <span className="font-normal opacity-60">{delivLabel}</span>
     </button>
   );
 };
 
 const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
   const cls =
-    'px-4 py-1.5 rounded-xl text-xs font-medium transition border ' +
+    'px-3 py-1.5 rounded-lg text-xs font-medium transition border ' +
     (isActive
       ? 'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100'
       : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600');
@@ -107,6 +107,11 @@ const ClientFilterButton = ({ id, label, isActive, onSelect }) => {
     </button>
   );
 };
+
+// Separador vertical sutil entre grupos de filtros en la barra compacta.
+const FilterDivider = () => (
+  <span className="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-800 mx-1" />
+);
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
@@ -348,34 +353,40 @@ const Production = () => {
         </div>
       </div>
 
-      {/* Week segmenter */}
-      <div className="flex gap-1 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-8">
-        {WEEK_SEGMENTS.map(({ offset, label }) => (
-          <button
-            key={offset}
-            onClick={() => setWeekOffset(offset)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-              weekOffset === offset
-                ? 'bg-white dark:bg-slate-700 shadow text-slate-800 dark:text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Navegación principal: etapa del pipeline (Cocina/Empaque/Entrega).
+          Va primero porque decide qué vista se muestra — los filtros de
+          semana/día/cliente de abajo solo acotan los datos de esa vista. */}
+      <KitchenStageTabs
+        pendingDays={normalPending}
+        packedDays={normalPacked}
+        deliveredDays={normalDelivered}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
 
-      {loadingDays ? (
-        <p className="text-slate-400 dark:text-slate-500 text-sm">Cargando días...</p>
-      ) : (
-        <>
-          {slots.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 dark:text-slate-600">
-              <Truck size={40} className="mx-auto mb-3 opacity-30" />
-              <p>No hay pedidos activos esta semana</p>
-            </div>
-          ) : (
-            <div className="flex gap-2 bg-slate-200 dark:bg-slate-900 p-1 rounded-xl w-fit mb-6">
+      {/* Filtros secundarios: semana, día de entrega y tipo de cliente, todos
+          en una sola barra compacta en vez de tres bloques apilados. */}
+      <div className="flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl px-2 py-2 mb-6">
+        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+          {WEEK_SEGMENTS.map(({ offset, label }) => (
+            <button
+              key={offset}
+              onClick={() => setWeekOffset(offset)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                weekOffset === offset
+                  ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-800 dark:text-white'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {!loadingDays && slots.length > 0 && (
+          <>
+            <FilterDivider />
+            <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
               {slots.map((slot) => (
                 <SlotButton
                   key={slot.name}
@@ -385,41 +396,53 @@ const Production = () => {
                 />
               ))}
             </div>
-          )}
-          <div className="flex gap-1 mb-4">
-            {[
-              { id: 'todos', label: '🌐 Todos' },
-              { id: 'personal', label: '👤 Personales' },
-              { id: 'family', label: '👨‍👩‍👧 Familiares' },
-            ].map(({ id, label }) => (
-              <ClientFilterButton
-                key={id}
-                id={id}
-                label={label}
-                isActive={clientFilter === id}
-                onSelect={setClientFilter}
-              />
-            ))}
-          </div>
+          </>
+        )}
 
-          {loading ? (
-            <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
-          ) : (
-            <KitchenPipeline
-              pendingDays={normalPending}
-              packedDays={normalPacked}
-              deliveredDays={normalDelivered}
-              onPack={markPacked}
-              onPackDetail={markPackedDetail}
-              onDeliver={markDelivered}
-              onDeliverDetail={markDeliveredDetail}
-              onUnpack={markPending}
-              onUnpackDetail={markPendingDetail}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
+        <FilterDivider />
+        <div className="flex gap-1 flex-wrap">
+          {[
+            { id: 'todos', label: '🌐 Todos' },
+            { id: 'personal', label: '👤 Personales' },
+            { id: 'family', label: '👨‍👩‍👧 Familiares' },
+          ].map(({ id, label }) => (
+            <ClientFilterButton
+              key={id}
+              id={id}
+              label={label}
+              isActive={clientFilter === id}
+              onSelect={setClientFilter}
             />
-          )}
-        </>
+          ))}
+        </div>
+
+        {loadingDays && (
+          <span className="text-xs text-slate-400 dark:text-slate-500">Cargando días...</span>
+        )}
+      </div>
+
+      {!loadingDays && slots.length === 0 ? (
+        <div className="text-center py-10 text-slate-400 dark:text-slate-600">
+          <Truck size={40} className="mx-auto mb-3 opacity-30" />
+          <p>No hay pedidos activos esta semana</p>
+        </div>
+      ) : loading ? (
+        <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
+      ) : (
+        <KitchenPipeline
+          pendingDays={normalPending}
+          packedDays={normalPacked}
+          deliveredDays={normalDelivered}
+          onPack={markPacked}
+          onPackDetail={markPackedDetail}
+          onDeliver={markDelivered}
+          onDeliverDetail={markDeliveredDetail}
+          onUnpack={markPending}
+          onUnpackDetail={markPendingDetail}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          hideTabs
+        />
       )}
     </div>
   );

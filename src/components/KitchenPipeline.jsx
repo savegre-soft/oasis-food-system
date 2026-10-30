@@ -36,6 +36,34 @@ const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
   );
 };
 
+// Barra de pestañas de etapa — es la navegación principal del pipeline
+// (decide qué vista se muestra), por eso se expone aparte: las páginas que
+// tienen filtros propios (semana/día/tipo de cliente) la colocan primero,
+// antes de esos filtros secundarios, en vez de dejarla al final del stack.
+export const KitchenStageTabs = ({ pendingDays, packedDays, deliveredDays, activeTab, setActiveTab }) => {
+  const counts = {
+    cocina: pendingDays.length,
+    empaque: pendingDays.length + packedDays.length,
+    entrega: deliveredDays.length,
+  };
+
+  return (
+    <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+      {STAGE_TABS.map(({ id, label, Icon }) => (
+        <TabButton
+          key={id}
+          id={id}
+          label={label}
+          Icon={Icon}
+          isActive={activeTab === id}
+          count={counts[id] ?? 0}
+          onSelect={setActiveTab}
+        />
+      ))}
+    </div>
+  );
+};
+
 const KitchenPipeline = ({
   pendingDays,
   packedDays,
@@ -48,28 +76,21 @@ const KitchenPipeline = ({
   onUnpackDetail,
   activeTab,
   setActiveTab,
+  // Cuando la página ya renderizó <KitchenStageTabs> en otra posición
+  // (ver Deliveries.jsx), evita que el pipeline la dibuje de nuevo.
+  hideTabs = false,
 }) => {
-  const counts = {
-    cocina: pendingDays.length,
-    empaque: pendingDays.length + packedDays.length,
-    entrega: deliveredDays.length,
-  };
-
   return (
     <>
-      <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-        {STAGE_TABS.map(({ id, label, Icon }) => (
-          <TabButton
-            key={id}
-            id={id}
-            label={label}
-            Icon={Icon}
-            isActive={activeTab === id}
-            count={counts[id] ?? 0}
-            onSelect={setActiveTab}
-          />
-        ))}
-      </div>
+      {!hideTabs && (
+        <KitchenStageTabs
+          pendingDays={pendingDays}
+          packedDays={packedDays}
+          deliveredDays={deliveredDays}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+      )}
 
       <div className="transition-opacity duration-300 dark:text-slate-300">
         {activeTab === 'cocina' && (
