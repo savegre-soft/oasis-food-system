@@ -200,7 +200,7 @@ export default function Navbar() {
   const { Icon: ThemeIcon, label: themeLabel } = themeConfig[theme];
 
   const baseStyle =
-    'px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2';
+    'px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2';
 
   // ¿Hay algo que mostrar en el dropdown?
   const hasResults = linkResults.length > 0 || clientResults.length > 0;
@@ -210,11 +210,11 @@ export default function Navbar() {
 
   function SearchResults({ onSelect }) {
     return (
-      <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 z-50 border border-gray-100 dark:border-gray-700">
+      <div className="absolute top-full right-0 mt-2 w-64 bg-oasis-paper dark:bg-slate-800 rounded-xl shadow-xl py-2 z-50 border border-oasis-olive-100 dark:border-slate-700">
         {/* Secciones */}
         {linkResults.length > 0 && (
           <>
-            <p className="px-4 pt-1 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+            <p className="px-4 pt-1 pb-1 text-xs font-semibold text-oasis-ink/40 dark:text-slate-500 uppercase tracking-wide">
               Secciones
             </p>
             {linkResults.map((link) => {
@@ -223,7 +223,7 @@ export default function Navbar() {
                 <button
                   key={link.to}
                   onClick={() => onSelect(link.to)}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-800 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 text-left"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-oasis-olive-800 dark:text-oasis-olive-300 hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30 text-left"
                 >
                   <Icon size={15} />
                   {link.label}
@@ -237,23 +237,23 @@ export default function Navbar() {
         {(searchLoading || clientResults.length > 0) && (
           <>
             <p
-              className={`px-4 pb-1 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide ${linkResults.length > 0 ? 'pt-3 border-t border-gray-100 dark:border-gray-700 mt-1' : 'pt-1'}`}
+              className={`px-4 pb-1 text-xs font-semibold text-oasis-ink/40 dark:text-slate-500 uppercase tracking-wide ${linkResults.length > 0 ? 'pt-3 border-t border-oasis-olive-100 dark:border-slate-700 mt-1' : 'pt-1'}`}
             >
               Clientes
             </p>
             {searchLoading ? (
               <div className="flex items-center gap-2 px-4 py-2">
-                <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-gray-400 dark:text-gray-500">Buscando...</span>
+                <div className="w-3 h-3 border-2 border-oasis-olive-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-oasis-ink/40 dark:text-slate-500">Buscando...</span>
               </div>
             ) : (
               clientResults.map((client) => (
                 <button
                   key={client.id_client}
                   onClick={() => onSelect(`/cliente/${client.id_client}`)}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30 text-left"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-oasis-ink/80 dark:text-slate-200 hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30 text-left"
                 >
-                  <Users size={15} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                  <Users size={15} className="text-oasis-ink/30 dark:text-slate-500 shrink-0" />
                   <span className="truncate">{client.name}</span>
                 </button>
               ))
@@ -263,7 +263,7 @@ export default function Navbar() {
 
         {/* Sin resultados */}
         {!searchLoading && !hasResults && searchQuery.trim() && (
-          <p className="px-4 py-2 text-sm text-gray-400 dark:text-gray-500">Sin resultados</p>
+          <p className="px-4 py-2 text-sm text-oasis-ink/40 dark:text-slate-500">Sin resultados</p>
         )}
       </div>
     );
@@ -272,18 +272,31 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className="sticky top-0 z-50 bg-green-800/95 backdrop-blur-md text-white shadow-lg"
+      className="sticky top-0 z-50 bg-oasis-paper/95 dark:bg-slate-900/95 backdrop-blur-sm text-oasis-ink dark:text-slate-100 border-b border-oasis-olive-100 dark:border-slate-800 shadow-sm"
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
-        <img src={LogoUrl} alt="Oasis Food" className="h-10 w-10 rounded-full object-cover shrink-0" />
+      <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16 gap-3">
+        {/* Logo */}
+        <div className="flex items-center gap-3 shrink-0">
+          <img src={LogoUrl} alt="Oasis Food" className="h-10 w-10 rounded-full object-cover shrink-0" />
+          <span className="hidden sm:block leading-tight">
+            <span className="block font-display font-semibold text-base text-oasis-ink dark:text-slate-100">
+              Oasis
+            </span>
+            <span className="block text-[10px] tracking-[0.18em] uppercase text-oasis-olive-600 dark:text-oasis-olive-400">
+              Panel operativo
+            </span>
+          </span>
+        </div>
 
         {/* Desktop */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2">
           {/* ── Barra de búsqueda colapsable ── */}
           <div ref={searchRef} className="relative flex items-center">
             <div
-              className={`flex items-center overflow-hidden rounded-lg transition-all duration-300 ease-in-out ${
-                searchExpanded ? 'max-w-xs bg-white/20 px-3 py-1.5 gap-2' : 'max-w-0 px-0 py-0'
+              className={`flex items-center overflow-hidden rounded-full transition-all duration-300 ease-in-out ${
+                searchExpanded
+                  ? 'max-w-xs bg-oasis-olive-50 dark:bg-slate-800 px-3 py-1.5 gap-2 border border-oasis-olive-100 dark:border-slate-700'
+                  : 'max-w-0 px-0 py-0'
               }`}
             >
               <input
@@ -292,7 +305,7 @@ export default function Navbar() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar sección o cliente..."
-                className="bg-transparent text-white placeholder-white/50 text-sm outline-none w-48"
+                className="bg-transparent text-oasis-ink dark:text-slate-100 placeholder-oasis-ink/40 dark:placeholder-slate-500 text-sm outline-none w-48"
               />
               {searchQuery && (
                 <button
@@ -300,7 +313,7 @@ export default function Navbar() {
                     setSearchQuery('');
                     inputRef.current?.focus();
                   }}
-                  className="text-white/60 hover:text-white transition-colors shrink-0"
+                  className="text-oasis-ink/40 hover:text-oasis-ink dark:text-slate-500 dark:hover:text-slate-200 transition-colors shrink-0"
                 >
                   <X size={14} />
                 </button>
@@ -310,7 +323,7 @@ export default function Navbar() {
             <button
               onClick={searchExpanded ? closeSearch : openSearch}
               title={searchExpanded ? 'Cerrar búsqueda' : 'Buscar'}
-              className="p-2 rounded-lg hover:bg-green-700 transition-colors shrink-0"
+              className="p-2 rounded-full hover:bg-oasis-olive-50 dark:hover:bg-slate-800 transition-colors shrink-0"
             >
               {searchExpanded ? <X size={18} /> : <Search size={18} />}
             </button>
@@ -325,7 +338,11 @@ export default function Navbar() {
                 key={link.to}
                 to={link.to}
                 className={({ isActive }) =>
-                  `${baseStyle} ${isActive ? 'bg-white text-green-800 shadow-md' : 'hover:bg-green-700 hover:scale-105'}`
+                  `${baseStyle} ${
+                    isActive
+                      ? 'bg-oasis-olive-600 text-white shadow-sm'
+                      : 'text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
+                  }`
                 }
               >
                 <Icon size={18} />
@@ -370,7 +387,7 @@ export default function Navbar() {
           <button
             onClick={cycleTheme}
             title={`Tema: ${themeLabel}`}
-            className="p-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1.5 text-sm"
+            className="p-2 rounded-full text-oasis-ink/70 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800 transition flex items-center gap-1.5 text-sm"
           >
             <ThemeIcon size={18} />
           </button>
@@ -379,15 +396,15 @@ export default function Navbar() {
           <div className="relative">
             <button
               onClick={() => toggleMenu('profile')}
-              className="p-2 rounded-full hover:bg-green-700 transition"
+              className="p-2 rounded-full text-oasis-ink/70 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800 transition"
             >
               <User size={22} />
             </button>
 
             {openMenu === 'profile' && (
-              <div className="absolute right-0 mt-3 w-52 bg-white dark:bg-gray-800 text-green-800 dark:text-green-300 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-gray-700">
+              <div className="absolute right-0 mt-3 w-52 bg-oasis-paper dark:bg-slate-800 text-oasis-olive-800 dark:text-oasis-olive-300 rounded-xl shadow-xl py-2 border border-oasis-olive-100 dark:border-slate-700">
                 {user && (
-                  <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 truncate">
+                  <div className="px-4 py-2 text-xs text-oasis-ink/50 dark:text-slate-400 border-b border-oasis-olive-100 dark:border-slate-700 truncate">
                     {user.email}
                   </div>
                 )}
@@ -397,7 +414,7 @@ export default function Navbar() {
                     setOpenMenu(null);
                     nav('/perfil');
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30"
                 >
                   <User size={16} />
                   Perfil
@@ -408,15 +425,15 @@ export default function Navbar() {
                     setOpenMenu(null);
                     nav('/settings');
                   }}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30"
                 >
                   <Settings size={16} />
                   Configuración
                 </button>
 
-                <div className="px-4 py-2 border-t border-b border-gray-100 dark:border-gray-700">
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Apariencia</p>
-                  <div className="flex rounded-lg overflow-hidden border border-green-200 dark:border-green-800">
+                <div className="px-4 py-2 border-t border-b border-oasis-olive-100 dark:border-slate-700">
+                  <p className="text-xs text-oasis-ink/40 dark:text-slate-500 mb-2">Apariencia</p>
+                  <div className="flex rounded-full overflow-hidden border border-oasis-olive-200 dark:border-slate-700">
                     {[
                       { key: 'light', Icon: Sun, label: 'Claro' },
                       { key: 'dark', Icon: Moon, label: 'Oscuro' },
@@ -428,8 +445,8 @@ export default function Navbar() {
                         onClick={() => setTheme(key)}
                         className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 text-xs transition-colors ${
                           theme === key
-                            ? 'bg-green-700 text-white'
-                            : 'hover:bg-green-50 dark:hover:bg-green-900/30 text-green-700 dark:text-green-400'
+                            ? 'bg-oasis-olive-600 text-white'
+                            : 'hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30 text-oasis-olive-700 dark:text-oasis-olive-400'
                         }`}
                       >
                         <Ic size={14} />
@@ -441,7 +458,7 @@ export default function Navbar() {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-oasis-rose/40 dark:hover:bg-red-900/20 text-oasis-terracotta-dark dark:text-red-400"
                 >
                   <LogOut size={16} />
                   Cerrar Sesión
@@ -454,7 +471,7 @@ export default function Navbar() {
         {/* Mobile button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 rounded-lg hover:bg-green-700"
+          className="md:hidden p-2 rounded-full text-oasis-ink dark:text-slate-100 hover:bg-oasis-olive-50 dark:hover:bg-slate-800"
         >
           {isOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -462,25 +479,25 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-green-800">
+        <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-oasis-paper dark:bg-slate-900 border-t border-oasis-olive-100 dark:border-slate-800">
           <div ref={searchRef} className="relative mt-2">
-            <div className="flex items-center bg-white/15 rounded-lg px-3 py-2 gap-2">
-              <Search size={16} className="text-white/70 shrink-0" />
+            <div className="flex items-center bg-oasis-olive-50 dark:bg-slate-800 border border-oasis-olive-100 dark:border-slate-700 rounded-full px-3 py-2 gap-2">
+              <Search size={16} className="text-oasis-ink/40 dark:text-slate-500 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar sección o cliente..."
-                className="bg-transparent text-white placeholder-white/50 text-sm outline-none flex-1"
+                className="bg-transparent text-oasis-ink dark:text-slate-100 placeholder-oasis-ink/40 dark:placeholder-slate-500 text-sm outline-none flex-1"
               />
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')}>
-                  <X size={14} className="text-white/60" />
+                  <X size={14} className="text-oasis-ink/40 dark:text-slate-500" />
                 </button>
               )}
             </div>
             {(hasResults || searchLoading) && searchQuery.trim() && (
-              <div className="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 z-50 border border-gray-100 dark:border-gray-700">
+              <div className="absolute top-full mt-1 left-0 right-0 bg-oasis-paper dark:bg-slate-800 rounded-xl shadow-xl py-2 z-50 border border-oasis-olive-100 dark:border-slate-700">
                 {linkResults.map((link) => {
                   const Icon = link.icon;
                   return (
@@ -490,7 +507,7 @@ export default function Navbar() {
                         handleSearchSelect(link.to);
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-800 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-oasis-olive-800 dark:text-oasis-olive-300 hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30"
                     >
                       <Icon size={15} />
                       {link.label}
@@ -499,8 +516,8 @@ export default function Navbar() {
                 })}
                 {searchLoading ? (
                   <div className="flex items-center gap-2 px-4 py-2">
-                    <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs text-gray-400">Buscando clientes...</span>
+                    <div className="w-3 h-3 border-2 border-oasis-olive-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs text-oasis-ink/40 dark:text-slate-500">Buscando clientes...</span>
                   </div>
                 ) : (
                   clientResults.map((client) => (
@@ -510,9 +527,9 @@ export default function Navbar() {
                         handleSearchSelect(`/customers/${client.id_client}`);
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/30"
+                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-oasis-ink/80 dark:text-slate-200 hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30"
                     >
-                      <Users size={15} className="text-gray-400 shrink-0" />
+                      <Users size={15} className="text-oasis-ink/30 dark:text-slate-500 shrink-0" />
                       <span className="truncate">{client.name}</span>
                     </button>
                   ))
@@ -529,7 +546,11 @@ export default function Navbar() {
                 to={link.to}
                 onClick={() => setIsOpen(false)}
                 className={({ isActive }) =>
-                  `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
+                  `${baseStyle} ${
+                    isActive
+                      ? 'bg-oasis-olive-600 text-white'
+                      : 'text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
+                  }`
                 }
               >
                 <Icon size={18} />
@@ -575,7 +596,7 @@ export default function Navbar() {
             onNavigate={() => setIsOpen(false)}
           />
 
-          <div className="flex rounded-lg overflow-hidden border border-green-600 mt-1">
+          <div className="flex rounded-full overflow-hidden border border-oasis-olive-200 dark:border-slate-700 mt-1">
             {[
               { key: 'light', Icon: Sun, label: 'Claro' },
               { key: 'dark', Icon: Moon, label: 'Oscuro' },
@@ -587,8 +608,8 @@ export default function Navbar() {
                 onClick={() => setTheme(key)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs transition-colors ${
                   theme === key
-                    ? 'bg-white text-green-800 font-medium'
-                    : 'text-white/70 hover:bg-green-700'
+                    ? 'bg-oasis-olive-600 text-white font-medium'
+                    : 'text-oasis-ink/70 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <Ic size={14} />
@@ -601,7 +622,11 @@ export default function Navbar() {
             to="/settings"
             onClick={() => setIsOpen(false)}
             className={({ isActive }) =>
-              `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
+              `${baseStyle} ${
+                isActive
+                  ? 'bg-oasis-olive-600 text-white'
+                  : 'text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
+              }`
             }
           >
             <Settings size={18} />
@@ -610,7 +635,7 @@ export default function Navbar() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-red-300 hover:bg-red-700 rounded-lg"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-oasis-terracotta-dark dark:text-red-400 hover:bg-oasis-rose/40 dark:hover:bg-red-900/20 rounded-full"
           >
             <LogOut size={18} />
             Cerrar Sesión
@@ -626,13 +651,16 @@ export default function Navbar() {
 function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
   return (
     <div className="relative">
-      <button onClick={() => toggleMenu(menuKey)} className={`${baseStyle} hover:bg-green-700`}>
+      <button
+        onClick={() => toggleMenu(menuKey)}
+        className={`${baseStyle} text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800`}
+      >
         {label}
         <ChevronDown size={16} />
       </button>
 
       {openMenu === menuKey && (
-        <div className="absolute mt-2 w-56 bg-white dark:bg-gray-800 text-green-800 dark:text-green-300 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-gray-700">
+        <div className="absolute mt-2 w-56 bg-oasis-paper dark:bg-slate-800 text-oasis-olive-800 dark:text-oasis-olive-300 rounded-xl shadow-xl py-2 border border-oasis-olive-100 dark:border-slate-700">
           {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -640,7 +668,7 @@ function Dropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle }) {
                 key={link.to}
                 to={link.to}
                 onClick={() => toggleMenu(menuKey)}
-                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-900/30"
+                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-oasis-olive-50 dark:hover:bg-oasis-olive-900/30"
               >
                 <Icon size={16} />
                 {link.label}
@@ -660,7 +688,7 @@ function MobileDropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle
     <div>
       <button
         onClick={() => toggleMenu(menuKey)}
-        className={`${baseStyle} w-full justify-between hover:bg-green-700`}
+        className={`${baseStyle} w-full justify-between text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800`}
       >
         {label}
         <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -676,7 +704,11 @@ function MobileDropdown({ label, menuKey, openMenu, toggleMenu, links, baseStyle
                 to={link.to}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `${baseStyle} ${isActive ? 'bg-white text-green-800' : 'hover:bg-green-700'}`
+                  `${baseStyle} ${
+                    isActive
+                      ? 'bg-oasis-olive-600 text-white'
+                      : 'text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
+                  }`
                 }
               >
                 <Icon size={18} />
