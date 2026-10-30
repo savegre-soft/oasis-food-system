@@ -22,6 +22,7 @@ const DeliveriesCombos = () => {
   const [loading, setLoading] = useState(false);
   const [comboOrders, setComboOrders] = useState([]);
   const [showPrint, setShowPrint] = useState(false);
+  const [stage, setStage] = useState('cocina');
 
   useEffect(() => {
     const fetchWeeks = async () => {
@@ -101,6 +102,17 @@ const DeliveriesCombos = () => {
   const markComboDelivered = (id) => updateComboOrderStatus(id, 'DELIVERED', '🚚 Combo entregado');
   const markComboPending = (id) => updateComboOrderStatus(id, 'PENDING', 'Combo devuelto a pendiente');
 
+  // Mismo criterio de etapas que ComboDeliveryView, para que el resumen
+  // impreso coincida con los conteos de la pantalla.
+  const printOrders = comboOrders.filter((o) =>
+    stage === 'cocina'
+      ? o.status === 'PENDING'
+      : stage === 'empaque'
+        ? o.status === 'PENDING' || o.status === 'PACKED'
+        : o.status === 'DELIVERED'
+  );
+  const stageLabel = { cocina: 'Cocina', empaque: 'Empaque', entrega: 'Entrega' }[stage];
+
   const weekLabel = currentWeek
     ? 'Semana del ' +
       fmtDate(currentWeek.week_start_date, { day: '2-digit', month: 'long' }) +
@@ -110,7 +122,7 @@ const DeliveriesCombos = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
-      {showPrint && <ComboPrintReport orders={comboOrders} weekLabel={weekLabel} onClose={() => setShowPrint(false)} />}
+      {showPrint && <ComboPrintReport orders={printOrders} weekLabel={`${weekLabel} · ${stageLabel}`} onClose={() => setShowPrint(false)} />}
 
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
@@ -159,6 +171,7 @@ const DeliveriesCombos = () => {
           onDeliver={markComboDelivered}
           onUnpack={markComboPending}
           onUndeliver={markComboPacked}
+          onStageChange={setStage}
         />
       )}
     </div>
