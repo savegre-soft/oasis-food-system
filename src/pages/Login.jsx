@@ -83,15 +83,9 @@ const Login = () => {
       <div className="hidden lg:flex flex-col justify-between bg-oasis-olive-700 text-white p-12 relative overflow-hidden">
         <span
           aria-hidden="true"
-          className="font-display italic text-9xl text-white/10 absolute -top-6 -left-4 select-none"
+          className="font-display italic text-8xl text-white/10 absolute -bottom-6 -right-4 select-none whitespace-nowrap"
         >
-          Oa
-        </span>
-        <span
-          aria-hidden="true"
-          className="font-display italic text-9xl text-white/10 absolute bottom-10 right-0 select-none"
-        >
-          sis
+          Oasis
         </span>
 
         <Link to="/" className="flex items-center gap-3 relative">

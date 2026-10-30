@@ -30,6 +30,80 @@
   --color-oasis-butter-dark: #b98a2d;
   --color-oasis-sand: #e9d9c3;
   --color-oasis-sage: #dbe2c9;
+
+  /* ── Reskin del panel interno con la identidad del sitio público ──────────
+     El panel interno (NavBar, Dashboards, Pedidos, Entregas, etc.) usa las
+     paletas genéricas de Tailwind (slate/gray para neutros, green/emerald/teal
+     para acentos). En vez de reescribir cientos de usos de esas clases en
+     cada página, se redefinen aquí las variables de esas escalas con tonos
+     derivados de la paleta "oasis" (cálidos: crema/oliva/tinta/terracota) en
+     vez de los grises/verdes fríos por defecto. Toda la app hereda el cambio
+     de inmediato, sin tocar el markup de cada pantalla. */
+
+  /* Neutros cálidos (reemplaza el gris frío de slate/gray) */
+  --color-slate-50: #faf6ec;
+  --color-slate-100: #f1ecdc;
+  --color-slate-200: #e4dcc3;
+  --color-slate-300: #cfc3a0;
+  --color-slate-400: #ab9f78;
+  --color-slate-500: #8a7d5c;
+  --color-slate-600: #6b6048;
+  --color-slate-700: #4f4734;
+  --color-slate-800: #322d22;
+  --color-slate-900: #211e16;
+  --color-slate-950: #15130e;
+
+  --color-gray-50: #faf6ec;
+  --color-gray-100: #f1ecdc;
+  --color-gray-200: #e4dcc3;
+  --color-gray-300: #cfc3a0;
+  --color-gray-400: #ab9f78;
+  --color-gray-500: #8a7d5c;
+  --color-gray-600: #6b6048;
+  --color-gray-700: #4f4734;
+  --color-gray-800: #322d22;
+  --color-gray-900: #211e16;
+  --color-gray-950: #15130e;
+
+  /* Acento primario (reemplaza el verde genérico por el oliva de la marca) */
+  --color-green-50: #eef1e1;
+  --color-green-100: #dde3c6;
+  --color-green-200: #c3ce9f;
+  --color-green-300: #a7b878;
+  --color-green-400: #899f52;
+  --color-green-500: #6e8338;
+  --color-green-600: #596b2c;
+  --color-green-700: #475426;
+  --color-green-800: #343c1b;
+  --color-green-900: #242a13;
+  --color-green-950: #1a1e0f;
+
+  --color-emerald-50: #eef1e1;
+  --color-emerald-100: #dde3c6;
+  --color-emerald-200: #c3ce9f;
+  --color-emerald-300: #a7b878;
+  --color-emerald-400: #899f52;
+  --color-emerald-500: #6e8338;
+  --color-emerald-600: #596b2c;
+  --color-emerald-700: #475426;
+  --color-emerald-800: #343c1b;
+  --color-emerald-900: #242a13;
+  --color-emerald-950: #1a1e0f;
+
+  /* Acento secundario (reemplaza teal por un tono terracota, para que los
+     degradados/acentos de dos colores sigan luciendo como un duotono y no
+     como un solo verde plano) */
+  --color-teal-50: #fbe9df;
+  --color-teal-100: #f6d2c0;
+  --color-teal-200: #efb595;
+  --color-teal-300: #e6986b;
+  --color-teal-400: #e2996a;
+  --color-teal-500: #d9733e;
+  --color-teal-600: #c25f2d;
+  --color-teal-700: #a14f25;
+  --color-teal-800: #7e3e1e;
+  --color-teal-900: #5c2d16;
+  --color-teal-950: #3d1e0f;
 }
 
 html,
