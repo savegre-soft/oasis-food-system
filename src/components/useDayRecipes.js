@@ -198,23 +198,38 @@ export const useDayRecipes = () => {
   const loadFromOrderDays = useCallback(
     (orderDays, allRecipes = []) => {
       const recipes = {};
+      const overrides = {};
 
       DAYS_ORDER.forEach((d) => {
         recipes[d] = [];
       });
 
       orderDays.forEach((od) => {
-        recipes[od.day_of_week] = (od.order_day_details ?? []).map((det) => ({
-          recipe_id: String(det.recipe_id ?? det.recipes?.id_recipe ?? ''),
-          recipe_name: det.recipes?.name ?? '',
-          quantity: det.quantity ?? 1,
-          isExtra: true,
-          // Tiempo de comida del detalle (si el llamador lo infirió); define sus macros.
-          ...(det.mealType ? { mealType: det.mealType } : {}),
-        }));
+        recipes[od.day_of_week] = (od.order_day_details ?? []).map((det, index) => {
+          // Si el detalle trae filas de override (p.ej. un 'extra' agregado a mano),
+          // se hidratan aquí para que no se pierdan al reabrir/editar el pedido.
+          const ovRows = det.order_day_recipe_overrides ?? [];
+          if (ovRows.length > 0) {
+            const grouped = { protein: [], carb: [], extra: [] };
+            ovRows.forEach((ov) => {
+              grouped[ov.category]?.push(ov.name);
+            });
+            overrides[`${od.day_of_week}-${index}`] = grouped;
+          }
+
+          return {
+            recipe_id: String(det.recipe_id ?? det.recipes?.id_recipe ?? ''),
+            recipe_name: det.recipes?.name ?? '',
+            quantity: det.quantity ?? 1,
+            isExtra: true,
+            // Tiempo de comida del detalle (si el llamador lo infirió); define sus macros.
+            ...(det.mealType ? { mealType: det.mealType } : {}),
+          };
+        });
       });
 
       setDayRecipes(recipes);
+      setIngredientOverrides(overrides);
 
       const ids = Object.values(recipes)
         .flat()

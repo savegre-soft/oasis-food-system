@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChefHat, Package, Truck, Archive, CheckCircle } from 'lucide-react';
 import {
   CATEGORY_ORDER,
@@ -208,9 +208,14 @@ const ClienteView = ({ stage, pending, packed, delivered, onPack, onDeliver, onU
 
 // orders: combo_orders de la semana/rango activo, con clients() y
 // combo_order_selections(combo_items()) — misma forma que ComboOrdersTab.
-const ComboDeliveryView = ({ orders, onPack, onDeliver, onUnpack, onUndeliver }) => {
+const ComboDeliveryView = ({ orders, onPack, onDeliver, onUnpack, onUndeliver, onStageChange }) => {
   const [stage, setStage] = useState('cocina');
   const [viewMode, setViewMode] = useState('cliente');
+
+  // El resumen impreso debe reflejar la misma etapa que se ve en pantalla.
+  useEffect(() => {
+    onStageChange?.(stage);
+  }, [stage, onStageChange]);
 
   const pending = useMemo(() => orders.filter((o) => o.status === 'PENDING'), [orders]);
   const packed = useMemo(() => orders.filter((o) => o.status === 'PACKED'), [orders]);

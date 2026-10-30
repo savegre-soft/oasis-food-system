@@ -322,7 +322,8 @@ const EditOrder = ({ order, onSuccess }) => {
 
       const overrideRows = [];
       (detData ?? []).forEach((det, i) => {
-        const ov = ingredientOverrides[`${day}-${i}`];
+        const origIdx = details[i]?.origIdx;
+        const ov = ingredientOverrides[`${day}-${origIdx}`];
         if (!ov) return;
         for (const cat of ['protein', 'carb', 'extra']) {
           for (const name of ov[cat] ?? [])

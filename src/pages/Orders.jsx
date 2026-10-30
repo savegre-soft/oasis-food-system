@@ -700,7 +700,8 @@ const Orders = () => {
             id_order_day_detail,
             recipe_id,
             quantity,
-            recipes ( id_recipe, name )
+            recipes ( id_recipe, name ),
+            order_day_recipe_overrides ( name, category )
           )
         )
       `
