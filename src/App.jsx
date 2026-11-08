@@ -53,7 +53,9 @@ const Combos = lazy(() => import('./pages/Combos'));
 const BulkDishes = lazy(() => import('./pages/BulkDishes'));
 const BulkSales = lazy(() => import('./pages/BulkSales'));
 const Prospects = lazy(() => import('./pages/Prospects'));
+const EventQuotes = lazy(() => import('./pages/EventQuotes'));
 const PromotionsAdmin = lazy(() => import('./pages/PromotionsAdmin'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 
 // Fallback mientras se descarga el chunk de una ruta.
 const RouteFallback = () => (
@@ -92,6 +94,8 @@ export default function App() {
               <Route path="/orders" element={<Orders />} />
               <Route path="/combos" element={<Combos />} />
               <Route path="/prospectos" element={<Prospects />} />
+              <Route path="/cotizaciones" element={<EventQuotes />} />
+              <Route path="/notificaciones" element={<Notifications />} />
               <Route path="/promociones-admin" element={<PromotionsAdmin />} />
               <Route path="/control-gastos" element={<ExpenseStadistic />} />
               <Route path="/pagos" element={<Payments />} />

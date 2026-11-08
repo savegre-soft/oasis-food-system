@@ -26,15 +26,19 @@ import {
   Monitor,
   Boxes,
   Layers,
-  // UserPlus, Megaphone — solo usados por los links de Prospectos/Promociones,
-  // ocultos temporalmente más abajo.
+  CalendarHeart,
+  Bell,
+  // UserPlus, Megaphone — solo usados por el link de Promociones, oculto
+  // temporalmente más abajo.
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
 import LogoUrl from '../assets/Oasis-logo.png';
+import NotificationBell from './NotificationBell';
 
 const links = [
   { to: '/Main', label: 'Dashboards', icon: Home },
+  { to: '/cotizaciones', label: 'Cotizaciones', icon: CalendarHeart },
   // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
   // { to: '/prospectos', label: 'Prospectos', icon: UserPlus },
 ];
@@ -392,6 +396,8 @@ export default function Navbar() {
             <ThemeIcon size={18} />
           </button>
 
+          <NotificationBell openMenu={openMenu} toggleMenu={toggleMenu} />
+
           {/* Perfil */}
           <div className="relative">
             <button
@@ -616,6 +622,14 @@ export default function Navbar() {
                 {label}
               </button>
             ))}
+          </div>
+
+          <div className={`${baseStyle} justify-between`}>
+            <span className="flex items-center gap-2">
+              <Bell size={18} />
+              Notificaciones
+            </span>
+            <NotificationBell openMenu={openMenu} toggleMenu={toggleMenu} />
           </div>
 
           <NavLink
