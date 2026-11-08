@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 // Fase 1 de "Cotizaciones de eventos": el formulario guarda la solicitud
@@ -193,19 +194,25 @@ const EventQuoteForm = () => {
         <label htmlFor="quote-event-type" className={labelClass}>
           Tipo de evento
         </label>
-        <select
-          id="quote-event-type"
-          value={form.eventType}
-          onChange={update('eventType')}
-          className={inputClass}
-        >
-          <option value="">Elegí el tipo de evento</option>
-          {EVENT_TYPE_OPTIONS.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id="quote-event-type"
+            value={form.eventType}
+            onChange={update('eventType')}
+            className={`${inputClass} appearance-none pr-10`}
+          >
+            <option value="">Elegí el tipo de evento</option>
+            {EVENT_TYPE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={18}
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-oasis-ink/40"
+          />
+        </div>
         {form.eventType === 'Otro' && (
           <input
             type="text"
