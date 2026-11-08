@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { sileo } from 'sileo';
 import {
   Pencil,
@@ -65,14 +66,18 @@ const formatEventType = (quote) => {
 
 const EventQuotes = () => {
   const { supabase } = useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusId = searchParams.get('id');
 
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [editingStatus, setEditingStatus] = useState(null); // { id, status }
-  const [expandedId, setExpandedId] = useState(null);
+  const [expandedId, setExpandedId] = useState(focusId ? Number(focusId) : null);
   const [discardingQuote, setDiscardingQuote] = useState(null);
+
+  const rowRefs = useRef(new Map());
 
   const fetchQuotes = async () => {
     setLoading(true);
@@ -95,6 +100,25 @@ const EventQuotes = () => {
     const timer = setTimeout(() => fetchQuotes(), 0);
     return () => clearTimeout(timer);
   }, [supabase]);
+
+  // Si se llegó desde la campanita de notificaciones (?id=<id_event_quote>),
+  // asegura que el filtro de estado no la esconda y hace scroll a su fila
+  // una vez que el listado terminó de cargar.
+  useEffect(() => {
+    if (!focusId || loading) return;
+    setStatusFilter('all');
+    setSearch('');
+    const timer = setTimeout(() => {
+      rowRefs.current.get(Number(focusId))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('id');
+        return next;
+      });
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe correr una vez que `quotes` llega, no en cada cambio de searchParams/setSearchParams
+  }, [focusId, loading]);
 
   const displayList = useMemo(() => {
     const term = search.toLowerCase();
@@ -218,6 +242,10 @@ const EventQuotes = () => {
                     return (
                       <Fragment key={quote.id_event_quote}>
                         <tr
+                          ref={(el) => {
+                            if (el) rowRefs.current.set(quote.id_event_quote, el);
+                            else rowRefs.current.delete(quote.id_event_quote);
+                          }}
                           className={`border-t border-slate-100 dark:border-slate-800 transition ${
                             i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-950/40'
                           } hover:bg-slate-100 dark:hover:bg-slate-800/60`}

@@ -318,7 +318,7 @@ const EventQuoteForm = () => {
         disabled={!canSubmit || loading}
         className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
       >
-        {loading ? 'Enviando...' : 'Enviar cotización'}
+        {loading ? 'Enviando...' : 'Solicitar cotización'}
       </button>
     </form>
   );

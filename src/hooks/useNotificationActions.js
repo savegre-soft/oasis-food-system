@@ -12,7 +12,8 @@ export default function useNotificationActions(markAsRead) {
     markAsRead(n.id);
 
     if (n.type === 'quote_request') {
-      nav('/cotizaciones');
+      const quoteId = n.metadata?.event_quote_id;
+      nav(quoteId ? `/cotizaciones?id=${quoteId}` : '/cotizaciones');
     }
   };
 
