@@ -11,10 +11,10 @@ import PortalSettings from '../components/settings/PortalSettings';
 
 const TABS = [
   { id: 'users', label: 'Usuarios' },
-  { id: 'expense_categories', label: 'Categorías de gastos' },
+  { id: 'portal', label: 'Portal de clientes' },
   { id: 'notifications', label: 'Notificaciones' },
   { id: 'label_template', label: 'Etiquetas' },
-  { id: 'portal', label: 'Portal de clientes' },
+  { id: 'expense_categories', label: 'Categorías de gastos' },
 ];
 
 const Settings = () => {
@@ -86,21 +86,9 @@ const Settings = () => {
           </div>
         )}
 
-        {activeTab === 'expense_categories' && (
+        {activeTab === 'portal' && (
           <AuthRoles rolesNames={['Administrador']}>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-700 overflow-hidden">
-              <div className="p-6">
-                <div className="mb-5">
-                  <h2 className="text-sm font-semibold text-slate-700 dark:text-gray-200">
-                    Categorías de gastos
-                  </h2>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                    Administra las categorías disponibles para clasificar gastos
-                  </p>
-                </div>
-                <ExpenseCategories />
-              </div>
-            </div>
+            <PortalSettings />
           </AuthRoles>
         )}
 
@@ -116,9 +104,21 @@ const Settings = () => {
           </AuthRoles>
         )}
 
-        {activeTab === 'portal' && (
+        {activeTab === 'expense_categories' && (
           <AuthRoles rolesNames={['Administrador']}>
-            <PortalSettings />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-700 overflow-hidden">
+              <div className="p-6">
+                <div className="mb-5">
+                  <h2 className="text-sm font-semibold text-slate-700 dark:text-gray-200">
+                    Categorías de gastos
+                  </h2>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                    Administra las categorías disponibles para clasificar gastos
+                  </p>
+                </div>
+                <ExpenseCategories />
+              </div>
+            </div>
           </AuthRoles>
         )}
       </div>

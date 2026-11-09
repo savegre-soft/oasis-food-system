@@ -198,7 +198,7 @@ const CustomerPortal = () => {
       }
     : null;
 
-  // Corte global del viernes (configurable por el staff en
+  // Corte global semanal (día y hora configurables por el staff en
   // Settings → Portal de clientes), distinto del cierre por día más abajo.
   // No aplica al caso especial de entrega del martes, que
   // portal_get_current_order ya resuelve como locked=false.
@@ -405,7 +405,7 @@ const CustomerPortal = () => {
             <div className="mb-4 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-400 rounded-xl px-4 py-3 text-sm">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />
               <p>
-                Ya pasó el plazo del viernes para pedir o modificar esta semana. Podés revisar tu
+                Ya pasó el plazo para pedir o modificar esta semana. Podés revisar tu
                 pedido, pero para cambiarlo contactá al equipo de Oasis Food.
               </p>
             </div>
