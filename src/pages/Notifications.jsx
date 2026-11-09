@@ -1,16 +1,9 @@
 import { useState } from 'react';
-import { Bell, CalendarHeart, Check, RotateCcw } from 'lucide-react';
+import { Bell, Check, RotateCcw } from 'lucide-react';
 
 import useNotifications from '../hooks/useNotifications';
 import useNotificationActions from '../hooks/useNotificationActions';
-
-const TYPE_CONFIG = {
-  quote_request: {
-    Icon: CalendarHeart,
-    color: 'text-oasis-olive-600 dark:text-oasis-olive-400',
-    bg: 'bg-oasis-olive-50 dark:bg-oasis-olive-900/20',
-  },
-};
+import { NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPE } from '../lib/notificationTypes';
 
 const TABS = [
   { id: 'all', label: 'Todas' },
@@ -19,7 +12,7 @@ const TABS = [
 
 const Notifications = () => {
   const { notifications, unreadCount, readIds, loading, markAsRead, markAsUnread } = useNotifications();
-  const { handleSelect } = useNotificationActions(markAsRead);
+  const { handleSelect, loadingWeek, reportPortal } = useNotificationActions(markAsRead);
   const [tab, setTab] = useState('all');
 
   const displayed = tab === 'unread' ? notifications.filter((n) => !readIds.has(n.id)) : notifications;
@@ -34,7 +27,7 @@ const Notifications = () => {
           <div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Notificaciones</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Cotizaciones de eventos recibidas desde el sitio público
+              Cotizaciones, pagos pendientes y apertura/cierre de la semana de pedidos
             </p>
           </div>
         </div>
@@ -71,7 +64,7 @@ const Notifications = () => {
           </div>
         ) : (
           displayed.map((n) => {
-            const { Icon, color, bg } = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.quote_request;
+            const { Icon, color, bg } = NOTIFICATION_TYPES[n.type] ?? DEFAULT_NOTIFICATION_TYPE;
             const isUnread = !readIds.has(n.id);
             return (
               <div
@@ -80,7 +73,8 @@ const Notifications = () => {
               >
                 <button
                   onClick={() => handleSelect(n)}
-                  className="flex items-start gap-3 flex-1 min-w-0 text-left"
+                  disabled={loadingWeek}
+                  className="flex items-start gap-3 flex-1 min-w-0 text-left disabled:opacity-50"
                 >
                   <div className={`shrink-0 p-2 rounded-xl ${bg}`}>
                     <Icon size={16} className={color} />
@@ -127,6 +121,8 @@ const Notifications = () => {
           })
         )}
       </div>
+
+      {reportPortal}
     </div>
   );
 };

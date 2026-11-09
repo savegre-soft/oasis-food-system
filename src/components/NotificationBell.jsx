@@ -1,23 +1,20 @@
 import { useNavigate } from 'react-router-dom';
-import { Bell, CalendarHeart } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
 import useNotifications from '../hooks/useNotifications';
 import useNotificationActions from '../hooks/useNotificationActions';
-
-const TYPE_CONFIG = {
-  quote_request: { Icon: CalendarHeart, color: 'text-oasis-olive-600 dark:text-oasis-olive-400' },
-};
+import { NOTIFICATION_TYPES, DEFAULT_NOTIFICATION_TYPE } from '../lib/notificationTypes';
 
 const NotificationBell = ({ openMenu, toggleMenu, menuKey = 'notifications' }) => {
   const nav = useNavigate();
   const { notifications, unreadCount, readIds, markAsRead, markAsUnread } = useNotifications();
-  const { handleSelect } = useNotificationActions(markAsRead);
+  const { handleSelect, loadingWeek, reportPortal } = useNotificationActions(markAsRead);
 
   const open = openMenu === menuKey;
 
-  const handleClick = (n) => {
+  const handleClick = async (n) => {
     toggleMenu(menuKey);
-    handleSelect(n);
+    await handleSelect(n);
   };
 
   return (
@@ -45,7 +42,7 @@ const NotificationBell = ({ openMenu, toggleMenu, menuKey = 'notifications' }) =
             <p className="px-4 py-6 text-sm text-oasis-ink/40 dark:text-slate-500 text-center">Sin notificaciones</p>
           ) : (
             notifications.slice(0, 8).map((n) => {
-              const { Icon, color } = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.quote_request;
+              const { Icon, color } = NOTIFICATION_TYPES[n.type] ?? DEFAULT_NOTIFICATION_TYPE;
               const isUnread = !readIds.has(n.id);
               return (
                 <div
@@ -54,7 +51,8 @@ const NotificationBell = ({ openMenu, toggleMenu, menuKey = 'notifications' }) =
                 >
                   <button
                     onClick={() => handleClick(n)}
-                    className="flex items-start gap-2.5 flex-1 min-w-0 text-left"
+                    disabled={loadingWeek}
+                    className="flex items-start gap-2.5 flex-1 min-w-0 text-left disabled:opacity-50"
                   >
                     <Icon size={16} className={`shrink-0 mt-0.5 ${color}`} />
                     <div className="min-w-0 flex-1">
@@ -97,6 +95,8 @@ const NotificationBell = ({ openMenu, toggleMenu, menuKey = 'notifications' }) =
           </button>
         </div>
       )}
+
+      {reportPortal}
     </div>
   );
 };

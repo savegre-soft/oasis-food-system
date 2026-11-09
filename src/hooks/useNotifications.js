@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
+import useNotificationPrefs from './useNotificationPrefs';
 
 const POLL_MS = 45000;
 
 export default function useNotifications() {
   const { supabase, user } = useApp();
+  const { mutedTypes } = useNotificationPrefs();
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -72,10 +74,11 @@ export default function useNotifications() {
     [supabase, user, readIds]
   );
 
-  const unread = notifications.filter((n) => !readIds.has(n.id));
+  const visible = notifications.filter((n) => !mutedTypes.includes(n.type));
+  const unread = visible.filter((n) => !readIds.has(n.id));
 
   return {
-    notifications,
+    notifications: visible,
     unreadCount: unread.length,
     readIds,
     loading,
