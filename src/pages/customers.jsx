@@ -1,4 +1,5 @@
 import { Search, UserCheck, UserX, RotateCcw, LayoutGrid, Table } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { motion, AnimatePresence } from 'framer-motion';
 
 import Modal from '../components/Modal';

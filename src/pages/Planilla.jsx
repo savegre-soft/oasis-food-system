@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, DollarSign, Pencil, Trash2, ChevronDown, ChevronUp, Clock, Calendar } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 

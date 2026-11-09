@@ -193,10 +193,9 @@ export const useDayRecipes = () => {
    * Utilizado para edición de órdenes existentes.
    *
    * @param {Array<Object>} orderDays - Datos de días de la orden
-   * @param {Array<Object>} [allRecipes=[]] - Lista de recetas disponibles
    */
   const loadFromOrderDays = useCallback(
-    (orderDays, allRecipes = []) => {
+    (orderDays) => {
       const recipes = {};
       const overrides = {};
 

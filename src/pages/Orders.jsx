@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 
@@ -835,7 +836,9 @@ const Orders = () => {
 
         {/* Tabs Principales */}
         <div className="flex items-center gap-1 mb-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm">
-          {TABS.map(({ id, label, Icon }) => {
+          {TABS.map(
+            // eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a destructured var
+            ({ id, label, Icon }) => {
             const count = id === 'week' ? filteredWeek.length : id === 'history' ? filteredHistory.length : 0;
             const active = activeTab === id;
             const cls =

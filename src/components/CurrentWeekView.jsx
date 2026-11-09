@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { STATUS_CONFIG, DAY_LABELS } from '../utils/customerUtils';
 
 import { ChevronDown, ChevronUp, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';

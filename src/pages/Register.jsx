@@ -1,4 +1,5 @@
 import { useState } from 'react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, UserPlus, Leaf } from 'lucide-react';
 import { useApp } from '../context/AppContext';

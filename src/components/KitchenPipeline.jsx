@@ -14,6 +14,7 @@ const STAGE_TABS = [
   { id: 'entrega', label: 'Entrega', Icon: Truck },
 ];
 
+// eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a destructured var
 const TabButton = ({ id, label, Icon, isActive, count, onSelect }) => {
   const cls =
     'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition border ' +

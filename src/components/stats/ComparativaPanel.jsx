@@ -50,20 +50,21 @@ const ComparativaPanel = ({ expenses, empCosts, payments, dateRange, loading }) 
       weekMap[wk].gastos += amt;
     });
 
-    let runIngresos = 0, runGastos = 0;
-    const vsByDay = Object.keys(dayMap).sort().map((date) => {
+    const vsByDay = Object.keys(dayMap).sort().reduce((acc, date) => {
       const { ingresos, gastos } = dayMap[date];
-      runIngresos += ingresos;
-      runGastos += gastos;
-      return {
+      const prev = acc[acc.length - 1];
+      const acumIngresos = (prev?.acumIngresos ?? 0) + ingresos;
+      const acumGastos = (prev?.acumGastos ?? 0) + gastos;
+      acc.push({
         date: date.slice(5).replace('-', '/'),
         ingresos, gastos,
         balance: ingresos - gastos,
-        acumIngresos: runIngresos,
-        acumGastos: runGastos,
-        acumBalance: runIngresos - runGastos,
-      };
-    });
+        acumIngresos,
+        acumGastos,
+        acumBalance: acumIngresos - acumGastos,
+      });
+      return acc;
+    }, []);
 
     const weeklyVs = Object.entries(weekMap)
       .sort(([a], [b]) => a.localeCompare(b))

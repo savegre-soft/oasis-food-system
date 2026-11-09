@@ -26,7 +26,7 @@ const IngredientBadges = ({ ingredients }) => {
   );
 };
 
-const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPack, onPackDetail, selectedIds, onToggleMeal }) => {
+const RecipeProductionCard = ({ variantKey, recipe, isExpanded, onToggle, onPackDetail, selectedIds, onToggleMeal }) => {
   const accentColor = recipe.isOverridden ? 'bg-blue-600' : 'bg-slate-800';
 
   // IDs (detail level) de todos los meals de esta receta para la casilla a nivel de tarjeta
