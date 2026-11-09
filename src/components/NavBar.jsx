@@ -28,8 +28,8 @@ import {
   Layers,
   CalendarHeart,
   Bell,
-  // UserPlus, Megaphone — solo usados por el link de Promociones, oculto
-  // temporalmente más abajo.
+  UserPlus,
+  Megaphone,
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
@@ -41,8 +41,7 @@ const links = [{ to: '/Main', label: 'Dashboards', icon: Home }];
 const clientesLinks = [
   { to: '/Clientes', label: 'Clientes', icon: Users },
   { to: '/cotizaciones', label: 'Cotizaciones', icon: CalendarHeart },
-  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
-  // { to: '/prospectos', label: 'Prospectos', icon: UserPlus },
+  { to: '/prospectos', label: 'Prospectos', icon: UserPlus },
 ];
 
 const ordersLinks = [
@@ -63,8 +62,7 @@ const gestionLinks = [
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
   { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
   { to: '/platos-venta-masiva', label: 'Platos de Venta', icon: Layers },
-  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
-  // { to: '/promociones-admin', label: 'Promociones', icon: Megaphone },
+  { to: '/promociones-admin', label: 'Promociones', icon: Megaphone },
 ];
 
 const financialLinks = [
