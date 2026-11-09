@@ -333,24 +333,23 @@ const Contact = () => {
       </section>
 
       {/* Cotizaciones de eventos */}
-      <section
-        id="cotizar-evento"
-        className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-[1fr_1.3fr] gap-12 scroll-mt-24"
-      >
-        <Reveal>
-          <SectionBadge>Cotizaciones</SectionBadge>
-          <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
-            Cotizá tu evento
-          </h2>
-          <p className="mt-4 text-oasis-ink/70 max-w-md">
-            Contanos los detalles de tu evento y te respondemos por WhatsApp con una propuesta a
-            la medida.
-          </p>
-        </Reveal>
+      <section id="cotizar-evento" className="bg-white border-t border-oasis-olive-100 scroll-mt-24">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-[1fr_1.3fr] gap-12">
+          <Reveal>
+            <SectionBadge>Cotizaciones</SectionBadge>
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
+              Cotizá tu evento
+            </h2>
+            <p className="mt-4 text-oasis-ink/70 max-w-md">
+              Contanos los detalles de tu evento y te respondemos por WhatsApp con una propuesta a
+              la medida.
+            </p>
+          </Reveal>
 
-        <Reveal className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
-          <EventQuoteForm />
-        </Reveal>
+          <Reveal className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
+            <EventQuoteForm />
+          </Reveal>
+        </div>
       </section>
 
       {/* FAQ */}
