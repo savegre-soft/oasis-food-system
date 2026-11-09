@@ -10,8 +10,9 @@ import ComboWeekConfigHistory from '../components/combos/ComboWeekConfigHistory'
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
   { id: 'history', label: 'Historico', Icon: History },
-  { id: 'config-history', label: 'Semanas anteriores', Icon: ListChecks },
 ];
+
+const CONFIG_HISTORY_TAB = { id: 'config-history', label: 'Semanas anteriores', Icon: ListChecks };
 
 const Combos = () => {
   const [activeTab, setActiveTab] = useState('week');
@@ -25,25 +26,40 @@ const Combos = () => {
         </p>
       </div>
 
-      {/* Tabs Principales */}
-      <div className="flex items-center gap-1 mb-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm">
-        {TABS.map(
-          // eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a destructured var
-          ({ id, label, Icon }) => {
-            const active = activeTab === id;
-            const cls =
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
-              (active
-                ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200');
-            return (
-              <button key={id} onClick={() => setActiveTab(id)} className={cls}>
-                <Icon size={15} />
-                {label}
-              </button>
-            );
+      {/* Tabs Principales + acceso a semanas anteriores */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm">
+          {TABS.map(
+            // eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a destructured var
+            ({ id, label, Icon }) => {
+              const active = activeTab === id;
+              const cls =
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
+                (active
+                  ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200');
+              return (
+                <button key={id} onClick={() => setActiveTab(id)} className={cls}>
+                  <Icon size={15} />
+                  {label}
+                </button>
+              );
+            }
+          )}
+        </div>
+
+        <button
+          onClick={() => setActiveTab(CONFIG_HISTORY_TAB.id)}
+          className={
+            'flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-medium border transition shadow-sm ' +
+            (activeTab === CONFIG_HISTORY_TAB.id
+              ? 'bg-slate-800 dark:bg-slate-700 text-white border-slate-800 dark:border-slate-700'
+              : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')
           }
-        )}
+        >
+          <CONFIG_HISTORY_TAB.Icon size={15} />
+          {CONFIG_HISTORY_TAB.label}
+        </button>
       </div>
 
       <AnimatePresence mode="wait">
