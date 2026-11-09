@@ -63,6 +63,16 @@ export const useDayRecipes = () => {
   const [expandedDays, setExpandedDays] = useState({});
 
   /**
+   * Tiempo de comida (Breakfast/Lunch/Dinner) por receta, clave `${day}-${index}` —
+   * solo relevante para pedidos que combinan más de un tiempo de comida, donde
+   * cada receta necesita saber a cuál pertenece (Producción y las macros
+   * aplicadas dependen de esto). Usado por el portal de clientes, que no tiene
+   * su propio estado local de `extraMealTypes` como AddOrder.jsx/EditOrder.jsx.
+   * @type {[Object.<string, string>, Function]}
+   */
+  const [recipeMealTypes, setRecipeMealTypes] = useState({});
+
+  /**
    * Obtiene los ingredientes de una lista de recetas desde Supabase.
    * Solo consulta aquellos IDs que aún no están en caché.
    *
@@ -198,6 +208,7 @@ export const useDayRecipes = () => {
     (orderDays) => {
       const recipes = {};
       const overrides = {};
+      const mealTypes = {};
 
       DAYS_ORDER.forEach((d) => {
         recipes[d] = [];
@@ -216,12 +227,14 @@ export const useDayRecipes = () => {
             overrides[`${od.day_of_week}-${index}`] = grouped;
           }
 
+          // Tiempo de comida del detalle (si el llamador lo infirió); define sus macros.
+          if (det.mealType) mealTypes[`${od.day_of_week}-${index}`] = det.mealType;
+
           return {
             recipe_id: String(det.recipe_id ?? det.recipes?.id_recipe ?? ''),
             recipe_name: det.recipes?.name ?? '',
             quantity: det.quantity ?? 1,
             isExtra: true,
-            // Tiempo de comida del detalle (si el llamador lo infirió); define sus macros.
             ...(det.mealType ? { mealType: det.mealType } : {}),
           };
         });
@@ -229,6 +242,7 @@ export const useDayRecipes = () => {
 
       setDayRecipes(recipes);
       setIngredientOverrides(overrides);
+      setRecipeMealTypes(mealTypes);
 
       const ids = Object.values(recipes)
         .flat()
@@ -248,6 +262,8 @@ export const useDayRecipes = () => {
     ingredientOverrides,
     setIngredientOverrides,
     expandedDays,
+    recipeMealTypes,
+    setRecipeMealTypes,
     addRecipeToDay,
     updateRecipeInDay,
     removeRecipeFromDay,

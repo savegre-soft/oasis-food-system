@@ -34,12 +34,17 @@ import {
 // portal_get_menu_options, con override de staff si existe) — el cliente no
 // ve el selector de plantilla que usa el staff, pero puede seguir editando
 // las recetas después de que se aplica.
+// Devuelve { recipes, mealTypes } — mealTypes (clave `${day}-${index}`) solo
+// importa para clasificaciones con más de un tiempo de comida: antes esta
+// función no guardaba de qué plantilla venía cada receta, así que Producción
+// no podía saber cuál plato era de cuál tiempo para un pedido combinado
+// armado desde el portal.
 const buildDayRecipesFromTemplates = (resolvedTemplates, classification) => {
   const recipes = {};
   DAYS_ORDER.forEach((d) => {
     recipes[d] = [];
   });
-  const addTemplate = (tmpl) => {
+  const addTemplate = (tmpl, mealType) => {
     if (!tmpl) return;
     (tmpl.days ?? []).forEach((day) => {
       if (!recipes[day.day_of_week]) recipes[day.day_of_week] = [];
@@ -49,12 +54,20 @@ const buildDayRecipesFromTemplates = (resolvedTemplates, classification) => {
           recipe_name: det.recipe_name,
           quantity: det.quantity,
           isExtra: true,
+          mealType,
         });
       });
     });
   };
-  mealTypesOf(classification).forEach((type) => addTemplate(resolvedTemplates?.[type]));
-  return recipes;
+  mealTypesOf(classification).forEach((type) => addTemplate(resolvedTemplates?.[type], type));
+
+  const mealTypes = {};
+  Object.entries(recipes).forEach(([day, items]) => {
+    items.forEach((r, idx) => {
+      if (r.mealType) mealTypes[`${day}-${idx}`] = r.mealType;
+    });
+  });
+  return { recipes, mealTypes };
 };
 
 // Clases completas (no interpoladas) para que Tailwind las detecte.
@@ -141,14 +154,18 @@ const CustomerPortal = () => {
         order_day_details: d.details.map((det) => ({
           recipe_id: det.recipe_id,
           quantity: det.quantity,
+          mealType: det.meal_type,
           recipes: { id_recipe: det.recipe_id, name: det.recipe_name },
         })),
       }));
       dayRecipesState.loadFromOrderDays(adapted);
     } else if (resolvedClassification) {
-      dayRecipesState.setDayRecipes(
-        buildDayRecipesFromTemplates(optionsData?.resolved_templates, resolvedClassification)
+      const { recipes, mealTypes } = buildDayRecipesFromTemplates(
+        optionsData?.resolved_templates,
+        resolvedClassification
       );
+      dayRecipesState.setDayRecipes(recipes);
+      dayRecipesState.setRecipeMealTypes(mealTypes);
     }
 
     setLoading(false);
@@ -162,7 +179,9 @@ const CustomerPortal = () => {
 
   const chooseClassification = (cls) => {
     setClassification(cls);
-    dayRecipesState.setDayRecipes(buildDayRecipesFromTemplates(menuOptions?.resolved_templates, cls));
+    const { recipes, mealTypes } = buildDayRecipesFromTemplates(menuOptions?.resolved_templates, cls);
+    dayRecipesState.setDayRecipes(recipes);
+    dayRecipesState.setRecipeMealTypes(mealTypes);
   };
 
   const isFamilyClient = client?.client_type === 'family';
@@ -212,6 +231,7 @@ const CustomerPortal = () => {
             recipe_id: Number(r.recipe_id),
             quantity: Number(r.quantity) || 1,
             ingredients_override: dayRecipesState.ingredientOverrides[`${day}-${r.idx}`] ?? null,
+            meal_type: dayRecipesState.recipeMealTypes[`${day}-${r.idx}`] ?? null,
           })),
         };
       })
@@ -391,6 +411,10 @@ const CustomerPortal = () => {
             onRemoveRecipe={dayRecipesState.removeRecipeFromDay}
             onOverrideChange={dayRecipesState.setOverride}
             onToggleDay={dayRecipesState.toggleDay}
+            extraMealTypes={dayRecipesState.recipeMealTypes}
+            onExtraMealTypeChange={(key, cls) =>
+              dayRecipesState.setRecipeMealTypes((p) => ({ ...p, [key]: cls }))
+            }
             closedDays={closedDays}
           />
 

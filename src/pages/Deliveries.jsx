@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Truck, Printer } from 'lucide-react';
+import { Truck, Printer, Tags } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 import ProductionPrintReport from '../components/ProductionPrintReport';
+import LabelPrintSheet from '../components/LabelPrintSheet';
 import KitchenPipeline, { KitchenStageTabs } from '../components/KitchenPipeline';
 import { useOrderDayActions } from '../hooks/useOrderDayActions';
 
@@ -56,7 +57,7 @@ const ORDER_DAY_SELECT = `
     id_order,
     classification,
     route_id,
-    clients ( id_client, name, client_type )
+    clients ( id_client, name, client_type, plan_type )
   ),
   order_day_details (
     id_order_day_detail,
@@ -64,6 +65,7 @@ const ORDER_DAY_SELECT = `
     quantity,
     protein_value_applied,
     carb_value_applied,
+    meal_type,
     recipes (
       id_recipe, name,
       recipe_ingredients ( name, category )
@@ -124,6 +126,7 @@ const Production = () => {
 
   const [activeTab, setActiveTab] = useState('cocina');
   const [showPrint, setShowPrint] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
   const [clientFilter, setClientFilter] = useState('todos');
 
   const [slots, setSlots] = useState([]);
@@ -325,6 +328,12 @@ const Production = () => {
           onClose={() => setShowPrint(false)}
         />
       )}
+      {showLabels && (
+        <LabelPrintSheet
+          orderDays={[...pendingDays, ...packedDays, ...deliveredDays]}
+          onClose={() => setShowLabels(false)}
+        />
+      )}
 
       <div className="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
@@ -344,6 +353,12 @@ const Production = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowLabels(true)}
+            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"
+          >
+            <Tags size={15} /> Generar etiquetas
+          </button>
           <button
             onClick={() => setShowPrint(true)}
             className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 px-4 py-2.5 rounded-xl text-sm font-medium transition shrink-0"

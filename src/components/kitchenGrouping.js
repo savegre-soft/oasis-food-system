@@ -68,13 +68,21 @@ export const groupByRecipe = (orderDays, { filterStatus = null } = {}) => {
         g.clients[clientName] = { clientName, totalQuantity: 0, meals: {} };
       }
 
-      const mealKey = orderDay.id_order_day;
+      // Clave por detail (no por order_day): un pedido con varios tiempos de
+      // comida puede tener 2-3 detalles en el mismo día (ej. almuerzo + cena)
+      // que antes se fusionaban en una sola "meal" si coincidían en receta,
+      // perdiendo cuál era cuál.
+      const mealKey = detail.id_order_day_detail;
       if (!g.clients[clientName].meals[mealKey]) {
         g.clients[clientName].meals[mealKey] = {
           id_order_day: orderDay.id_order_day,
           id_order_day_detail: detail.id_order_day_detail,
           day_of_week: orderDay.day_of_week,
-          classification,
+          // meal_type es la fuente de verdad por plato (permite distinguir
+          // almuerzo/cena/desayuno dentro de un mismo pedido); classification
+          // de la orden completa solo sirve de respaldo para filas históricas
+          // sin meal_type o pedidos de un solo tiempo de comida.
+          classification: detail.meal_type ?? classification,
           quantity: 0,
           orderDayIds: new Set(),
           id_order: orderDay.orders?.id_order,
@@ -156,7 +164,7 @@ export const groupByOrder = (orderDays, { filterStatus = null } = {}) => {
         day_of_week: orderDay.day_of_week,
         recipe_name: recipeName,
         quantity: qty,
-        classification,
+        classification: detail.meal_type ?? classification,
         isOverridden,
         ingredients,
       });

@@ -168,13 +168,17 @@ const EditOrder = ({ order, onSuccess }) => {
         const { data: applied } = await supabase
           .schema('operations')
           .from('order_day_details')
-          .select('id_order_day_detail, protein_value_applied, carb_value_applied')
+          .select('id_order_day_detail, protein_value_applied, carb_value_applied, meal_type')
           .in('order_day_id', dayIds);
         appliedById = Object.fromEntries((applied ?? []).map((a) => [a.id_order_day_detail, a]));
       }
       const inferMealType = (det) => {
         const a = appliedById[det.id_order_day_detail];
         if (!a) return primary;
+        // meal_type real guardado en la fila (desde el fix de order_day_details.meal_type)
+        // es la fuente de verdad; el emparejamiento por macros queda solo de
+        // respaldo para filas históricas creadas antes de esa columna.
+        if (a.meal_type) return a.meal_type;
         return (
           types.find(
             (t) =>
@@ -309,6 +313,10 @@ const EditOrder = ({ order, onSuccess }) => {
               quantity: Number(r.quantity) || 1,
               protein_value_applied: eff?.protein_value ?? null,
               carb_value_applied: eff?.carb_value ?? null,
+              meal_type:
+                !isFamilyClient && ['Breakfast', 'Lunch', 'Dinner'].includes(mealType)
+                  ? mealType
+                  : null,
             };
           })
         )
