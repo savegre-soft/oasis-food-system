@@ -10,6 +10,7 @@ import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { EASE, scaleIn } from '../lib/motion';
+import { getWeekRange, getWeekOfMonth, toDateString } from '../components/orderUtils';
 import {
   BUSINESS_JSON_LD,
   DELIVERY_ZONES,
@@ -92,20 +93,64 @@ const Homes = () => {
     let active = true;
 
     const loadPreview = async () => {
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('recipes')
-        .select('*')
-        .eq('is_active', true)
-        .order('id_recipe', { ascending: false })
-        .limit(4);
+      const { weekStart } = getWeekRange();
+      const weekOfMonth = getWeekOfMonth(weekStart);
+      const weekStartStr = toDateString(weekStart);
+
+      const [tplRes, ovrRes] = await Promise.all([
+        supabase
+          .schema('operations')
+          .from('order_templates')
+          .select(
+            'id_template, meal_type, week_of_month, order_template_days(day_of_week, order_template_details(recipes(id_recipe, name, description, image_url)))'
+          )
+          .in('meal_type', ['Lunch', 'Dinner'])
+          .eq('is_active', true),
+        supabase
+          .schema('operations')
+          .from('portal_template_overrides')
+          .select('meal_type, template_id')
+          .eq('week_start_date', weekStartStr),
+      ]);
 
       if (!active) return;
-      if (error) {
-        console.error(error);
+      if (tplRes.error) {
+        console.error(tplRes.error);
         return;
       }
-      setRecipes(data ?? []);
+
+      const overrides = {};
+      (ovrRes.data ?? []).forEach((o) => {
+        overrides[o.meal_type] = o.template_id;
+      });
+
+      const templates = tplRes.data ?? [];
+      const templateFor = (mealType) => {
+        if (overrides[mealType]) {
+          return templates.find((t) => t.id_template === overrides[mealType]) ?? null;
+        }
+        return (
+          templates.find((t) => t.week_of_month === weekOfMonth && t.meal_type === mealType) ??
+          null
+        );
+      };
+
+      const dishes = [];
+      const seen = new Set();
+      ['Lunch', 'Dinner'].forEach((mealType) => {
+        const template = templateFor(mealType);
+        (template?.order_template_days ?? []).forEach((d) => {
+          (d.order_template_details ?? []).forEach((det) => {
+            const r = det.recipes;
+            if (r && !seen.has(r.id_recipe)) {
+              seen.add(r.id_recipe);
+              dishes.push(r);
+            }
+          });
+        });
+      });
+
+      setRecipes(dishes.slice(0, 4));
     };
 
     loadPreview();
@@ -127,9 +172,7 @@ const Homes = () => {
       {/* HERO */}
       <section className="bg-oasis-cream">
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-6 pb-4 text-center">
-          <SectionBadge>
-            Entregas bajo pedido · {DELIVERY_ZONES.slice(0, 2).join(' · ')}
-          </SectionBadge>
+          <SectionBadge>Entregas bajo pedido · {DELIVERY_ZONES.join(' · ')}</SectionBadge>
         </div>
 
         <div className="max-w-6xl mx-auto px-4 md:px-6 pb-16 grid lg:grid-cols-2 gap-12 items-center">
@@ -346,7 +389,9 @@ const Homes = () => {
             <span className="inline-block bg-oasis-terracotta text-white text-xs font-semibold px-3 py-1 rounded-full">
               NUEVO
             </span>
-            <SectionBadge className="block mt-4">Well Shot by Oasis</SectionBadge>
+            <div className="mt-4">
+              <SectionBadge>Well Shot by Oasis</SectionBadge>
+            </div>
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
               Un shot de bienestar, energía y cuidado de la piel
             </h2>

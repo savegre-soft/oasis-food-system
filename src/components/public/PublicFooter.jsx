@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, Globe, Facebook, Linkedin } from 'lucide-react';
 import {
   DELIVERY_ZONES,
   INSTAGRAM_OASIS,
@@ -13,7 +12,7 @@ const PublicFooter = () => {
 
   return (
     <footer className="bg-oasis-olive-900 text-oasis-cream-dark">
-      <div className="max-w-6xl mx-auto px-6 py-14 grid gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr_1fr]">
+      <div className="max-w-6xl mx-auto px-6 py-14 grid gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <p className="font-display text-2xl text-white">Oasis</p>
           <p className="mt-3 text-sm text-oasis-olive-200 max-w-xs">
@@ -127,60 +126,6 @@ const PublicFooter = () => {
               <Link to="/politica-privacidad" className="hover:text-white transition">
                 Política de privacidad
               </Link>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-oasis-olive-300 mb-4">
-            Savegre Soft
-          </p>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <a
-                href={`mailto:${SAVEGRE_SOFT.email}`}
-                className="inline-flex items-center gap-1.5 break-all hover:text-white transition"
-              >
-                <Mail size={14} /> {SAVEGRE_SOFT.email}
-              </a>
-            </li>
-            <li>
-              <a
-                href={`tel:${SAVEGRE_SOFT.phone.replace(/[\s-]/g, '')}`}
-                className="inline-flex items-center gap-1.5 hover:text-white transition"
-              >
-                <Phone size={14} /> {SAVEGRE_SOFT.phone}
-              </a>
-            </li>
-            <li>
-              <a
-                href={SAVEGRE_SOFT.website}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-white transition"
-              >
-                <Globe size={14} /> {SAVEGRE_SOFT.website.replace(/^https?:\/\//, '')}
-              </a>
-            </li>
-            <li>
-              <a
-                href={SAVEGRE_SOFT.linkedin}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-white transition"
-              >
-                <Linkedin size={14} /> LinkedIn
-              </a>
-            </li>
-            <li>
-              <a
-                href={SAVEGRE_SOFT.facebook}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-white transition"
-              >
-                <Facebook size={14} /> Facebook
-              </a>
             </li>
           </ul>
         </div>

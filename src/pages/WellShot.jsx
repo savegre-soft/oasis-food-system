@@ -3,7 +3,7 @@ import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 import { scaleIn } from '../lib/motion';
-import { INSTAGRAM_WELLSHOT, WHATSAPP_LINK } from '../lib/siteContent';
+import { INSTAGRAM_WELLSHOT, WHATSAPP_LINK, buildWhatsAppLink } from '../lib/siteContent';
 import { Leaf, Sparkles, ShoppingBag } from 'lucide-react';
 
 const FLAVORS = [
@@ -77,7 +77,9 @@ const WellShot = () => {
           <span className="inline-block bg-oasis-terracotta text-white text-xs font-semibold px-3 py-1 rounded-full">
             NUEVO
           </span>
-          <SectionBadge className="block mt-4">Un formato de Oasis</SectionBadge>
+          <div className="mt-4">
+            <SectionBadge>Un formato de Oasis</SectionBadge>
+          </div>
           <h1 className="font-display text-5xl md:text-6xl font-semibold text-oasis-ink mt-3 tracking-wide">
             WELL SHOT
           </h1>
@@ -170,7 +172,9 @@ const WellShot = () => {
 
                 <div className="flex items-center justify-end mt-6 pt-5 border-t border-oasis-olive-100">
                   <a
-                    href={WHATSAPP_LINK}
+                    href={buildWhatsAppLink(
+                      `Hola! Quiero pedir un Well Shot ${flavor.name} 🙂`
+                    )}
                     target="_blank"
                     rel="noreferrer"
                     className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"

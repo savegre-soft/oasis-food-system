@@ -4,6 +4,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import LogoUrl from './../assets/Oasis-logo.png';
+import WellShotLogoUrl from './../assets/WellShot-logo.jpg';
 import { NAV_LINKS } from '../lib/siteContent';
 import { EASE } from '../lib/motion';
 
@@ -13,25 +14,48 @@ const PublicNavBar = () => {
   return (
     <header className="w-full bg-oasis-paper/95 backdrop-blur-sm border-b border-oasis-olive-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <motion.img
-            src={LogoUrl}
-            className="w-10 h-10 rounded-full object-cover"
-            alt="Oasis"
-            whileHover={{ scale: 1.06, rotate: -3 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-          />
-          <span className="leading-tight">
-            <span className="block font-display font-semibold text-lg text-oasis-ink transition-colors group-hover:text-oasis-olive-700">
-              Oasis
+        {/* Logos */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link to="/" className="flex items-center gap-3 group">
+            <motion.img
+              src={LogoUrl}
+              className="w-10 h-10 rounded-full object-cover"
+              alt="Oasis"
+              whileHover={{ scale: 1.06, rotate: -3 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+            />
+            <span className="leading-tight hidden sm:block">
+              <span className="block font-display font-semibold text-lg text-oasis-ink transition-colors group-hover:text-oasis-olive-700">
+                Oasis
+              </span>
+              <span className="block text-[10px] tracking-[0.2em] uppercase text-oasis-olive-500">
+                Comida preparada
+              </span>
             </span>
-            <span className="block text-[10px] tracking-[0.2em] uppercase text-oasis-olive-500">
-              Comida preparada
+          </Link>
+
+          <span className="w-px h-8 bg-oasis-olive-200" aria-hidden="true" />
+
+          <Link to="/well-shot" className="flex items-center gap-3 group">
+            <motion.img
+              src={WellShotLogoUrl}
+              className="w-10 h-10 rounded-full object-cover"
+              alt="Well Shot by Oasis"
+              whileHover={{ scale: 1.06, rotate: 3 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+            />
+            <span className="leading-tight hidden sm:block">
+              <span className="block font-display font-semibold text-lg text-oasis-ink transition-colors group-hover:text-oasis-olive-700">
+                Well Shot
+              </span>
+              <span className="block text-[10px] tracking-[0.2em] uppercase text-oasis-olive-500">
+                By Oasis
+              </span>
             </span>
-          </span>
-        </Link>
+          </Link>
+        </div>
 
         {/* Desktop Menu */}
         <nav className="hidden lg:flex items-center gap-7">
