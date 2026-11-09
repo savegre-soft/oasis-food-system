@@ -286,7 +286,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop */}
-        <div className="hidden lg:flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
+        <div className="hidden xl:flex items-center gap-2">
           {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -470,7 +470,7 @@ export default function Navbar() {
         {/* Mobile button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="lg:hidden p-2 rounded-full text-oasis-ink dark:text-slate-100 hover:bg-oasis-olive-50 dark:hover:bg-slate-800"
+          className="xl:hidden p-2 rounded-full text-oasis-ink dark:text-slate-100 hover:bg-oasis-olive-50 dark:hover:bg-slate-800"
         >
           {isOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -478,7 +478,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="lg:hidden px-6 pb-4 flex flex-col gap-2 bg-oasis-paper dark:bg-slate-900 border-t border-oasis-olive-100 dark:border-slate-800">
+        <div className="xl:hidden px-6 pb-4 flex flex-col gap-2 bg-oasis-paper dark:bg-slate-900 border-t border-oasis-olive-100 dark:border-slate-800">
           <div ref={searchRef} className="relative mt-2">
             <div className="flex items-center bg-oasis-olive-50 dark:bg-slate-800 border border-oasis-olive-100 dark:border-slate-700 rounded-full px-3 py-2 gap-2">
               <Search size={16} className="text-oasis-ink/40 dark:text-slate-500 shrink-0" />
