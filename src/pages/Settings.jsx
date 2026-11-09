@@ -7,12 +7,14 @@ import AuthRoles from '../components/auth/AuthRoles';
 import ExpenseCategories from '../components/ExpenseCategories';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import LabelTemplateSettings from '../components/settings/LabelTemplateSettings';
+import PortalSettings from '../components/settings/PortalSettings';
 
 const TABS = [
   { id: 'users', label: 'Usuarios' },
   { id: 'expense_categories', label: 'Categorías de gastos' },
   { id: 'notifications', label: 'Notificaciones' },
   { id: 'label_template', label: 'Etiquetas' },
+  { id: 'portal', label: 'Portal de clientes' },
 ];
 
 const Settings = () => {
@@ -111,6 +113,12 @@ const Settings = () => {
                 <LabelTemplateSettings />
               </div>
             </div>
+          </AuthRoles>
+        )}
+
+        {activeTab === 'portal' && (
+          <AuthRoles rolesNames={['Administrador']}>
+            <PortalSettings />
           </AuthRoles>
         )}
       </div>

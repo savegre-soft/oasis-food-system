@@ -1,8 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   ClipboardList,
-  // ClipboardCheck — solo usado por la pestaña "Checklist envío", oculta
-  // temporalmente más abajo.
+  ClipboardCheck,
   Calendar,
   History,
   ChevronLeft,
@@ -57,8 +56,6 @@ const STATUS_STYLES = {
 
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
-  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
-  // { id: 'checklist', label: 'Checklist envío', Icon: ClipboardCheck },
   { id: 'history', label: 'Historico', Icon: History },
 ];
 
@@ -594,6 +591,7 @@ const Orders = () => {
   const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [activeTab, setActiveTab] = useState('week');
   const [calendarView, setCalendarView] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -601,6 +599,7 @@ const Orders = () => {
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [search, setSearch] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
+  const [checklistWeekOffset, setChecklistWeekOffset] = useState(0);
 
   const handleDeleteOrder = async () => {
     if (!deletingOrder) return;
@@ -738,6 +737,16 @@ const Orders = () => {
     [selectedWeek]
   );
 
+  const checklistWeek = useMemo(() => getWeekBounds(checklistWeekOffset), [checklistWeekOffset]);
+
+  const checklistWeekLabel = useMemo(
+    () =>
+      fmtDate(checklistWeek.weekStart, { day: '2-digit', month: 'long' }) +
+      ' – ' +
+      fmtDate(checklistWeek.weekEnd, { day: '2-digit', month: 'long', year: 'numeric' }),
+    [checklistWeek]
+  );
+
   const applySearch = (list) => {
     if (!search.trim()) return list;
     const q = search.toLowerCase();
@@ -806,6 +815,35 @@ const Orders = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showChecklist && (
+          <Modal isOpen={showChecklist} onClose={() => setShowChecklist(false)}>
+            <div className="p-2">
+              <div className="flex items-center gap-2 mb-4">
+                <ClipboardCheck size={18} className="text-slate-700 dark:text-slate-300" />
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Checklist envío</h2>
+              </div>
+              <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-1 shadow-sm mb-4 w-fit">
+                {WEEK_OPTIONS.map(({ offset, label }) => (
+                  <button
+                    key={offset}
+                    onClick={() => setChecklistWeekOffset(offset)}
+                    className={`px-4 py-1.5 rounded-lg text-xs font-medium transition ${
+                      checklistWeekOffset === offset
+                        ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <OrderChecklistTab weekStart={checklistWeek.weekStart} weekLabel={checklistWeekLabel} />
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -814,12 +852,20 @@ const Orders = () => {
               Gestiona y consulta los pedidos semanales
             </p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-green-800 dark:bg-green-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-green-700 dark:hover:bg-green-500 transition text-sm font-medium shrink-0 shadow-sm"
-          >
-            <ClipboardList size={16} /> Nuevo Pedido
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowChecklist(true)}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl flex items-center gap-2 hover:border-slate-400 dark:hover:border-slate-500 transition text-sm font-medium shadow-sm"
+            >
+              <ClipboardCheck size={16} /> Checklist envío
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-green-800 dark:bg-green-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-green-700 dark:hover:bg-green-500 transition text-sm font-medium shadow-sm"
+            >
+              <ClipboardList size={16} /> Nuevo Pedido
+            </button>
+          </div>
         </div>
 
         {/* Input de Búsqueda */}
@@ -945,33 +991,6 @@ const Orders = () => {
                     ))}
                   </div>
                 )}
-              </motion.div>
-            )}
-
-            {activeTab === 'checklist' && (
-              <motion.div
-                key="checklist"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18 }}
-              >
-                <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-1 shadow-sm mb-4 w-fit">
-                  {WEEK_OPTIONS.map(({ offset, label }) => (
-                    <button
-                      key={offset}
-                      onClick={() => setWeekOffset(offset)}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-medium transition ${
-                        weekOffset === offset
-                          ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
-                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <OrderChecklistTab weekStart={selectedWeek.weekStart} weekLabel={weekLabel} />
               </motion.div>
             )}
 

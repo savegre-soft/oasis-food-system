@@ -25,6 +25,7 @@ const CATEGORIES = [
 // baseIngredients: { protein: ['Pollo', ...], carb: [...], extra: [...] }
 // value: null (usa base) | { protein: [...], carb: [...], extra: [...] } (override)
 // onChange: (newValue) => void  — null para resetear a base
+// La visibilidad la controla el componente padre (botón "Editar" en la fila de la receta).
 
 const RecipeIngredientEditor = ({ recipeName, baseIngredients, value, onChange }) => {
   const [newItem, setNewItem] = useState({ protein: '', carb: '', extra: '' });

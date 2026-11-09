@@ -64,6 +64,12 @@ export default function useNotificationActions(markAsRead) {
       return;
     }
 
+    if (n.type === 'portal_order_created' || n.type === 'portal_order_updated') {
+      const clientId = n.metadata?.client_id;
+      if (clientId) nav(`/cliente/${clientId}`);
+      return;
+    }
+
     if (n.type === 'period_close') {
       const { week_start_date, week_end_date } = n.metadata ?? {};
       if (!week_start_date || !week_end_date) return;

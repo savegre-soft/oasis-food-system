@@ -198,18 +198,28 @@ const CustomerPortal = () => {
       }
     : null;
 
+  // Corte global del viernes (configurable por el staff en
+  // Settings → Portal de clientes), distinto del cierre por día más abajo.
+  // No aplica al caso especial de entrega del martes, que
+  // portal_get_current_order ya resuelve como locked=false.
+  const isLocked = currentOrder?.locked === true;
+
   const closedDays = useMemo(() => {
     const s = new Set();
+    if (isLocked) {
+      DAYS_ORDER.forEach((d) => s.add(d));
+      return s;
+    }
     (currentOrder?.days ?? []).forEach((d) => {
       if (d.is_editable === false) s.add(d.day_of_week);
     });
     return s;
-  }, [currentOrder]);
+  }, [currentOrder, isLocked]);
 
   const hasEditableDays = DAYS_ORDER.some((d) => !closedDays.has(d));
 
   const handleSubmit = async () => {
-    if (!classification || submitting) return;
+    if (!classification || submitting || isLocked) return;
     setSubmitting(true);
 
     const { weekStart, tuesdayDelivery } = getWeekRange();
@@ -251,6 +261,11 @@ const CustomerPortal = () => {
     setSubmitting(false);
 
     if (error || data?.error) {
+      if (data?.error === 'cutoff_passed') {
+        sileo.error('Ya pasó el plazo para pedir o modificar esta semana.');
+        await fetchAll();
+        return;
+      }
       sileo.error('No se pudo confirmar tu pedido. Intentá de nuevo.');
       return;
     }
@@ -386,6 +401,16 @@ const CustomerPortal = () => {
             </p>
           )}
 
+          {isLocked && (
+            <div className="mb-4 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-400 rounded-xl px-4 py-3 text-sm">
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+              <p>
+                Ya pasó el plazo del viernes para pedir o modificar esta semana. Podés revisar tu
+                pedido, pero para cambiarlo contactá al equipo de Oasis Food.
+              </p>
+            </div>
+          )}
+
           <OrderAdjustments
             isFamilyClient={isFamilyClient}
             menuType={classification}
@@ -418,7 +443,7 @@ const CustomerPortal = () => {
             closedDays={closedDays}
           />
 
-          {hasEditableDays ? (
+          {isLocked ? null : hasEditableDays ? (
             <button
               onClick={handleSubmit}
               disabled={submitting}

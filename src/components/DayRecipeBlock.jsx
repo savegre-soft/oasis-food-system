@@ -1,4 +1,5 @@
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import MacroPanel from './MacroPanel';
 import RecipeIngredientEditor from './RecipeIngredientEditor';
 import { DAY_LABELS, MEAL_META, mealLabel, mealTypesOf } from './orderUtils';
@@ -40,8 +41,32 @@ const DayRecipeBlock = ({
   readOnly = false,
   hideMacroEditor = false,
 }) => {
+  const [expandedOverrides, setExpandedOverrides] = useState({});
+  const [confirmPending, setConfirmPending] = useState({});
   const hasRecipes = recipes.some((r) => r.recipe_id);
   const macroClasses = mealTypesOf(menuType);
+
+  const toggleOverride = (key) =>
+    setExpandedOverrides((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const handleEditClick = (key, quantity) => {
+    if (expandedOverrides[key]) {
+      toggleOverride(key);
+      return;
+    }
+    if (Number(quantity) > 1) {
+      setConfirmPending((prev) => ({ ...prev, [key]: true }));
+    } else {
+      toggleOverride(key);
+    }
+  };
+
+  const cancelConfirm = (key) => setConfirmPending((prev) => ({ ...prev, [key]: false }));
+
+  const confirmEdit = (key) => {
+    setConfirmPending((prev) => ({ ...prev, [key]: false }));
+    toggleOverride(key);
+  };
 
   return (
     <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
@@ -49,7 +74,7 @@ const DayRecipeBlock = ({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+        className="w-full flex items-center justify-between gap-3 pl-4 pr-7 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
       >
         <div className="flex items-center gap-2">
           <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm">
@@ -78,9 +103,9 @@ const DayRecipeBlock = ({
           )}
         </div>
         {isExpanded ? (
-          <ChevronUp size={16} className="text-slate-400 dark:text-slate-500" />
+          <ChevronUp size={16} className="text-slate-400 dark:text-slate-500 shrink-0" />
         ) : (
-          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500" />
+          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 shrink-0" />
         )}
       </button>
 
@@ -158,6 +183,22 @@ const DayRecipeBlock = ({
                     />
                   )}
 
+                  {/* Edit ingredient options */}
+                  {!readOnly && showIngredientEditor && item.recipe_id && (
+                    <button
+                      type="button"
+                      onClick={() => handleEditClick(`${day}-${index}`, item.quantity)}
+                      title="Editar ingredientes"
+                      className={`shrink-0 p-1.5 rounded-lg transition ${
+                        expandedOverrides[`${day}-${index}`] || ingredientOverrides[`${day}-${index}`]
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                          : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                      }`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
+
                   {/* Remove */}
                   {!readOnly && (
                     <button
@@ -170,17 +211,61 @@ const DayRecipeBlock = ({
                   )}
                 </div>
 
+                {/* Aviso: editar ingredientes afecta a todas las unidades de esta línea.
+                    Se muestra tanto antes de abrir el editor (con confirmación) como mientras
+                    está abierto si la cantidad es o pasa a ser mayor a 1 (p. ej. la suben
+                    después de ya estar editando), para que no se les escape ese caso. */}
+                {!readOnly &&
+                  showIngredientEditor &&
+                  item.recipe_id &&
+                  Number(item.quantity) > 1 &&
+                  (confirmPending[`${day}-${index}`] || expandedOverrides[`${day}-${index}`]) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-300">
+                      <p className="flex-1">
+                        Esta línea tiene {item.quantity} unidades de "{item.recipe_name}".{' '}
+                        {expandedOverrides[`${day}-${index}`]
+                          ? 'Los cambios de ingredientes se aplican a las'
+                          : 'Editar los ingredientes aplicará el cambio a las'}{' '}
+                        {item.quantity} recetas. Si querés editar solo 1 de {item.quantity},
+                        agregala como una receta aparte (
+                        {isFamilyClient ? '"+ Agregar receta"' : '"+ Agregar receta extra"'}) y
+                        editá esa.
+                      </p>
+                      {!expandedOverrides[`${day}-${index}`] && (
+                        <div className="flex gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => cancelConfirm(`${day}-${index}`)}
+                            className="px-3 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => confirmEdit(`${day}-${index}`)}
+                            className="px-3 py-1.5 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-500 transition"
+                          >
+                            Editar las {item.quantity}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 {/* Ingredient override editor */}
-                {!readOnly && showIngredientEditor && item.recipe_id && (
-                  <RecipeIngredientEditor
-                    recipeName={item.recipe_name}
-                    baseIngredients={
-                      recipeIngredients[item.recipe_id] ?? { protein: [], carb: [], extra: [] }
-                    }
-                    value={ingredientOverrides[`${day}-${index}`] ?? null}
-                    onChange={(val) => onOverrideChange(day, index, val)}
-                  />
-                )}
+                {!readOnly &&
+                  showIngredientEditor &&
+                  item.recipe_id &&
+                  expandedOverrides[`${day}-${index}`] && (
+                    <RecipeIngredientEditor
+                      recipeName={item.recipe_name}
+                      baseIngredients={
+                        recipeIngredients[item.recipe_id] ?? { protein: [], carb: [], extra: [] }
+                      }
+                      value={ingredientOverrides[`${day}-${index}`] ?? null}
+                      onChange={(val) => onOverrideChange(day, index, val)}
+                    />
+                  )}
               </div>
             ))}
 
