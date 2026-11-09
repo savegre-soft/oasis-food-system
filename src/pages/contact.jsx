@@ -94,6 +94,7 @@ const Contact = () => {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
+  const [activeForm, setActiveForm] = useState('lead');
 
   const canSubmit = name.trim() !== '' && phone.trim() !== '';
 
@@ -198,158 +199,178 @@ const Contact = () => {
         </Reveal>
 
         <Reveal className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10">
-          <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-1">
-            Quiero ser cliente
-          </h2>
-          <p className="text-sm text-oasis-ink/60 mb-6">Dejanos tus datos y te contactamos.</p>
+          <div className="flex gap-2 mb-6 bg-white rounded-full p-1 border border-oasis-olive-200 w-full sm:w-fit">
+            <button
+              type="button"
+              onClick={() => setActiveForm('lead')}
+              className={`flex-1 sm:flex-none px-5 py-2.5 rounded-full text-sm font-semibold transition-colors ${
+                activeForm === 'lead'
+                  ? 'bg-oasis-olive-600 text-white'
+                  : 'text-oasis-ink/60 hover:text-oasis-ink'
+              }`}
+            >
+              Quiero ser cliente
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveForm('quote')}
+              className={`flex-1 sm:flex-none px-5 py-2.5 rounded-full text-sm font-semibold transition-colors ${
+                activeForm === 'quote'
+                  ? 'bg-oasis-olive-600 text-white'
+                  : 'text-oasis-ink/60 hover:text-oasis-ink'
+              }`}
+            >
+              Cotizar evento
+            </button>
+          </div>
 
-          {done ? (
-            <div className="text-center py-10">
-              <h3 className="font-semibold text-oasis-ink mb-2">¡Mensaje enviado!</h3>
-              <p className="text-oasis-ink/60 text-sm">Te vamos a responder a la brevedad.</p>
-            </div>
+          {activeForm === 'quote' ? (
+            <>
+              <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-1">
+                Cotizá tu evento
+              </h2>
+              <p className="text-sm text-oasis-ink/60 mb-6">
+                Contanos los detalles de tu evento y te respondemos por WhatsApp con una propuesta
+                a la medida.
+              </p>
+              <EventQuoteForm />
+            </>
           ) : (
-            <form className="grid sm:grid-cols-2 gap-5" onSubmit={handleSubmit}>
-              <div>
-                <label
-                  htmlFor="contact-name"
-                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
-                >
-                  Nombre
-                </label>
-                <input
-                  id="contact-name"
-                  type="text"
-                  placeholder="Tu nombre"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-                />
-              </div>
+            <>
+              <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-1">
+                Quiero ser cliente
+              </h2>
+              <p className="text-sm text-oasis-ink/60 mb-6">Dejanos tus datos y te contactamos.</p>
 
-              <div>
-                <label
-                  htmlFor="contact-phone"
-                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
-                >
-                  Teléfono
-                </label>
-                <input
-                  id="contact-phone"
-                  type="tel"
-                  placeholder="8888-8888"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="contact-zone"
-                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
-                >
-                  Zona de entrega
-                </label>
-                <div className="relative">
-                  <select
-                    id="contact-zone"
-                    value={zone}
-                    onChange={(e) => setZone(e.target.value)}
-                    className="w-full px-4 py-3 pr-10 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition appearance-none"
-                  >
-                    <option value="">Elegí tu zona</option>
-                    {DELIVERY_ZONES.map((z) => (
-                      <option key={z} value={z}>
-                        {z}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-oasis-ink/40"
-                  />
+              {done ? (
+                <div className="text-center py-10">
+                  <h3 className="font-semibold text-oasis-ink mb-2">¡Mensaje enviado!</h3>
+                  <p className="text-oasis-ink/60 text-sm">Te vamos a responder a la brevedad.</p>
                 </div>
-              </div>
+              ) : (
+                <form className="grid sm:grid-cols-2 gap-5" onSubmit={handleSubmit}>
+                  <div>
+                    <label
+                      htmlFor="contact-name"
+                      className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                    >
+                      Nombre
+                    </label>
+                    <input
+                      id="contact-name"
+                      type="text"
+                      placeholder="Tu nombre"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
+                    />
+                  </div>
 
-              <div>
-                <label
-                  htmlFor="contact-interest"
-                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
-                >
-                  Me interesa
-                </label>
-                <input
-                  id="contact-interest"
-                  type="text"
-                  placeholder="Almuerzos, Well Shot, catering…"
-                  value={interest}
-                  onChange={(e) => setInterest(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-                />
-              </div>
+                  <div>
+                    <label
+                      htmlFor="contact-phone"
+                      className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                    >
+                      Teléfono
+                    </label>
+                    <input
+                      id="contact-phone"
+                      type="tel"
+                      placeholder="8888-8888"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
+                    />
+                  </div>
 
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="contact-message"
-                  className="block text-sm font-medium text-oasis-ink/70 mb-2"
-                >
-                  Mensaje
-                </label>
-                <textarea
-                  id="contact-message"
-                  rows="4"
-                  placeholder="¿Alguna preferencia o alergia?"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition resize-none"
-                />
-              </div>
+                  <div>
+                    <label
+                      htmlFor="contact-zone"
+                      className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                    >
+                      Zona de entrega
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="contact-zone"
+                        value={zone}
+                        onChange={(e) => setZone(e.target.value)}
+                        className="w-full px-4 py-3 pr-10 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition appearance-none"
+                      >
+                        <option value="">Elegí tu zona</option>
+                        {DELIVERY_ZONES.map((z) => (
+                          <option key={z} value={z}>
+                            {z}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={18}
+                        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-oasis-ink/40"
+                      />
+                    </div>
+                  </div>
 
-              <div className="absolute left-[-9999px]" aria-hidden="true">
-                <label htmlFor="website">Sitio web</label>
-                <input
-                  type="text"
-                  id="website"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  value={honeypot}
-                  onChange={(e) => setHoneypot(e.target.value)}
-                />
-              </div>
+                  <div>
+                    <label
+                      htmlFor="contact-interest"
+                      className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                    >
+                      Me interesa
+                    </label>
+                    <input
+                      id="contact-interest"
+                      type="text"
+                      placeholder="Almuerzos, Well Shot, catering…"
+                      value={interest}
+                      onChange={(e) => setInterest(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
+                    />
+                  </div>
 
-              {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor="contact-message"
+                      className="block text-sm font-medium text-oasis-ink/70 mb-2"
+                    >
+                      Mensaje
+                    </label>
+                    <textarea
+                      id="contact-message"
+                      rows="4"
+                      placeholder="¿Alguna preferencia o alergia?"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition resize-none"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={!canSubmit || loading}
-                className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-              >
-                {loading ? 'Enviando...' : 'Enviar'}
-              </button>
-            </form>
+                  <div className="absolute left-[-9999px]" aria-hidden="true">
+                    <label htmlFor="website">Sitio web</label>
+                    <input
+                      type="text"
+                      id="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
+                  </div>
+
+                  {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
+
+                  <button
+                    type="submit"
+                    disabled={!canSubmit || loading}
+                    className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  >
+                    {loading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </form>
+              )}
+            </>
           )}
         </Reveal>
-      </section>
-
-      {/* Cotizaciones de eventos */}
-      <section id="cotizar-evento" className="bg-white border-t border-oasis-olive-100 scroll-mt-24">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-[1fr_1.3fr] gap-12">
-          <Reveal>
-            <SectionBadge>Cotizaciones</SectionBadge>
-            <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
-              Cotizá tu evento
-            </h2>
-            <p className="mt-4 text-oasis-ink/70 max-w-md">
-              Contanos los detalles de tu evento y te respondemos por WhatsApp con una propuesta a
-              la medida.
-            </p>
-          </Reveal>
-
-          <Reveal className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
-            <EventQuoteForm />
-          </Reveal>
-        </div>
       </section>
 
       {/* FAQ */}
