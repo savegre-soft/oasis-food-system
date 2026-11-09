@@ -99,7 +99,7 @@ const groupByRecipeForPackage = (allDays) => {
         id_order_day_detail: detail.id_order_day_detail,
         id_order: orderDay.orders?.id_order,
         status: detailStatus,
-        classification,
+        classification: detail.meal_type ?? classification,
         quantity: qty,
       });
     }
@@ -160,7 +160,7 @@ const groupByOrder = (allDays) => {
         status: detailStatus,
         recipe_name: recipeName,
         quantity: qty,
-        classification,
+        classification: detail.meal_type ?? classification,
         isOverridden,
         ingredients,
       });

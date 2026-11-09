@@ -655,6 +655,14 @@ const AddOrder = ({ onSuccess }) => {
                 quantity: Number(r.quantity) || 1,
                 protein_value_applied: eff?.protein_value ?? null,
                 carb_value_applied: eff?.carb_value ?? null,
+                // Tiempo de comida real del plato (null para 'Family', que no
+                // tiene tiempos de comida individuales) — permite a
+                // Cocina/Empaque distinguir cuál plato es de cuál tiempo
+                // dentro de un mismo pedido combinado.
+                meal_type:
+                  !familyClient && ['Breakfast', 'Lunch', 'Dinner'].includes(effectiveType)
+                    ? effectiveType
+                    : null,
               };
             })
           )
