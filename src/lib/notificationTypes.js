@@ -1,4 +1,4 @@
-import { CalendarHeart, Clock, CalendarClock, CalendarCheck } from 'lucide-react';
+import { CalendarHeart, Clock, CalendarClock, CalendarCheck, Link2, PencilLine } from 'lucide-react';
 
 // Catálogo de tipos de notificación. Comparten metadata (ícono, color, label)
 // entre la campana (NotificationBell), la sección dedicada (Notifications.jsx)
@@ -31,6 +31,20 @@ export const NOTIFICATION_TYPES = {
     Icon: CalendarCheck,
     color: 'text-emerald-600 dark:text-emerald-400',
     bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+  },
+  portal_order_created: {
+    label: 'Pedidos nuevos del portal',
+    description: 'Avisa cuando un cliente confirma por primera vez su pedido desde su enlace del portal.',
+    Icon: Link2,
+    color: 'text-indigo-600 dark:text-indigo-400',
+    bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+  },
+  portal_order_updated: {
+    label: 'Cambios en pedidos del portal',
+    description: 'Avisa cuando un cliente modifica un pedido que ya había confirmado desde su enlace del portal.',
+    Icon: PencilLine,
+    color: 'text-fuchsia-600 dark:text-fuchsia-400',
+    bg: 'bg-fuchsia-50 dark:bg-fuchsia-900/20',
   },
 };
 
