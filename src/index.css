@@ -122,6 +122,17 @@ html {
   font-family: var(--font-display);
 }
 
+/* Scroll horizontal sin barra visible — usado como colchón en el NavBar para
+   que, si los enlaces no caben en anchos intermedios, se puedan deslizar
+   dentro de la barra en vez de desbordar la página (y dejar ver el fondo). */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Marquee continuo para la barra de zonas de entrega (Home). El contenido se
    duplica en el markup para que el bucle sea perfecto a -50%. */
 @keyframes oasis-marquee {
