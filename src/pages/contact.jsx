@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line no-unused-vars -- motion se usa como <motion.*> abajo
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, Instagram, MessageCircle, Truck, Clock3 } from 'lucide-react';
@@ -83,6 +84,7 @@ const FaqItem = ({ item, open, onToggle }) => (
 
 const Contact = () => {
   const { supabase } = useApp();
+  const [searchParams] = useSearchParams();
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -94,7 +96,9 @@ const Contact = () => {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
-  const [activeForm, setActiveForm] = useState('lead');
+  const [activeForm, setActiveForm] = useState(
+    searchParams.get('form') === 'quote' ? 'quote' : 'lead'
+  );
 
   const canSubmit = name.trim() !== '' && phone.trim() !== '';
 

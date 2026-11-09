@@ -3,13 +3,27 @@
 
 export const WHATSAPP_LINK = 'https://wa.me/message/ZYFLIBTMILUPK1';
 
+// Número de WhatsApp de Oasis en formato internacional (sin "+" ni espacios),
+// usado para armar links wa.me con un mensaje predefinido (el short link de
+// arriba no admite mensaje dinámico vía ?text=).
+export const WHATSAPP_PHONE = '50688190890';
+
+export const buildWhatsAppLink = (message) =>
+  `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+
 export const INSTAGRAM_OASIS = { handle: '@oasis_meals', url: 'https://instagram.com/oasis_meals' };
 export const INSTAGRAM_WELLSHOT = {
   handle: '@wellshot_byoasis',
   url: 'https://instagram.com/wellshot_byoasis',
 };
 
-export const DELIVERY_ZONES = ['Ciudad Quesada', 'La Fortuna', 'Florencia', 'Aguas Zarcas'];
+export const DELIVERY_ZONES = [
+  'Ciudad Quesada',
+  'La Fortuna',
+  'Florencia',
+  'Aguas Zarcas',
+  'Venecia',
+];
 
 export const ORDER_CUTOFF = 'Cerramos pedidos los viernes a medianoche';
 
@@ -28,7 +42,6 @@ export const SAVEGRE_SOFT = {
 export const NAV_LINKS = [
   { name: 'Inicio', path: '/' },
   { name: 'Menú', path: '/menu' },
-  { name: 'Well Shot', path: '/well-shot' },
   { name: 'Catering', path: '/catering' },
   { name: 'Promociones', path: '/promociones' },
   { name: 'Nosotros', path: '/nosotros' },

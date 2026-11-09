@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { Link } from 'react-router-dom';
 import SectionBadge from '../components/public/SectionBadge';
 import Photo from '../components/public/Photo';
 import Seo from '../components/public/Seo';
@@ -36,204 +35,6 @@ const STEPS = [
   { n: '04', title: 'Disfrutás', desc: 'Montamos, servimos y nos encargamos de todo.' },
 ];
 
-const CateringQuoteForm = () => {
-  const { supabase } = useApp();
-
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    eventDate: '',
-    eventType: '',
-    guests: '',
-    message: '',
-  });
-  const [honeypot, setHoneypot] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
-
-  const canSubmit = form.name.trim() !== '' && form.phone.trim() !== '';
-
-  const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canSubmit || loading) return;
-
-    if (honeypot) {
-      setDone(true);
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    const details = [
-      form.eventDate && `Fecha del evento: ${form.eventDate}`,
-      form.eventType && `Tipo de evento: ${form.eventType}`,
-      form.guests && `Invitados: ${form.guests}`,
-      form.message && `Mensaje: ${form.message}`,
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    const { error: insertError } = await supabase
-      .schema('operations')
-      .from('leads')
-      .insert([
-        {
-          name: form.name.trim(),
-          phone: form.phone.trim(),
-          message: details || null,
-          source: 'catering',
-        },
-      ]);
-
-    setLoading(false);
-
-    if (insertError) {
-      console.error(insertError);
-      setError('No se pudo enviar tu solicitud. Intentá de nuevo en un momento.');
-      return;
-    }
-
-    setDone(true);
-  };
-
-  if (done) {
-    return (
-      <div className="text-center py-10">
-        <h3 className="font-display text-xl font-semibold text-oasis-ink mb-2">¡Gracias!</h3>
-        <p className="text-oasis-ink/60">
-          Te respondemos por WhatsApp con una propuesta a la medida.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="grid sm:grid-cols-2 gap-5">
-      <div>
-        <label htmlFor="catering-name" className="block text-sm font-medium text-oasis-ink/70 mb-2">
-          Nombre
-        </label>
-        <input
-          id="catering-name"
-          type="text"
-          placeholder="Tu nombre"
-          value={form.name}
-          onChange={update('name')}
-          className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-        />
-      </div>
-
-      <div>
-        <label
-          htmlFor="catering-phone"
-          className="block text-sm font-medium text-oasis-ink/70 mb-2"
-        >
-          Teléfono
-        </label>
-        <input
-          id="catering-phone"
-          type="tel"
-          placeholder="8888-8888"
-          value={form.phone}
-          onChange={update('phone')}
-          className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="catering-date" className="block text-sm font-medium text-oasis-ink/70 mb-2">
-          Fecha del evento
-        </label>
-        <input
-          id="catering-date"
-          type="date"
-          value={form.eventDate}
-          onChange={update('eventDate')}
-          className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-        />
-      </div>
-
-      <div>
-        <label
-          htmlFor="catering-guests"
-          className="block text-sm font-medium text-oasis-ink/70 mb-2"
-        >
-          Invitados
-        </label>
-        <input
-          id="catering-guests"
-          type="number"
-          min="1"
-          placeholder="Ej. 50"
-          value={form.guests}
-          onChange={update('guests')}
-          className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-        />
-      </div>
-
-      <div className="sm:col-span-2">
-        <label
-          htmlFor="catering-event-type"
-          className="block text-sm font-medium text-oasis-ink/70 mb-2"
-        >
-          Tipo de evento
-        </label>
-        <input
-          id="catering-event-type"
-          type="text"
-          placeholder="Corporativo, cumpleaños, boda…"
-          value={form.eventType}
-          onChange={update('eventType')}
-          className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-        />
-      </div>
-
-      <div className="sm:col-span-2">
-        <label
-          htmlFor="catering-message"
-          className="block text-sm font-medium text-oasis-ink/70 mb-2"
-        >
-          Mensaje
-        </label>
-        <textarea
-          id="catering-message"
-          rows="4"
-          placeholder="Contanos más detalles"
-          value={form.message}
-          onChange={update('message')}
-          className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition resize-none"
-        />
-      </div>
-
-      <div className="absolute left-[-9999px]" aria-hidden="true">
-        <label htmlFor="website-catering">Sitio web</label>
-        <input
-          type="text"
-          id="website-catering"
-          tabIndex={-1}
-          autoComplete="off"
-          value={honeypot}
-          onChange={(e) => setHoneypot(e.target.value)}
-        />
-      </div>
-
-      {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
-
-      <button
-        type="submit"
-        disabled={!canSubmit || loading}
-        className="sm:col-span-2 mt-2 bg-oasis-olive-600 text-white py-3.5 rounded-full font-semibold shadow-sm hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-      >
-        {loading ? 'Enviando...' : 'Enviar solicitud'}
-      </button>
-    </form>
-  );
-};
-
 const Catering = () => {
   return (
     <div>
@@ -261,12 +62,12 @@ const Catering = () => {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href="#cotizar"
+            <Link
+              to="/contacto?form=quote"
               className="bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
             >
               Cotizar mi evento
-            </a>
+            </Link>
           </div>
         </Reveal>
 
@@ -332,22 +133,21 @@ const Catering = () => {
       </section>
 
       {/* COTIZADOR */}
-      <section
-        id="cotizar"
-        className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid lg:grid-cols-[1fr_1.3fr] gap-12 scroll-mt-24"
-      >
+      <section className="max-w-6xl mx-auto px-4 md:px-6 py-20 text-center">
         <Reveal>
           <SectionBadge>Cotizá tu evento</SectionBadge>
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
             Contanos qué tenés en mente
           </h2>
-          <p className="mt-4 text-oasis-ink/70">
+          <p className="mt-4 text-oasis-ink/70 max-w-xl mx-auto">
             Te respondemos por WhatsApp con una propuesta a la medida.
           </p>
-        </Reveal>
-
-        <Reveal variants={scaleIn} className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
-          <CateringQuoteForm />
+          <Link
+            to="/contacto?form=quote"
+            className="inline-block mt-8 bg-oasis-olive-600 text-white px-7 py-3 rounded-full font-semibold hover:bg-oasis-olive-700 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+          >
+            Cotizar mi evento
+          </Link>
         </Reveal>
       </section>
     </div>
