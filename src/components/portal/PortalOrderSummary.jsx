@@ -1,4 +1,4 @@
-import { CheckCircle2, Pencil } from 'lucide-react';
+import { CheckCircle2, Compass, Pencil } from 'lucide-react';
 import { DAYS_ORDER, DAY_LABELS, DAY_SHORT, MACRO_UNIT, MEAL_META, classificationLabel, mealTypesOf } from '../orderUtils';
 
 // Resumen de confirmación del portal — mismo formato que StepConfirm.jsx
@@ -16,6 +16,7 @@ const PortalOrderSummary = ({
   appliedDays = [],
   skippedDays = [],
   onEditAgain,
+  onViewTour,
 }) => (
   <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6 space-y-5">
     <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
@@ -130,13 +131,25 @@ const PortalOrderSummary = ({
       </div>
     </div>
 
-    {onEditAgain && (
-      <button
-        onClick={onEditAgain}
-        className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition mx-auto"
-      >
-        <Pencil size={14} /> Editar de nuevo
-      </button>
+    {(onEditAgain || onViewTour) && (
+      <div className="flex items-center justify-center gap-4">
+        {onEditAgain && (
+          <button
+            onClick={onEditAgain}
+            className="flex items-center gap-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition"
+          >
+            <Pencil size={14} /> Editar de nuevo
+          </button>
+        )}
+        {onViewTour && (
+          <button
+            onClick={onViewTour}
+            className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:underline transition"
+          >
+            <Compass size={14} /> Ver tour
+          </button>
+        )}
+      </div>
     )}
   </div>
 );

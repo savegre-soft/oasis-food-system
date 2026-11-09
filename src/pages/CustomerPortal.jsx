@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sileo } from 'sileo';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Compass } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import OrderAdjustments from '../components/OrderAdjustments';
 import PortalOrderSummary from '../components/portal/PortalOrderSummary';
+import GuidedTour from '../components/portal/GuidedTour';
 import { useMacros } from '../components/useMacros';
 import { useDayRecipes } from '../components/useDayRecipes';
 import {
@@ -96,6 +97,14 @@ const CustomerPortal = () => {
 
   const macros = useMacros();
   const dayRecipesState = useDayRecipes();
+
+  // Tour guiado del armador de pedido (RF-PC): se muestra solo, una vez,
+  // la primera vez que el cliente ve esta pantalla (por link/token, no hay
+  // login) y queda disponible para volver a verlo con el botón "Ver tour".
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+  const tourWasExpandedRef = useRef(false);
+  const tourSeenKey = `oasis_portal_tour_seen_v1_${token}`;
 
   const fetchAll = async () => {
     setLoading(true);
@@ -218,6 +227,152 @@ const CustomerPortal = () => {
 
   const hasEditableDays = DAYS_ORDER.some((d) => !closedDays.has(d));
 
+  // El picker de tiempos de comida ("¿Qué querés armar esta semana?") solo
+  // aparece para clientes personales con más de un tiempo configurado y sin
+  // pedido todavía (ver fetchAll: con un solo tiempo se auto-resuelve, con
+  // pedido existente la clasificación viene de ahí) — se basa en datos del
+  // cliente/pedido que no cambian por elegir, así el paso del tour no
+  // desaparece del array a mitad de camino cuando el cliente completa el
+  // picker.
+  const hasMealPicker =
+    !isFamilyClient &&
+    !currentOrder?.exists &&
+    MEAL_TYPES.filter((t) => client?.[clientMacroKey(t)]).length > 1;
+
+  // Día que usa el tour para mostrar "expandir día" / "agregar receta" /
+  // "editar ingredientes": el primero que ya trae una receta cargada (así
+  // el botón de editar ingredientes, que solo aparece si hay recipe_id,
+  // existe de entrada), o el primer día del orden semanal si ninguno tiene.
+  const tourTargetDay =
+    DAYS_ORDER.find((d) => (dayRecipesState.dayRecipes[d] ?? []).some((r) => r.recipe_id)) ??
+    DAYS_ORDER[0];
+  const tourTargetDayIsEditable = !closedDays.has(tourTargetDay);
+
+  const tourSteps = useMemo(() => {
+    // setup/teardown se repiten en ambos pasos del grupo "día expandido"
+    // (no solo en el primero) para que, sin importar en cuál de los dos
+    // termine el tour (p. ej. si "add-recipe" se salta por no existir el
+    // botón), siempre haya un teardown disponible para volver a colapsar
+    // el día al salir del grupo.
+    const expandDay = () => {
+      tourWasExpandedRef.current = !!dayRecipesState.expandedDays[tourTargetDay];
+      if (!tourWasExpandedRef.current) {
+        dayRecipesState.setExpandedDays((prev) => ({ ...prev, [tourTargetDay]: true }));
+      }
+    };
+    const collapseDay = () => {
+      if (!tourWasExpandedRef.current) {
+        dayRecipesState.setExpandedDays((prev) => ({ ...prev, [tourTargetDay]: false }));
+      }
+    };
+
+    const steps = [];
+
+    if (hasMealPicker) {
+      steps.push({
+        id: 'picker',
+        selector: '[data-tour="portal-meal-picker"]',
+        title: 'Elegí qué vas a armar',
+        body: 'Primero elegí uno o varios tiempos de comida (almuerzo y/o cena) y tocá "Continuar".',
+      });
+    }
+
+    steps.push({
+      id: 'intro',
+      selector: '[data-tour="portal-order-card"]',
+      title: 'Así armás tu pedido',
+      body: 'Acá elegís qué recetas querés cada día de la semana. Te mostramos rápido cómo funciona.',
+    });
+    steps.push({
+      id: 'day',
+      selector: `[data-tour-day="${tourTargetDay}"] [data-tour="day-header"]`,
+      title: 'Expandí un día',
+      body: 'Tocá el nombre de un día para ver sus recetas y poder editarlas.',
+    });
+
+    // Si el día que usa el tour ya está cerrado (fuera del corte de
+    // edición), no tiene sentido explicar "agregar receta"/"editar
+    // ingredientes" — esos botones no existen para un día cerrado, y antes
+    // esto hacía que el tour pareciera "cerrarse solo" (saltaba ambos pasos
+    // en silencio hasta terminar).
+    if (tourTargetDayIsEditable) {
+      steps.push({
+        id: 'add-recipe',
+        groupKey: `expand-${tourTargetDay}`,
+        setup: expandDay,
+        teardown: collapseDay,
+        selector: `[data-tour-day="${tourTargetDay}"] [data-tour="add-recipe"]`,
+        title: isFamilyClient ? 'Agregá recetas' : 'Agregá recetas extra',
+        body: 'Con este botón sumás otra receta a ese día, además de las que ya tiene tu menú.',
+      });
+      steps.push({
+        id: 'edit-ingredients',
+        groupKey: `expand-${tourTargetDay}`,
+        setup: expandDay,
+        teardown: collapseDay,
+        selector: `[data-tour-day="${tourTargetDay}"] [data-tour="edit-ingredients"]`,
+        title: 'Personalizá los ingredientes',
+        body: 'Tocá el lápiz para cambiar algún ingrediente de esa receta, por ejemplo si no te gusta algo.',
+      });
+    }
+
+    // El botón de confirmar tampoco existe si ya pasó el corte semanal o no
+    // quedan días editables (mismas condiciones que el render más abajo).
+    if (!isLocked && hasEditableDays) {
+      steps.push({
+        id: 'submit',
+        selector: '[data-tour="portal-submit-button"]',
+        title: 'Confirmá tu pedido',
+        body: 'Cuando termines de armar la semana, confirmá tu pedido con este botón. Podés seguir editándolo mientras no haya pasado el plazo.',
+      });
+    }
+
+    return steps;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourTargetDay, tourTargetDayIsEditable, isFamilyClient, hasMealPicker, isLocked, hasEditableDays]);
+
+  // Si el picker todavía se muestra, el tour arranca ahí; si la
+  // clasificación ya está resuelta (pedido existente, un solo tiempo de
+  // comida, o ya se pasó el picker esta sesión), arranca directo en el
+  // armador — si no, con el picker ya fuera del DOM el primer paso
+  // quedaría buscando algo que no existe hasta saltarlo solo.
+  const tourInitialStep = hasMealPicker && !classification ? 0 : hasMealPicker ? 1 : 0;
+
+  useEffect(() => {
+    if (loading || justSubmitted) return;
+    if (!hasMealPicker && !classification) return;
+    let seen = false;
+    try {
+      seen = localStorage.getItem(tourSeenKey) === '1';
+    } catch {
+      // localStorage puede no estar disponible (ej. modo privado) — el tour
+      // simplemente se mostrará de nuevo en la próxima visita.
+    }
+    if (!seen) {
+      setTourStep(tourInitialStep);
+      setTourOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, justSubmitted, hasMealPicker, classification]);
+
+  const closeTour = () => {
+    setTourOpen(false);
+    try {
+      localStorage.setItem(tourSeenKey, '1');
+    } catch {
+      /* ignora si no hay localStorage disponible */
+    }
+  };
+
+  const startTour = () => {
+    // Si se pide el tour desde la pantalla de confirmación (post-envío),
+    // hay que volver al armador primero: ahí es donde viven los elementos
+    // que el tour señala (la confirmación los reemplaza por completo).
+    setJustSubmitted(false);
+    setTourStep(tourInitialStep);
+    setTourOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!classification || submitting || isLocked) return;
     setSubmitting(true);
@@ -300,6 +455,10 @@ const CustomerPortal = () => {
 
   return (
     <div className="space-y-5">
+      {tourOpen && (
+        <GuidedTour steps={tourSteps} stepIndex={tourStep} onStepChange={setTourStep} onClose={closeTour} />
+      )}
+
       {/* Plan */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6">
         <h1 className="text-xl font-bold text-emerald-800 dark:text-emerald-400">Hola, {client.name} 👋</h1>
@@ -348,7 +507,7 @@ const CustomerPortal = () => {
 
       {/* Elegir qué armar (solo personal, sin pedido todavía) */}
       {!isFamilyClient && !classification && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6">
+        <div data-tour="portal-meal-picker" className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6">
           <h2 className="font-semibold text-slate-800 dark:text-slate-200 mb-3">
             ¿Qué querés armar esta semana?
           </h2>
@@ -391,10 +550,19 @@ const CustomerPortal = () => {
 
       {/* Armar / editar pedido */}
       {classification && !justSubmitted && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
-            {currentOrder?.exists ? 'Tu pedido de esta semana' : 'Armá tu pedido de esta semana'}
-          </h2>
+        <div data-tour="portal-order-card" className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-6">
+          <div className="flex items-start justify-between gap-2 flex-wrap">
+            <h2 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+              {currentOrder?.exists ? 'Tu pedido de esta semana' : 'Armá tu pedido de esta semana'}
+            </h2>
+            <button
+              type="button"
+              onClick={startTour}
+              className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
+            >
+              <Compass size={13} /> Ver tour
+            </button>
+          </div>
           {currentOrder?.week_start_date && (
             <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">
               Semana del {currentOrder.week_start_date} al {currentOrder.week_end_date}
@@ -445,6 +613,7 @@ const CustomerPortal = () => {
 
           {isLocked ? null : hasEditableDays ? (
             <button
+              data-tour="portal-submit-button"
               onClick={handleSubmit}
               disabled={submitting}
               className="w-full mt-5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-3 rounded-2xl font-semibold shadow-lg hover:scale-[1.01] transition disabled:opacity-50 disabled:hover:scale-100"
@@ -473,6 +642,7 @@ const CustomerPortal = () => {
           appliedDays={submitResult.applied_days}
           skippedDays={submitResult.skipped_days}
           onEditAgain={() => setJustSubmitted(false)}
+          onViewTour={startTour}
         />
       )}
     </div>

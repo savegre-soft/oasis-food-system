@@ -69,10 +69,11 @@ const DayRecipeBlock = ({
   };
 
   return (
-    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+    <div data-tour-day={day} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
       {/* Header */}
       <button
         type="button"
+        data-tour="day-header"
         onClick={onToggle}
         className="w-full flex items-center justify-between gap-3 pl-4 pr-7 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
       >
@@ -187,6 +188,7 @@ const DayRecipeBlock = ({
                   {!readOnly && showIngredientEditor && item.recipe_id && (
                     <button
                       type="button"
+                      data-tour="edit-ingredients"
                       onClick={() => handleEditClick(`${day}-${index}`, item.quantity)}
                       title="Editar ingredientes"
                       className={`shrink-0 p-1.5 rounded-lg transition ${
@@ -272,6 +274,7 @@ const DayRecipeBlock = ({
             {!readOnly && (
               <button
                 type="button"
+                data-tour="add-recipe"
                 onClick={() => onAddRecipe(day)}
                 className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl hover:border-slate-400 dark:hover:border-slate-500 transition mt-1"
               >
