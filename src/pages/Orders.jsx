@@ -1,8 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
   ClipboardList,
-  // ClipboardCheck — solo usado por la pestaña "Checklist envío", oculta
-  // temporalmente más abajo.
+  ClipboardCheck,
   Calendar,
   History,
   ChevronLeft,
@@ -57,8 +56,7 @@ const STATUS_STYLES = {
 
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
-  // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
-  // { id: 'checklist', label: 'Checklist envío', Icon: ClipboardCheck },
+  { id: 'checklist', label: 'Checklist envío', Icon: ClipboardCheck },
   { id: 'history', label: 'Historico', Icon: History },
 ];
 
