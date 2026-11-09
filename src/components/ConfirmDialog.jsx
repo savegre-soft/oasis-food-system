@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle } from 'lucide-react';
 

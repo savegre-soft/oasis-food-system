@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { DollarSign, TrendingUp, Clock, Search, BarChart2, AlertTriangle } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 import AuthRoles from '../components/auth/AuthRoles';
@@ -140,8 +141,6 @@ const Payments = () => {
 
   const { start: weekStart, end: weekEnd } = getWeekRange();
   const todayStr = new Date().toISOString().split('T')[0];
-
-  const todayPayments = payments.filter((p) => effectiveDate(p) === todayStr);
 
   const weekPayments = payments.filter((p) => {
     const raw = effectiveDate(p);

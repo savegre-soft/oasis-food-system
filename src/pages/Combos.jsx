@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Calendar, History, ListChecks } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { AnimatePresence, motion } from 'framer-motion';
 
 import ComboOrdersTab from '../components/combos/ComboOrdersTab';
@@ -26,20 +27,23 @@ const Combos = () => {
 
       {/* Tabs Principales */}
       <div className="flex items-center gap-1 mb-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm">
-        {TABS.map(({ id, label, Icon }) => {
-          const active = activeTab === id;
-          const cls =
-            'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
-            (active
-              ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200');
-          return (
-            <button key={id} onClick={() => setActiveTab(id)} className={cls}>
-              <Icon size={15} />
-              {label}
-            </button>
-          );
-        })}
+        {TABS.map(
+          // eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a destructured var
+          ({ id, label, Icon }) => {
+            const active = activeTab === id;
+            const cls =
+              'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
+              (active
+                ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200');
+            return (
+              <button key={id} onClick={() => setActiveTab(id)} className={cls}>
+                <Icon size={15} />
+                {label}
+              </button>
+            );
+          }
+        )}
       </div>
 
       <AnimatePresence mode="wait">

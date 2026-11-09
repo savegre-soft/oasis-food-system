@@ -59,20 +59,21 @@ const ExpenseStadisticContent = () => {
       weekMap[wk].personal += amt;
     });
 
-    let runExp = 0, runEmp = 0;
-    const combinedByDay = Object.keys(dayMap).sort().map((date) => {
-      runExp += dayMap[date];
-      runEmp += empDayMap[date];
-      return {
+    const combinedByDay = Object.keys(dayMap).sort().reduce((acc, date) => {
+      const prev = acc[acc.length - 1];
+      const acumGastos = (prev?.acumGastos ?? 0) + dayMap[date];
+      const acumPersonal = (prev?.acumPersonal ?? 0) + empDayMap[date];
+      acc.push({
         date: date.slice(5).replace('-', '/'),
         gastos: dayMap[date],
         personal: empDayMap[date],
         total: dayMap[date] + empDayMap[date],
-        acumGastos: runExp,
-        acumPersonal: runEmp,
-        acumTotal: runExp + runEmp,
-      };
-    });
+        acumGastos,
+        acumPersonal,
+        acumTotal: acumGastos + acumPersonal,
+      });
+      return acc;
+    }, []);
 
     const categoryData = Object.entries(categoryMap)
       .map(([name, value]) => ({ name, value }))

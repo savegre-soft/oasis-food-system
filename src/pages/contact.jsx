@@ -14,6 +14,7 @@ import {
   ORDER_CUTOFF,
   WHATSAPP_LINK,
 } from '../lib/siteContent';
+import EventQuoteForm from '../components/public/EventQuoteForm';
 
 const FAQS = [
   {
@@ -250,19 +251,25 @@ const Contact = () => {
                 >
                   Zona de entrega
                 </label>
-                <select
-                  id="contact-zone"
-                  value={zone}
-                  onChange={(e) => setZone(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition"
-                >
-                  <option value="">Elegí tu zona</option>
-                  {DELIVERY_ZONES.map((z) => (
-                    <option key={z} value={z}>
-                      {z}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    id="contact-zone"
+                    value={zone}
+                    onChange={(e) => setZone(e.target.value)}
+                    className="w-full px-4 py-3 pr-10 rounded-xl border border-oasis-olive-200 bg-white focus:outline-none focus:ring-2 focus:ring-oasis-olive-500 transition appearance-none"
+                  >
+                    <option value="">Elegí tu zona</option>
+                    {DELIVERY_ZONES.map((z) => (
+                      <option key={z} value={z}>
+                        {z}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={18}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-oasis-ink/40"
+                  />
+                </div>
               </div>
 
               <div>
@@ -322,6 +329,27 @@ const Contact = () => {
               </button>
             </form>
           )}
+        </Reveal>
+      </section>
+
+      {/* Cotizaciones de eventos */}
+      <section
+        id="cotizar-evento"
+        className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid lg:grid-cols-[1fr_1.3fr] gap-12 scroll-mt-24"
+      >
+        <Reveal>
+          <SectionBadge>Cotizaciones</SectionBadge>
+          <h2 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
+            Cotizá tu evento
+          </h2>
+          <p className="mt-4 text-oasis-ink/70 max-w-md">
+            Contanos los detalles de tu evento y te respondemos por WhatsApp con una propuesta a
+            la medida.
+          </p>
+        </Reveal>
+
+        <Reveal className="bg-oasis-olive-50 rounded-3xl p-8 md:p-10 relative">
+          <EventQuoteForm />
         </Reveal>
       </section>
 

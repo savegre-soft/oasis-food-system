@@ -26,4 +26,12 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // Edge Function (Deno runtime), no código de navegador — vive en src/lib/
+    // en vez de supabase/functions/ por eso lo agarra el glob **/*.js de arriba.
+    files: ['src/lib/delete-user.js'],
+    languageOptions: {
+      globals: { Deno: 'readonly' },
+    },
+  },
 ])

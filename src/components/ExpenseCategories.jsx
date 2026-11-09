@@ -29,7 +29,10 @@ const ExpenseCategories = () => {
   };
 
   useEffect(() => {
-    fetchCategories();
+    // setTimeout desacopla la llamada del cuerpo síncrono del efecto — fetchCategories
+    // sincroniza con Supabase (fuente externa), mismo patrón que Deliveries.jsx.
+    const timer = setTimeout(() => fetchCategories(), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAdd = async () => {

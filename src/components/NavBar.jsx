@@ -26,35 +26,40 @@ import {
   Monitor,
   Boxes,
   Layers,
-  // UserPlus, Megaphone — solo usados por los links de Prospectos/Promociones,
-  // ocultos temporalmente más abajo.
+  CalendarHeart,
+  Bell,
+  // UserPlus, Megaphone — solo usados por el link de Promociones, oculto
+  // temporalmente más abajo.
 } from 'lucide-react';
 
 import { useApp } from '../context/AppContext';
 import LogoUrl from '../assets/Oasis-logo.png';
+import NotificationBell from './NotificationBell';
 
-const links = [
-  { to: '/Main', label: 'Dashboards', icon: Home },
+const links = [{ to: '/Main', label: 'Dashboards', icon: Home }];
+
+const clientesLinks = [
+  { to: '/Clientes', label: 'Clientes', icon: Users },
+  { to: '/cotizaciones', label: 'Cotizaciones', icon: CalendarHeart },
   // Oculto a pedido del usuario (2026-08-13) — se reactiva más adelante.
   // { to: '/prospectos', label: 'Prospectos', icon: UserPlus },
 ];
 
 const ordersLinks = [
   { to: '/orders', label: 'Órdenes', icon: Handbag },
-  { to: '/combos', label: 'Combos', icon: Package },
   { to: '/ventas-masivas', label: 'Ventas', icon: Boxes },
+  { to: '/combos', label: 'Pedidos de Combo', icon: Package },
 ];
 
 const entregasLinks = [
   { to: '/entregas', label: 'Producción', icon: ChefHat },
   { to: '/entregas/express', label: 'Express', icon: Zap },
-  { to: '/entregas/combos', label: 'Combos', icon: PackageCheck },
+  { to: '/entregas/combos', label: 'Entrega de Combos', icon: PackageCheck },
+  { to: '/routes', label: 'Rutas', icon: RouteIcon },
 ];
 
 const gestionLinks = [
-  { to: '/Clientes', label: 'Clientes', icon: Users },
   { to: '/menus', label: 'Platos', icon: HamburgerIcon },
-  { to: '/routes', label: 'Rutas', icon: RouteIcon },
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
   { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
   { to: '/platos-venta-masiva', label: 'Platos de Venta', icon: Layers },
@@ -69,7 +74,14 @@ const financialLinks = [
   { to: '/estadisticas', label: 'Estadísticas', icon: ChartScatterIcon },
 ];
 
-const allLinks = [...links, ...ordersLinks, ...entregasLinks, ...gestionLinks, ...financialLinks];
+const allLinks = [
+  ...links,
+  ...clientesLinks,
+  ...ordersLinks,
+  ...entregasLinks,
+  ...gestionLinks,
+  ...financialLinks,
+];
 
 export default function Navbar() {
   const nav = useNavigate();
@@ -184,21 +196,6 @@ export default function Navbar() {
     setOpenMenu(openMenu === menu ? null : menu);
   }
 
-  // ── Tema ──────────────────────────────────────────────────────────────────
-
-  function cycleTheme() {
-    if (theme === 'system') setTheme('light');
-    else if (theme === 'light') setTheme('dark');
-    else setTheme('system');
-  }
-
-  const themeConfig = {
-    light: { Icon: Sun, label: 'Claro' },
-    dark: { Icon: Moon, label: 'Oscuro' },
-    system: { Icon: Monitor, label: 'Sistema' },
-  };
-  const { Icon: ThemeIcon, label: themeLabel } = themeConfig[theme];
-
   const baseStyle =
     'px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2';
 
@@ -289,7 +286,68 @@ export default function Navbar() {
         </div>
 
         {/* Desktop */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
+          {links.map((link) => {
+            const Icon = link.icon;
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  `${baseStyle} ${
+                    isActive
+                      ? 'bg-oasis-olive-600 text-white shadow-sm'
+                      : 'text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {link.label}
+              </NavLink>
+            );
+          })}
+
+          <Dropdown
+            label="Clientes"
+            menuKey="clientes"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={clientesLinks}
+            baseStyle={baseStyle}
+          />
+          <Dropdown
+            label="Pedidos"
+            menuKey="pedidos"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={ordersLinks}
+            baseStyle={baseStyle}
+          />
+          <Dropdown
+            label="Producción"
+            menuKey="produccion"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={entregasLinks}
+            baseStyle={baseStyle}
+          />
+          <Dropdown
+            label="Catálogo"
+            menuKey="catalogo"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={gestionLinks}
+            baseStyle={baseStyle}
+          />
+          <Dropdown
+            label="Finanzas"
+            menuKey="finanzas"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={financialLinks}
+            baseStyle={baseStyle}
+          />
+
           {/* ── Barra de búsqueda colapsable ── */}
           <div ref={searchRef} className="relative flex items-center">
             <div
@@ -331,66 +389,7 @@ export default function Navbar() {
             {showDropdown && <SearchResults onSelect={handleSearchSelect} />}
           </div>
 
-          {links.map((link) => {
-            const Icon = link.icon;
-            return (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `${baseStyle} ${
-                    isActive
-                      ? 'bg-oasis-olive-600 text-white shadow-sm'
-                      : 'text-oasis-ink/80 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                <Icon size={18} />
-                {link.label}
-              </NavLink>
-            );
-          })}
-
-          <Dropdown
-            label="Pedidos"
-            menuKey="pedidos"
-            openMenu={openMenu}
-            toggleMenu={toggleMenu}
-            links={ordersLinks}
-            baseStyle={baseStyle}
-          />
-          <Dropdown
-            label="Entregas"
-            menuKey="entregas"
-            openMenu={openMenu}
-            toggleMenu={toggleMenu}
-            links={entregasLinks}
-            baseStyle={baseStyle}
-          />
-          <Dropdown
-            label="Gestión"
-            menuKey="gestion"
-            openMenu={openMenu}
-            toggleMenu={toggleMenu}
-            links={gestionLinks}
-            baseStyle={baseStyle}
-          />
-          <Dropdown
-            label="Finanzas"
-            menuKey="finanzas"
-            openMenu={openMenu}
-            toggleMenu={toggleMenu}
-            links={financialLinks}
-            baseStyle={baseStyle}
-          />
-
-          <button
-            onClick={cycleTheme}
-            title={`Tema: ${themeLabel}`}
-            className="p-2 rounded-full text-oasis-ink/70 dark:text-slate-300 hover:bg-oasis-olive-50 dark:hover:bg-slate-800 transition flex items-center gap-1.5 text-sm"
-          >
-            <ThemeIcon size={18} />
-          </button>
+          <NotificationBell openMenu={openMenu} toggleMenu={toggleMenu} />
 
           {/* Perfil */}
           <div className="relative">
@@ -471,7 +470,7 @@ export default function Navbar() {
         {/* Mobile button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-2 rounded-full text-oasis-ink dark:text-slate-100 hover:bg-oasis-olive-50 dark:hover:bg-slate-800"
+          className="lg:hidden p-2 rounded-full text-oasis-ink dark:text-slate-100 hover:bg-oasis-olive-50 dark:hover:bg-slate-800"
         >
           {isOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -479,7 +478,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden px-6 pb-4 flex flex-col gap-2 bg-oasis-paper dark:bg-slate-900 border-t border-oasis-olive-100 dark:border-slate-800">
+        <div className="lg:hidden px-6 pb-4 flex flex-col gap-2 bg-oasis-paper dark:bg-slate-900 border-t border-oasis-olive-100 dark:border-slate-800">
           <div ref={searchRef} className="relative mt-2">
             <div className="flex items-center bg-oasis-olive-50 dark:bg-slate-800 border border-oasis-olive-100 dark:border-slate-700 rounded-full px-3 py-2 gap-2">
               <Search size={16} className="text-oasis-ink/40 dark:text-slate-500 shrink-0" />
@@ -560,6 +559,15 @@ export default function Navbar() {
           })}
 
           <MobileDropdown
+            label="Clientes"
+            menuKey="clientes"
+            openMenu={openMenu}
+            toggleMenu={toggleMenu}
+            links={clientesLinks}
+            baseStyle={baseStyle}
+            onNavigate={() => setIsOpen(false)}
+          />
+          <MobileDropdown
             label="Pedidos"
             menuKey="pedidos"
             openMenu={openMenu}
@@ -569,8 +577,8 @@ export default function Navbar() {
             onNavigate={() => setIsOpen(false)}
           />
           <MobileDropdown
-            label="Entregas"
-            menuKey="entregas"
+            label="Producción"
+            menuKey="produccion"
             openMenu={openMenu}
             toggleMenu={toggleMenu}
             links={entregasLinks}
@@ -578,8 +586,8 @@ export default function Navbar() {
             onNavigate={() => setIsOpen(false)}
           />
           <MobileDropdown
-            label="Gestión"
-            menuKey="gestion"
+            label="Catálogo"
+            menuKey="catalogo"
             openMenu={openMenu}
             toggleMenu={toggleMenu}
             links={gestionLinks}
@@ -616,6 +624,14 @@ export default function Navbar() {
                 {label}
               </button>
             ))}
+          </div>
+
+          <div className={`${baseStyle} justify-between`}>
+            <span className="flex items-center gap-2">
+              <Bell size={18} />
+              Notificaciones
+            </span>
+            <NotificationBell openMenu={openMenu} toggleMenu={toggleMenu} />
           </div>
 
           <NavLink

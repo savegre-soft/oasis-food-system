@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { motion } from 'framer-motion';
 import { Users, User, Pencil, X } from 'lucide-react';
 import { MACRO_UNIT, classificationEmoji, classificationLabel } from './orderUtils';

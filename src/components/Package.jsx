@@ -570,7 +570,7 @@ const StatCard = ({ icon, label, value }) => (
 
 // ── EmpaqueView ───────────────────────────────────────────────────────────────
 
-const EmpaqueView = ({ pendingDays, packedDays, onPack, onPackDetail, onDeliver, onDeliverDetail, onUnpack, onUnpackDetail }) => {
+const EmpaqueView = ({ pendingDays, packedDays, onPackDetail, onDeliverDetail, onUnpackDetail }) => {
   const [expandedRecipes, setExpandedRecipes] = useState({});
   const [showConfirm, setShowConfirm] = useState(false);
   const [viewMode, setViewMode] = useState('recipe'); // 'recipe' | 'order'

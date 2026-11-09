@@ -43,7 +43,11 @@ const PaymentSection = ({ clientId }) => {
   };
 
   useEffect(() => {
-    if (clientId) fetchPayments();
+    if (!clientId) return;
+    // setTimeout desacopla la llamada del cuerpo síncrono del efecto — fetchPayments
+    // sincroniza con Supabase (fuente externa), mismo patrón que Deliveries.jsx.
+    const timer = setTimeout(() => fetchPayments(), 0);
+    return () => clearTimeout(timer);
   }, [clientId]);
 
   const handleStatusSave = async (paymentId, newStatus) => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Search, DollarSign, LayoutGrid, Table } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { AnimatePresence, motion } from 'framer-motion';
 import { sileo } from 'sileo';
 
@@ -60,7 +61,10 @@ const GastosTab = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    // setTimeout desacopla la llamada del cuerpo síncrono del efecto — fetchData
+    // sincroniza con Supabase (fuente externa), mismo patrón que Deliveries.jsx.
+    const timer = setTimeout(() => fetchData(), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const filtered = gastos

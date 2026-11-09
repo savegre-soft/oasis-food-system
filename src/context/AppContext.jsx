@@ -175,6 +175,7 @@ export const AppProvider = ({ children }) => {
  * @throws {Error} Si se usa fuera de AppProvider
  * @returns {AppContextValue}
  */
+// eslint-disable-next-line react-refresh/only-export-components -- hook colocado a propósito con su Provider; solo afecta fast refresh en dev, no el build
 export const useApp = () => {
   const context = useContext(AppContext);
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { X, Printer, FlameKindling, Wheat, Salad, UtensilsCrossed } from 'lucide-react';
-import { groupByRecipe } from './Kitchen';
+import { groupByRecipe } from './kitchenGrouping';
 import { MACRO_UNIT } from './orderUtils';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

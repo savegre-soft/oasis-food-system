@@ -127,7 +127,10 @@ export default function useCustomers() {
    * Carga inicial de clientes al montar el hook
    */
   useEffect(() => {
-    fetchCustomers();
+    // setTimeout desacopla la llamada del cuerpo síncrono del efecto — fetchCustomers
+    // sincroniza con Supabase (fuente externa), mismo patrón que Deliveries.jsx.
+    const timer = setTimeout(() => fetchCustomers(), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   return {

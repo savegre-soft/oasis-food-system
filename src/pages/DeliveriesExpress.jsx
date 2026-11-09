@@ -62,7 +62,10 @@ const DeliveriesExpress = () => {
   };
 
   useEffect(() => {
-    getData();
+    // setTimeout desacopla la llamada del cuerpo síncrono del efecto — getData
+    // sincroniza con Supabase (fuente externa), mismo patrón que Deliveries.jsx.
+    const timer = setTimeout(() => getData(), 0);
+    return () => clearTimeout(timer);
   }, []);
 
   // Refresco silencioso tras marcar un pedido: no activa `loading`, para no

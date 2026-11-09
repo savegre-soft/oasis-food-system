@@ -83,6 +83,23 @@ const AddRecipe = ({ onSuccess, initialData }) => {
     setPreview(URL.createObjectURL(file));
   };
 
+  const uploadImage = async (recipeId) => {
+    if (!image) return null;
+
+    const fileExt = image.name.split('.').pop();
+    const fileName = Date.now() + '-' + recipeId + '.' + fileExt;
+    const filePath = `recipes/${fileName}`;
+
+    const { error } = await supabase.storage.from('Recipes').upload(filePath, image, { upsert: true });
+    if (error) {
+      console.error(error);
+      return null;
+    }
+
+    const { data } = supabase.storage.from('Recipes').getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
   const resetForm = () => {
     setName('');
     setDescription('');
@@ -153,9 +170,15 @@ const AddRecipe = ({ onSuccess, initialData }) => {
       }
     }
 
+    const imageUrl = await uploadImage(recipeId);
+    if (imageUrl) {
+      await supabase.schema('operations').from('recipes').update({ image_url: imageUrl }).eq('id_recipe', recipeId);
+    }
+
     sileo.success(isEdit ? 'Plato actualizado correctamente' : 'Plato guardado correctamente');
     if (!isEdit) resetForm();
     setLoading(false);
+    onSuccess?.();
   };
 
   return (

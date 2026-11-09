@@ -5,10 +5,12 @@ import AddUser from '../components/user/AddUser';
 import Modal from '../components/Modal';
 import AuthRoles from '../components/auth/AuthRoles';
 import ExpenseCategories from '../components/ExpenseCategories';
+import NotificationSettings from '../components/settings/NotificationSettings';
 
 const TABS = [
   { id: 'users', label: 'Usuarios' },
   { id: 'expense_categories', label: 'Categorías de gastos' },
+  { id: 'notifications', label: 'Notificaciones' },
 ];
 
 const Settings = () => {
@@ -97,6 +99,8 @@ const Settings = () => {
             </div>
           </AuthRoles>
         )}
+
+        {activeTab === 'notifications' && <NotificationSettings />}
       </div>
     </>
   );

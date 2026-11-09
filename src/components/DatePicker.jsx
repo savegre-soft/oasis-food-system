@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const DatePicker = ({ startDate, endDate, onChange }) => {
+const DatePicker = ({ onChange }) => {
   const [mode, setMode] = useState('day');
 
   const [customStart, setCustomStart] = useState('');
@@ -46,13 +46,14 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case 'last_week':
+      case 'last_week': {
         const lastWeek = new Date(now);
         lastWeek.setDate(now.getDate() - 7);
 
         ({ start, end } = getWeekRange(lastWeek));
         onChange?.({ startDate: start, endDate: end });
         break;
+      }
 
       case 'month':
         start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -62,7 +63,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
         onChange?.({ startDate: start, endDate: end });
         break;
 
-      case 'quarter':
+      case 'quarter': {
         const q = Math.floor(now.getMonth() / 3);
 
         start = new Date(now.getFullYear(), q * 3, 1);
@@ -71,6 +72,7 @@ const DatePicker = ({ startDate, endDate, onChange }) => {
 
         onChange?.({ startDate: start, endDate: end });
         break;
+      }
 
       case 'year':
         start = new Date(now.getFullYear(), 0, 1);

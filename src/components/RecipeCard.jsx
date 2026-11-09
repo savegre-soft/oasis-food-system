@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Trash2,
   UtensilsCrossed,
@@ -8,7 +8,6 @@ import {
   Pencil,
   PencilIcon,
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
 import { AnimatePresence } from 'framer-motion';
 import Modal from './../components/Modal';
 import AddRecipe from '../components/AddRecipe';
