@@ -13,6 +13,18 @@ export const DELIVERY_ZONES = ['Ciudad Quesada', 'La Fortuna', 'Florencia', 'Agu
 
 export const ORDER_CUTOFF = 'Cerramos pedidos los viernes a medianoche';
 
+// Datos de Savegre Soft (empresa desarrolladora de este sistema), para el
+// crédito en el pie de página público. Tomados de savegresoft.com.
+export const SAVEGRE_SOFT = {
+  name: 'Savegre Soft',
+  tagline: 'Desarrollo de Software & Análisis de Datos',
+  website: 'https://savegresoft.com',
+  email: 'contacto@savegresoft.com',
+  phone: '+506 8808-9479',
+  linkedin: 'https://www.linkedin.com/company/savegre-soft/',
+  facebook: 'https://www.facebook.com/profile.php?id=61588349762906',
+};
+
 export const NAV_LINKS = [
   { name: 'Inicio', path: '/' },
   { name: 'Menú', path: '/menu' },
