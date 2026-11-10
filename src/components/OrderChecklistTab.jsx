@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Copy, Check, Search, ClipboardCheck } from 'lucide-react';
+import { Copy, Check, Search, ClipboardCheck, MessageCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
 
@@ -34,7 +34,7 @@ const OrderChecklistTab = ({ weekStart, weekLabel }) => {
           supabase
             .schema('operations')
             .from('clients')
-            .select('id_client, name, portal_token')
+            .select('id_client, name, portal_token, phone')
             .eq('is_active', true)
             .order('name'),
           supabase
@@ -108,10 +108,18 @@ const OrderChecklistTab = ({ weekStart, weekLabel }) => {
 
   const markSent = (row) => upsertRow(row.client.id_client, { link_sent_at: new Date().toISOString() });
 
+  const portalLink = (client) => `${window.location.origin}/portal/${client.portal_token}`;
+
   const copyLink = (client) => {
-    const url = `${window.location.origin}/portal/${client.portal_token}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(portalLink(client));
     sileo.success('Enlace copiado');
+  };
+
+  const sendWhatsApp = (client) => {
+    const message = `Hola ${client.name}, aquí está el enlace para armar tu pedido de esta semana: ${portalLink(client)}`;
+    const phone = client.phone?.trim();
+    window.open(`https://wa.me/506${phone}?text=${encodeURIComponent(message)}`, '_blank');
+    upsertRow(client.id_client, { link_sent_at: new Date().toISOString() });
   };
 
   const pendingCount = rows.filter((r) => r.shouldSend && !r.linkSentAt).length;
@@ -199,6 +207,20 @@ const OrderChecklistTab = ({ weekStart, weekLabel }) => {
                     className="shrink-0 flex items-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl hover:border-slate-400 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Copy size={12} /> Copiar enlace
+                  </button>
+                  <button
+                    onClick={() => sendWhatsApp(row.client)}
+                    disabled={!row.client.portal_token || !row.client.phone?.trim()}
+                    title={
+                      !row.client.portal_token
+                        ? 'Cliente sin enlace de portal'
+                        : !row.client.phone?.trim()
+                          ? 'Cliente sin teléfono registrado'
+                          : 'Enviar enlace por WhatsApp'
+                    }
+                    className="shrink-0 flex items-center gap-1.5 text-xs font-medium bg-green-600 text-white px-2.5 py-1.5 rounded-xl hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <MessageCircle size={12} /> WhatsApp
                   </button>
                 </>
               )}
