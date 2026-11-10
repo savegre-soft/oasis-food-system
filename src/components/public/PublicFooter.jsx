@@ -118,11 +118,6 @@ const PublicFooter = () => {
               </a>
             </li>
             <li>
-              <Link to="/login" className="hover:text-white transition">
-                Login Interno
-              </Link>
-            </li>
-            <li>
               <Link to="/politica-privacidad" className="hover:text-white transition">
                 Política de privacidad
               </Link>
