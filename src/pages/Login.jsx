@@ -200,13 +200,6 @@ const Login = () => {
           >
             Pedir por WhatsApp sin cuenta
           </a>
-
-          <p className="text-center text-sm text-oasis-ink/60 mt-6">
-            ¿Aún no sos cliente?{' '}
-            <Link to="/ordenar" className="text-oasis-olive-700 font-semibold hover:underline">
-              Quiero ser cliente
-            </Link>
-          </p>
         </motion.div>
       </div>
     </div>
