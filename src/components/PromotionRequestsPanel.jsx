@@ -4,8 +4,7 @@ import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import { computeComboPrice, groupSelectionsByItem } from './comboUtils';
 import { summarizeBatch } from './bulkSalesUtils';
-
-const SOURCE_LABEL = { manual: 'Manual', combo: 'Combo semanal', bulk_dish: 'Venta masiva' };
+import { SOURCE_TYPE_LABEL } from '../lib/promotionSourceLabels';
 
 const STATUS_LABEL = {
   pending: 'Pendiente',
@@ -238,20 +237,37 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       .filter(([category]) => category !== 'plato_extra')
       .reduce((sum, [, max]) => sum + max, 0);
 
-    let poolUsed = 0;
-    const rows = [];
+    // El pool (cubierto por `base_price`) se asigna a las unidades más baratas
+    // primero, sin importar el orden en que el cliente mandó `selections` —
+    // de lo contrario un solicitante podría listar sus ítems más caros
+    // primero para que caigan "gratis" en el pool y empujar los baratos a
+    // overflow, pagando menos de lo que realmente pidió.
+    const nonExtraUnits = [];
+    const platoExtraUnits = [];
     for (const c of counts) {
-      const isPlatoExtra = c.category === 'plato_extra';
+      const target = c.category === 'plato_extra' ? platoExtraUnits : nonExtraUnits;
       for (let i = 0; i < c.qty; i++) {
-        const overflow = !isPlatoExtra && poolUsed >= poolCapacity;
-        if (!isPlatoExtra) poolUsed += 1;
-        rows.push({
-          category: c.category,
-          combo_item_id: c.combo_item_id,
-          is_extra: overflow,
-          unit_price: isPlatoExtra || overflow ? priceByItem[c.combo_item_id] : null,
-        });
+        target.push({ category: c.category, combo_item_id: c.combo_item_id });
       }
+    }
+    nonExtraUnits.sort((a, b) => (priceByItem[a.combo_item_id] ?? 0) - (priceByItem[b.combo_item_id] ?? 0));
+
+    const rows = nonExtraUnits.map((unit, idx) => {
+      const overflow = idx >= poolCapacity;
+      return {
+        category: unit.category,
+        combo_item_id: unit.combo_item_id,
+        is_extra: overflow,
+        unit_price: overflow ? priceByItem[unit.combo_item_id] : null,
+      };
+    });
+    for (const unit of platoExtraUnits) {
+      rows.push({
+        category: unit.category,
+        combo_item_id: unit.combo_item_id,
+        is_extra: true,
+        unit_price: priceByItem[unit.combo_item_id],
+      });
     }
 
     return { selections: rows, price: computeComboPrice(req.promotions.combo_weeks?.base_price, rows) };
@@ -326,10 +342,29 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       sileo.error('Elige el lote contra el que se registra la venta');
       throw new Error('batch_not_selected');
     }
+
+    // `batchOptions` se cargó al abrir el select y puede estar desactualizado
+    // si se registraron otras ventas de ese lote mientras la solicitud
+    // seguía pendiente — se recalcula el sobrante real justo antes de
+    // confirmar, para no sobrevender.
+    const { data: batch, error: batchError } = await supabase
+      .schema('operations')
+      .from('bulk_sale_batches')
+      .select('quantity_cooked, bulk_sale_entries(quantity)')
+      .eq('id_bulk_sale_batch', batchId)
+      .single();
+    if (batchError) throw batchError;
+
+    const quantity = Number(req.quantity) || 1;
+    const { leftover } = summarizeBatch(batch);
+    if (quantity > leftover) {
+      sileo.error(`El lote elegido solo tiene ${leftover} de sobrante — no alcanza para esta solicitud`);
+      throw new Error('insufficient_leftover');
+    }
+
     const clientId = await resolveClient(req);
     // Igual que en combos: el monto se recalcula desde el precio real del
     // catálogo (suggested_price), nunca desde el `price` que mandó el cliente.
-    const quantity = Number(req.quantity) || 1;
     const amount = quantity * (Number(req.promotions?.bulk_dishes?.suggested_price) || 0);
 
     const { data: payment, error: paymentError } = await supabase
@@ -396,7 +431,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       sileo.success('Solicitud confirmada');
       await fetchRequests();
     } catch (err) {
-      if (err?.message !== 'batch_not_selected') {
+      if (err?.message !== 'batch_not_selected' && err?.message !== 'insufficient_leftover') {
         console.error(err);
         sileo.error('No se pudo confirmar la solicitud');
       }
@@ -433,7 +468,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
                 <p className="text-xs text-slate-400 dark:text-slate-500">
                   {req.promotions?.title} ·{' '}
                   <span className="text-indigo-600 dark:text-indigo-400">
-                    {SOURCE_LABEL[sourceType] ?? sourceType}
+                    {SOURCE_TYPE_LABEL[sourceType] ?? sourceType}
                   </span>
                 </p>
               </div>

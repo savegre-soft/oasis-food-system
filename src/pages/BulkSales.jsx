@@ -3,6 +3,7 @@ import { Plus, Boxes } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
+import { togglePromotionPublish } from '../lib/promotionPublish';
 
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -29,6 +30,21 @@ const BulkSales = () => {
   const [saleBatch, setSaleBatch] = useState(null); // batch al que se le está registrando una venta
   const [deletingEntry, setDeletingEntry] = useState(null);
   const [deletingBatch, setDeletingBatch] = useState(null);
+  const [promotionsByDish, setPromotionsByDish] = useState({}); // { [id_bulk_dish]: { id_promotion, is_active } }
+  const [publishingDishId, setPublishingDishId] = useState(null);
+
+  const getPromotions = useCallback(async () => {
+    const { data, error } = await supabase
+      .schema('operations')
+      .from('promotions')
+      .select('id_promotion, is_active, bulk_dish_id')
+      .eq('source_type', 'bulk_dish');
+    if (error) {
+      console.error(error);
+      return;
+    }
+    setPromotionsByDish(Object.fromEntries((data ?? []).map((p) => [p.bulk_dish_id, p])));
+  }, [supabase]);
 
   const getBatches = useCallback(async () => {
     const { data, error } = await supabase
@@ -54,9 +70,9 @@ const BulkSales = () => {
     ]);
     setDishes(dishesRes.data ?? []);
     setClients(clientsRes.data ?? []);
-    await getBatches();
+    await Promise.all([getBatches(), getPromotions()]);
     setLoading(false);
-  }, [supabase, getBatches]);
+  }, [supabase, getBatches, getPromotions]);
 
   useEffect(() => {
     const run = async () => {
@@ -115,6 +131,38 @@ const BulkSales = () => {
     sileo.success('Lote eliminado');
     setDeletingBatch(null);
     getBatches();
+  };
+
+  // "Publicar" crea (si no existe) la promoción de este plato (bulk_dish_id)
+  // y la activa; "Quitar de Promociones" solo la desactiva — mismo patrón que
+  // ComboOrdersTab.jsx (ver lib/promotionPublish.js), pero a nivel de plato en
+  // vez de semana, porque varios lotes pueden compartir el mismo plato.
+  const togglePublish = async (batch) => {
+    const dish = batch.bulk_dishes;
+    if (!dish?.id_bulk_dish) return;
+    const dishId = dish.id_bulk_dish;
+    const existing = promotionsByDish[dishId];
+
+    setPublishingDishId(dishId);
+    try {
+      const updated = await togglePromotionPublish(supabase, {
+        promotion: existing,
+        insertPayload: {
+          title: dish.name,
+          price_label:
+            dish.suggested_price != null ? `₡${Number(dish.suggested_price).toLocaleString('es-CR')}` : null,
+          source_type: 'bulk_dish',
+          bulk_dish_id: dishId,
+        },
+      });
+      setPromotionsByDish((prev) => ({ ...prev, [dishId]: { ...updated, bulk_dish_id: dishId } }));
+      sileo.success(updated.is_active ? 'Venta publicada en Promociones' : 'Venta quitada de Promociones');
+    } catch (error) {
+      sileo.error(existing ? 'No se pudo actualizar la publicación' : 'No se pudo publicar la venta');
+      console.error(error);
+    } finally {
+      setPublishingDishId(null);
+    }
   };
 
   const totalCooked = batches.reduce((s, b) => s + Number(b.quantity_cooked || 0), 0);
@@ -200,6 +248,9 @@ const BulkSales = () => {
               <BulkSaleBatchCard
                 key={batch.id_bulk_sale_batch}
                 batch={batch}
+                promotion={promotionsByDish[batch.bulk_dishes?.id_bulk_dish]}
+                publishing={publishingDishId === batch.bulk_dishes?.id_bulk_dish}
+                onTogglePublish={togglePublish}
                 onAddSale={setSaleBatch}
                 onDeleteEntry={setDeletingEntry}
                 onDeleteBatch={setDeletingBatch}
