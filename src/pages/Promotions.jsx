@@ -22,6 +22,60 @@ const getDisplayPrice = (promo) => {
 
 const TONES = ['sage', 'butter', 'rose', 'sand'];
 
+// Los 3 tipos de pedido que puede mostrar /promociones, en el orden en que
+// se agrupan abajo — manual = promoción propiamente dicha, combo/bulk_dish
+// se publican desde Combos.jsx/BulkSales.jsx (ver lib/promotionPublish.js).
+const SOURCE_SECTION_LABEL = { manual: 'Promociones', combo: 'Combos', bulk_dish: 'Ventas' };
+const SECTION_ORDER = ['manual', 'combo', 'bulk_dish'];
+
+const PromoCard = ({ promo, index }) => (
+  <StaggerItem
+    whileHover={{ y: -6 }}
+    className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden hover:shadow-xl hover:border-oasis-olive-200 transition"
+  >
+    <div className="overflow-hidden h-40">
+      {promo.image_url ? (
+        <img
+          src={promo.image_url}
+          alt={promo.title}
+          className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <PlaceholderImage
+          tone={TONES[index % TONES.length]}
+          rounded="rounded-none"
+          className="h-40 transition-transform duration-500 group-hover:scale-105"
+        />
+      )}
+    </div>
+
+    <div className="p-6">
+      {promo.badge && (
+        <span className="text-xs font-semibold text-oasis-terracotta-dark uppercase tracking-wide">
+          {promo.badge}
+        </span>
+      )}
+      <h3 className="font-semibold text-oasis-ink mt-1">{promo.title}</h3>
+      {promo.description && <p className="text-oasis-ink/60 text-sm mt-2">{promo.description}</p>}
+      {promo.validity && (
+        <p className="text-xs text-oasis-terracotta-dark mt-3">● Válida: {promo.validity}</p>
+      )}
+
+      <div className="flex items-center justify-between mt-5">
+        {getDisplayPrice(promo) && (
+          <span className="font-semibold text-oasis-ink">{getDisplayPrice(promo)}</span>
+        )}
+        <Link
+          to={`/pedir-promo/${promo.id_promotion}`}
+          className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
+        >
+          Pedir
+        </Link>
+      </div>
+    </div>
+  </StaggerItem>
+);
+
 const Promotions = () => {
   const { supabase } = useApp();
 
@@ -52,6 +106,12 @@ const Promotions = () => {
   }, [supabase]);
 
   const [featured, ...rest] = promos;
+
+  const sections = SECTION_ORDER.map((type) => ({
+    type,
+    label: SOURCE_SECTION_LABEL[type],
+    items: rest.filter((p) => (p.source_type ?? 'manual') === type),
+  })).filter((section) => section.items.length > 0);
 
   return (
     <div>
@@ -147,61 +207,17 @@ const Promotions = () => {
           </motion.div>
         )}
 
-        {/* Resto de promos */}
-        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" stagger={0.1}>
-          {rest.map((promo, index) => (
-            <StaggerItem
-              key={promo.id_promotion}
-              whileHover={{ y: -6 }}
-              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden hover:shadow-xl hover:border-oasis-olive-200 transition"
-            >
-              <div className="overflow-hidden h-40">
-                {promo.image_url ? (
-                  <img
-                    src={promo.image_url}
-                    alt={promo.title}
-                    className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <PlaceholderImage
-                    tone={TONES[index % TONES.length]}
-                    rounded="rounded-none"
-                    className="h-40 transition-transform duration-500 group-hover:scale-105"
-                  />
-                )}
-              </div>
-
-              <div className="p-6">
-                {promo.badge && (
-                  <span className="text-xs font-semibold text-oasis-terracotta-dark uppercase tracking-wide">
-                    {promo.badge}
-                  </span>
-                )}
-                <h3 className="font-semibold text-oasis-ink mt-1">{promo.title}</h3>
-                {promo.description && (
-                  <p className="text-oasis-ink/60 text-sm mt-2">{promo.description}</p>
-                )}
-                {promo.validity && (
-                  <p className="text-xs text-oasis-terracotta-dark mt-3">
-                    ● Válida: {promo.validity}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between mt-5">
-                  {getDisplayPrice(promo) && (
-                    <span className="font-semibold text-oasis-ink">{getDisplayPrice(promo)}</span>
-                  )}
-                  <Link
-                    to={`/pedir-promo/${promo.id_promotion}`}
-                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
-                  >
-                    Pedir
-                  </Link>
-                </div>
-              </div>
-            </StaggerItem>
-          ))}
-        </Stagger>
+        {/* Resto de promos, agrupadas por tipo (Promociones/Combos/Ventas) */}
+        {sections.map((section) => (
+          <div key={section.type} className="mb-12 last:mb-0">
+            <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-6">{section.label}</h2>
+            <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" stagger={0.1}>
+              {section.items.map((promo, index) => (
+                <PromoCard key={promo.id_promotion} promo={promo} index={index} />
+              ))}
+            </Stagger>
+          </div>
+        ))}
 
         {/* Condiciones */}
         <div className="mt-10 bg-oasis-olive-50 rounded-2xl p-6 text-sm text-oasis-ink/60">
