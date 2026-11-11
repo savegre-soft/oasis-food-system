@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { MotionConfig, motion } from 'framer-motion';
 import PublicNavBar from '../components/PublicNavBar';
 import PublicFooter from '../components/public/PublicFooter';
+import CookieConsentBanner from '../components/public/CookieConsentBanner';
 import { EASE } from '../lib/motion';
 
 export default function PublicLayout() {
@@ -28,6 +29,7 @@ export default function PublicLayout() {
         </motion.main>
 
         <PublicFooter />
+        <CookieConsentBanner />
       </div>
     </MotionConfig>
   );

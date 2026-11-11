@@ -6,6 +6,7 @@ import {
   SAVEGRE_SOFT,
   WHATSAPP_LINK,
 } from '../../lib/siteContent';
+import { openCookiePreferences } from '../../lib/cookieConsent';
 
 const PublicFooter = () => {
   const year = new Date().getFullYear();
@@ -121,6 +122,15 @@ const PublicFooter = () => {
               <Link to="/politica-privacidad" className="hover:text-white transition">
                 Política de privacidad
               </Link>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={openCookiePreferences}
+                className="hover:text-white transition text-left"
+              >
+                Preferencias de cookies
+              </button>
             </li>
           </ul>
         </div>
