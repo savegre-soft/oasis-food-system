@@ -48,6 +48,7 @@ const ordersLinks = [
   { to: '/orders', label: 'Órdenes', icon: Handbag },
   { to: '/ventas-masivas', label: 'Ventas', icon: Boxes },
   { to: '/combos', label: 'Pedidos de Combo', icon: Package },
+  { to: '/promociones-admin', label: 'Promociones', icon: Megaphone },
 ];
 
 const entregasLinks = [
@@ -62,7 +63,6 @@ const gestionLinks = [
   { to: '/templates', label: 'Menús Predefinidos', icon: Utensils },
   { to: '/combo-items', label: 'Ítems de Combo', icon: Salad },
   { to: '/platos-venta-masiva', label: 'Platos de Venta', icon: Layers },
-  { to: '/promociones-admin', label: 'Promociones', icon: Megaphone },
 ];
 
 const financialLinks = [
