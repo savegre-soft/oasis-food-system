@@ -3,18 +3,16 @@ import { sileo } from 'sileo';
 import { ImagePlus } from 'lucide-react';
 import Modal from './Modal';
 import { useApp } from '../context/AppContext';
-import { SOURCE_TYPE_LABEL } from '../lib/promotionSourceLabels';
 
 // Alta/edición de promociones del sitio público (RF-PUB-02). Reusable para
 // crear (initialData=null) y editar (initialData=promoción real) — el modo
 // se decide por la presencia de id_promotion, no por initialData en sí, para
 // poder eventualmente prellenar el form sin forzar modo edición.
 //
-// Esta pasarela solo crea promociones de origen manual — las de Combo/Venta
-// se publican desde sus propias secciones (botón "Publicar" en Combos.jsx y
-// en Pedidos de Ventas) y solo quedan editables acá para su título,
-// descripción, precio visible, etiqueta e imagen; el vínculo (`source_type`,
-// `combo_week_id`, `bulk_dish_id`) no se toca desde este form.
+// `promotions` representa solo promociones manuales — un combo o una venta
+// publicados en /promociones no son una promoción, viven en su propia tabla
+// con su propio flag de publicación (ver
+// supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql).
 const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
   const { supabase } = useApp();
   const isEdit = !!initialData?.id_promotion;
@@ -28,8 +26,6 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  const sourceType = initialData?.source_type ?? 'manual';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -85,8 +81,6 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
         image_url: imageUrl,
       };
 
-      if (!isEdit) payload.source_type = 'manual';
-
       const { error } = isEdit
         ? await supabase
             .schema('operations')
@@ -113,21 +107,6 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
         <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
           {isEdit ? 'Editar promoción' : 'Nueva promoción'}
         </h2>
-
-        {isEdit && sourceType !== 'manual' ? (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-              Origen
-            </label>
-            <span className="inline-block w-fit text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-xl">
-              {SOURCE_TYPE_LABEL[sourceType] ?? sourceType}
-            </span>
-            <p className="text-xs text-slate-400">
-              Esta promoción se publicó desde su sección de origen — acá solo se edita cómo se muestra
-              en el sitio público.
-            </p>
-          </div>
-        ) : null}
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -165,11 +144,6 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
               onChange={(e) => setPriceLabel(e.target.value)}
               className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
             />
-            {sourceType !== 'manual' && (
-              <p className="text-xs text-slate-400">
-                Solo se usa si se borra el vínculo — mientras esté vinculado se muestra el precio en vivo.
-              </p>
-            )}
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">

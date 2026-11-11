@@ -3,7 +3,7 @@ import { Plus, Boxes } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
 import { sileo } from 'sileo';
-import { togglePromotionPublish } from '../lib/promotionPublish';
+import { togglePublished } from '../lib/promotionPublish';
 
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -14,7 +14,7 @@ import { summarizeBatch } from '../components/bulkSalesUtils';
 
 const BATCH_SELECT = `
   id_bulk_sale_batch, batch_date, quantity_cooked, notes,
-  bulk_dishes ( id_bulk_dish, name, suggested_price ),
+  bulk_dishes ( id_bulk_dish, name, suggested_price, is_published ),
   bulk_sale_entries ( id_bulk_sale_entry, client_id, quantity, amount, payment_id, clients ( id_client, name ) )
 `;
 
@@ -30,21 +30,7 @@ const BulkSales = () => {
   const [saleBatch, setSaleBatch] = useState(null); // batch al que se le está registrando una venta
   const [deletingEntry, setDeletingEntry] = useState(null);
   const [deletingBatch, setDeletingBatch] = useState(null);
-  const [promotionsByDish, setPromotionsByDish] = useState({}); // { [id_bulk_dish]: { id_promotion, is_active } }
   const [publishingDishId, setPublishingDishId] = useState(null);
-
-  const getPromotions = useCallback(async () => {
-    const { data, error } = await supabase
-      .schema('operations')
-      .from('promotions')
-      .select('id_promotion, is_active, bulk_dish_id')
-      .eq('source_type', 'bulk_dish');
-    if (error) {
-      console.error(error);
-      return;
-    }
-    setPromotionsByDish(Object.fromEntries((data ?? []).map((p) => [p.bulk_dish_id, p])));
-  }, [supabase]);
 
   const getBatches = useCallback(async () => {
     const { data, error } = await supabase
@@ -70,9 +56,9 @@ const BulkSales = () => {
     ]);
     setDishes(dishesRes.data ?? []);
     setClients(clientsRes.data ?? []);
-    await Promise.all([getBatches(), getPromotions()]);
+    await getBatches();
     setLoading(false);
-  }, [supabase, getBatches, getPromotions]);
+  }, [supabase, getBatches]);
 
   useEffect(() => {
     const run = async () => {
@@ -133,32 +119,33 @@ const BulkSales = () => {
     getBatches();
   };
 
-  // "Publicar" crea (si no existe) la promoción de este plato (bulk_dish_id)
-  // y la activa; "Quitar de Promociones" solo la desactiva — mismo patrón que
-  // ComboOrdersTab.jsx (ver lib/promotionPublish.js), pero a nivel de plato en
-  // vez de semana, porque varios lotes pueden compartir el mismo plato.
+  // Una venta publicada no es "una promoción" — se marca con su propio flag
+  // en bulk_dishes (ver supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql).
+  // Es por plato, no por lote: varios lotes pueden compartir el mismo plato,
+  // así que publicar desde cualquiera de ellos publica el plato entero.
   const togglePublish = async (batch) => {
     const dish = batch.bulk_dishes;
     if (!dish?.id_bulk_dish) return;
     const dishId = dish.id_bulk_dish;
-    const existing = promotionsByDish[dishId];
 
     setPublishingDishId(dishId);
     try {
-      const updated = await togglePromotionPublish(supabase, {
-        promotion: existing,
-        insertPayload: {
-          title: dish.name,
-          price_label:
-            dish.suggested_price != null ? `₡${Number(dish.suggested_price).toLocaleString('es-CR')}` : null,
-          source_type: 'bulk_dish',
-          bulk_dish_id: dishId,
-        },
+      const nextValue = await togglePublished(supabase, {
+        table: 'bulk_dishes',
+        idColumn: 'id_bulk_dish',
+        idValue: dishId,
+        current: dish.is_published,
       });
-      setPromotionsByDish((prev) => ({ ...prev, [dishId]: { ...updated, bulk_dish_id: dishId } }));
-      sileo.success(updated.is_active ? 'Venta publicada en Promociones' : 'Venta quitada de Promociones');
+      setBatches((prev) =>
+        prev.map((b) =>
+          b.bulk_dishes?.id_bulk_dish === dishId
+            ? { ...b, bulk_dishes: { ...b.bulk_dishes, is_published: nextValue } }
+            : b
+        )
+      );
+      sileo.success(nextValue ? 'Venta publicada en Promociones' : 'Venta quitada de Promociones');
     } catch (error) {
-      sileo.error(existing ? 'No se pudo actualizar la publicación' : 'No se pudo publicar la venta');
+      sileo.error('No se pudo actualizar la publicación');
       console.error(error);
     } finally {
       setPublishingDishId(null);
@@ -248,7 +235,6 @@ const BulkSales = () => {
               <BulkSaleBatchCard
                 key={batch.id_bulk_sale_batch}
                 batch={batch}
-                promotion={promotionsByDish[batch.bulk_dishes?.id_bulk_dish]}
                 publishing={publishingDishId === batch.bulk_dishes?.id_bulk_dish}
                 onTogglePublish={togglePublish}
                 onAddSale={setSaleBatch}

@@ -8,32 +8,35 @@ import ComboCategorySelector from '../components/combos/ComboCategorySelector';
 import { useComboSelections } from '../hooks/useComboSelections';
 import { computeComboPrice } from '../components/comboUtils';
 
-const PROMOTION_SELECT = `
-  id_promotion, title, description, source_type, combo_week_id, bulk_dish_id, is_active,
-  combo_weeks (
-    id_combo_week, base_price,
-    combo_week_categories (
-      id_combo_week_category, category, max_selections,
-      combo_week_category_items (
-        id_combo_week_category_item, combo_item_id,
-        combo_items ( id_combo_item, name, portion_size_g, category, price )
-      )
+const MANUAL_SELECT = 'id_promotion, title, description, is_active';
+
+const COMBO_SELECT = `
+  id_combo_week, base_price, is_published,
+  combo_week_categories (
+    id_combo_week_category, category, max_selections,
+    combo_week_category_items (
+      id_combo_week_category_item, combo_item_id,
+      combo_items ( id_combo_item, name, portion_size_g, category, price )
     )
-  ),
-  bulk_dishes ( id_bulk_dish, name, suggested_price )
+  )
 `;
 
-// Pasarela pública de solicitud de una promoción (RF-CV-09/10 simplificado —
-// ver docs/v2/07_REQUERIMIENTOS_COMBOS_VENTAS.md §6). Reemplaza el CTA de
-// WhatsApp genérico: el cliente elige ítems (combo) o cantidad (venta
-// masiva), llena sus datos de contacto, y la solicitud queda pendiente de
-// confirmación manual por WhatsApp desde el panel interno — sin OTP ni
-// proveedor de mensajería nuevo.
+const BULK_DISH_SELECT = 'id_bulk_dish, name, suggested_price, is_published';
+
+// Pasarela pública de solicitud (RF-CV-09/10 simplificado — ver
+// docs/v2/07_REQUERIMIENTOS_COMBOS_VENTAS.md §6). Cubre los 3 tipos de
+// "oferta" que puede mostrar /promociones — una promoción manual, un combo
+// semanal o un plato de venta — cada uno vive en su propia tabla (ver
+// supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql), así
+// que la ruta trae `offerType` + `offerId` en vez de un solo `promotionId`.
+// El cliente elige ítems (combo) o cantidad (venta) cuando corresponde,
+// llena sus datos de contacto, y la solicitud queda pendiente de
+// confirmación manual por WhatsApp desde el panel interno.
 const RequestPromotion = () => {
-  const { promotionId } = useParams();
+  const { offerType, offerId } = useParams();
   const { supabase } = useApp();
 
-  const [promotion, setPromotion] = useState(null);
+  const [offer, setOffer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [quantity, setQuantity] = useState(1);
@@ -50,23 +53,47 @@ const RequestPromotion = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
-        .schema('operations')
-        .from('promotions')
-        .select(PROMOTION_SELECT)
-        .eq('id_promotion', promotionId)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (fetchError) console.error(fetchError);
-      setPromotion(data ?? null);
+
+      if (offerType === 'manual') {
+        const { data, error: fetchError } = await supabase
+          .schema('operations')
+          .from('promotions')
+          .select(MANUAL_SELECT)
+          .eq('id_promotion', offerId)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (fetchError) console.error(fetchError);
+        setOffer(data ? { ...data, title: data.title } : null);
+      } else if (offerType === 'combo') {
+        const { data, error: fetchError } = await supabase
+          .schema('operations')
+          .from('combo_weeks')
+          .select(COMBO_SELECT)
+          .eq('id_combo_week', offerId)
+          .eq('is_published', true)
+          .maybeSingle();
+        if (fetchError) console.error(fetchError);
+        setOffer(data ? { ...data, title: 'Combo de la semana' } : null);
+      } else if (offerType === 'bulk_dish') {
+        const { data, error: fetchError } = await supabase
+          .schema('operations')
+          .from('bulk_dishes')
+          .select(BULK_DISH_SELECT)
+          .eq('id_bulk_dish', offerId)
+          .eq('is_published', true)
+          .maybeSingle();
+        if (fetchError) console.error(fetchError);
+        setOffer(data ? { ...data, title: data.name } : null);
+      } else {
+        setOffer(null);
+      }
+
       setLoading(false);
     };
     load();
-  }, [supabase, promotionId]);
+  }, [supabase, offerType, offerId]);
 
-  const comboWeek = promotion?.combo_weeks;
-  const categories = useMemo(() => comboWeek?.combo_week_categories ?? [], [comboWeek]);
-  const bulkDish = promotion?.bulk_dishes;
+  const categories = useMemo(() => offer?.combo_week_categories ?? [], [offer]);
 
   const {
     quantities,
@@ -117,10 +144,10 @@ const RequestPromotion = () => {
   }, [categories, quantities, extraCharges]);
 
   const totalPrice =
-    promotion?.source_type === 'combo'
-      ? computeComboPrice(comboWeek?.base_price, flatSelections)
-      : promotion?.source_type === 'bulk_dish'
-        ? (Number(bulkDish?.suggested_price) || 0) * quantity
+    offerType === 'combo'
+      ? computeComboPrice(offer?.base_price, flatSelections)
+      : offerType === 'bulk_dish'
+        ? (Number(offer?.suggested_price) || 0) * quantity
         : null;
 
   const canSubmit =
@@ -139,13 +166,16 @@ const RequestPromotion = () => {
     setError('');
 
     const payload = {
-      promotion_id: promotion.id_promotion,
+      offer_type: offerType,
+      promotion_id: offerType === 'manual' ? offer.id_promotion : null,
+      combo_week_id: offerType === 'combo' ? offer.id_combo_week : null,
+      bulk_dish_id: offerType === 'bulk_dish' ? offer.id_bulk_dish : null,
       client_name: clientName.trim(),
       email: email.trim(),
       phone: phone.trim(),
       delivery_address: address.trim(),
-      quantity: promotion.source_type === 'bulk_dish' ? quantity : null,
-      selections: promotion.source_type === 'combo' ? flatSelections : null,
+      quantity: offerType === 'bulk_dish' ? quantity : null,
+      selections: offerType === 'combo' ? flatSelections : null,
       price: totalPrice,
     };
 
@@ -169,7 +199,7 @@ const RequestPromotion = () => {
     return <div className="max-w-2xl mx-auto px-4 py-20 text-center text-oasis-ink/70">Cargando...</div>;
   }
 
-  if (!promotion) {
+  if (!offer) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <h1 className="font-display text-2xl text-oasis-ink mb-3">Esta promoción ya no está disponible</h1>
@@ -180,23 +210,23 @@ const RequestPromotion = () => {
     );
   }
 
-  const needsSelectionStep = promotion.source_type === 'combo' || promotion.source_type === 'bulk_dish';
+  const needsSelectionStep = offerType === 'combo' || offerType === 'bulk_dish';
 
   return (
     <div>
       <Seo
-        title={`Pedir ${promotion.title}`}
-        description={`Solicitá "${promotion.title}" y coordinamos la entrega por WhatsApp.`}
-        path={`/pedir-promo/${promotion.id_promotion}`}
+        title={`Pedir ${offer.title}`}
+        description={`Solicitá "${offer.title}" y coordinamos la entrega por WhatsApp.`}
+        path={`/pedir-promo/${offerType}/${offerId}`}
       />
 
       <section className="bg-oasis-olive-50 py-14 text-center">
         <div className="max-w-2xl mx-auto px-4">
           <SectionBadge>Solicitud</SectionBadge>
           <h1 className="font-display text-3xl md:text-4xl font-semibold text-oasis-ink mt-3">
-            {promotion.title}
+            {offer.title}
           </h1>
-          {promotion.description && <p className="mt-3 text-oasis-ink/70">{promotion.description}</p>}
+          {offer.description && <p className="mt-3 text-oasis-ink/70">{offer.description}</p>}
         </div>
       </section>
 
@@ -224,7 +254,7 @@ const RequestPromotion = () => {
 
             {needsSelectionStep && step === 1 && (
               <div className="space-y-5">
-                {promotion.source_type === 'combo' && (
+                {offerType === 'combo' && (
                   <ComboCategorySelector
                     categories={categories}
                     poolTotal={poolTotal}
@@ -237,9 +267,9 @@ const RequestPromotion = () => {
                   />
                 )}
 
-                {promotion.source_type === 'bulk_dish' && (
+                {offerType === 'bulk_dish' && (
                   <div className="flex items-center justify-between px-4 py-4 border border-oasis-olive-200 rounded-2xl bg-white">
-                    <span className="font-medium text-oasis-ink">{bulkDish?.name}</span>
+                    <span className="font-medium text-oasis-ink">{offer.name}</span>
                     <div className="flex items-center gap-3">
                       <button
                         type="button"

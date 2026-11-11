@@ -6,10 +6,12 @@ import PromotionFormModal from '../components/PromotionFormModal';
 import PromotionRequestsPanel from '../components/PromotionRequestsPanel';
 import Tooltip from '../components/Tooltip';
 
-// Panel interno de administración de promociones (RF-PUB-02) — solo las
-// manuales: las de Combo/Venta se administran y publican desde sus propias
-// secciones (Combos.jsx, BulkSales.jsx) y se ven junto a las manuales en
-// /promociones (sitio público), no acá.
+// Panel interno de administración de promociones (RF-PUB-02). `promotions`
+// representa solo promociones manuales — un combo o una venta publicados en
+// /promociones no son una promoción, se administran y publican desde sus
+// propias secciones (Combos.jsx, BulkSales.jsx) y se ven junto a las
+// manuales en el sitio público, no acá (ver
+// supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql).
 const PromotionsAdmin = () => {
   const { supabase } = useApp();
 
@@ -25,7 +27,6 @@ const PromotionsAdmin = () => {
       .schema('operations')
       .from('promotions')
       .select('*')
-      .eq('source_type', 'manual')
       .order('display_order', { ascending: true });
 
     if (error) {

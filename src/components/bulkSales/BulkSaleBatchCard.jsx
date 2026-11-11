@@ -1,15 +1,14 @@
 import { Plus, Trash2, Package, Megaphone, EyeOff } from 'lucide-react';
 import { summarizeBatch } from '../bulkSalesUtils';
 
-// batch: bulk_sale_batches con bulk_dishes(name, suggested_price) y
-// bulk_sale_entries(clients(name)) anidados.
-// promotion: fila de promotions (source_type='bulk_dish') para el plato de
-// este lote, o null si todavía no se publicó — la publicación es por plato,
-// no por lote, así que todos los lotes del mismo plato comparten estado.
-const BulkSaleBatchCard = ({ batch, promotion, onTogglePublish, publishing, onAddSale, onDeleteEntry, onDeleteBatch }) => {
+// batch: bulk_sale_batches con bulk_dishes(name, suggested_price, is_published)
+// y bulk_sale_entries(clients(name)) anidados. `is_published` vive en el
+// plato, no en el lote — todos los lotes del mismo plato comparten estado.
+const BulkSaleBatchCard = ({ batch, onTogglePublish, publishing, onAddSale, onDeleteEntry, onDeleteBatch }) => {
   const { quantitySold, leftover } = summarizeBatch(batch);
   const entries = batch.bulk_sale_entries ?? [];
   const dishId = batch.bulk_dishes?.id_bulk_dish;
+  const isPublished = batch.bulk_dishes?.is_published ?? false;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-5">
@@ -17,7 +16,7 @@ const BulkSaleBatchCard = ({ batch, promotion, onTogglePublish, publishing, onAd
         <div>
           <p className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             {batch.bulk_dishes?.name}
-            {promotion?.is_active && (
+            {isPublished && (
               <span className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full font-medium">
                 Publicado
               </span>
@@ -38,13 +37,13 @@ const BulkSaleBatchCard = ({ batch, promotion, onTogglePublish, publishing, onAd
               onClick={() => onTogglePublish(batch)}
               disabled={publishing}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl transition disabled:opacity-50 ${
-                promotion?.is_active
+                isPublished
                   ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-red-300 hover:text-red-600'
                   : 'bg-green-800 dark:bg-green-600 text-white hover:bg-green-700 dark:hover:bg-green-500'
               }`}
             >
-              {promotion?.is_active ? <EyeOff size={12} /> : <Megaphone size={12} />}
-              {promotion?.is_active ? 'Quitar de Promociones' : 'Publicar'}
+              {isPublished ? <EyeOff size={12} /> : <Megaphone size={12} />}
+              {isPublished ? 'Quitar de Promociones' : 'Publicar'}
             </button>
           )}
           <button

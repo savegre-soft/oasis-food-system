@@ -3,7 +3,7 @@ import { Settings2, Plus, Package, Sparkles, Megaphone, EyeOff } from 'lucide-re
 import { AnimatePresence } from 'framer-motion';
 import { sileo } from 'sileo';
 import { useApp } from '../../context/AppContext';
-import { fetchPromotionBy, togglePromotionPublish } from '../../lib/promotionPublish';
+import { togglePublished } from '../../lib/promotionPublish';
 
 import Modal from '../Modal';
 import ConfirmDialog from '../ConfirmDialog';
@@ -13,7 +13,7 @@ import EditComboOrder from './EditComboOrder';
 import ComboOrderCard from './ComboOrderCard';
 
 const COMBO_WEEK_SELECT = `
-  id_combo_week, week_start_date, week_end_date, base_price, status, image_url,
+  id_combo_week, week_start_date, week_end_date, base_price, status, image_url, is_published,
   combo_week_categories (
     id_combo_week_category, category, max_selections,
     combo_week_category_items (
@@ -35,7 +35,6 @@ const ComboOrdersTab = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
-  const [promotion, setPromotion] = useState(null);
   const [publishing, setPublishing] = useState(false);
 
   const getComboWeek = useCallback(async () => {
@@ -52,26 +51,6 @@ const ComboOrdersTab = () => {
     setComboWeek(data ?? null);
     setLoading(false);
   }, [supabase]);
-
-  const getPromotion = useCallback(
-    async (weekId) => {
-      if (!weekId) {
-        setPromotion(null);
-        return;
-      }
-      try {
-        const data = await fetchPromotionBy(supabase, {
-          sourceType: 'combo',
-          column: 'combo_week_id',
-          value: weekId,
-        });
-        setPromotion(data);
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [supabase]
-  );
 
   const getOrders = useCallback(
     async (weekId) => {
@@ -113,34 +92,26 @@ const ComboOrdersTab = () => {
   }, [supabase, getComboWeek]);
 
   useEffect(() => {
-    const run = async () => {
-      await getOrders(comboWeek?.id_combo_week);
-      await getPromotion(comboWeek?.id_combo_week);
-    };
-    run();
-  }, [comboWeek, getOrders, getPromotion]);
+    getOrders(comboWeek?.id_combo_week);
+  }, [comboWeek, getOrders]);
 
-  // "Publicar" crea (si no existe) la promoción vinculada a esta semana y la
-  // activa; "Quitar de Promociones" solo la desactiva — no se borra, para no
-  // perder título/descripción/imagen si el staff ya la había personalizado
-  // desde PromotionsAdmin.jsx.
+  // Un combo publicado no es "una promoción" — se marca con su propio flag
+  // en combo_weeks (ver supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql),
+  // para que esta semana aparezca en la sección "Combos" de /promociones.
   const togglePublish = async () => {
     if (!comboWeek) return;
     setPublishing(true);
     try {
-      const updated = await togglePromotionPublish(supabase, {
-        promotion,
-        insertPayload: {
-          title: 'Combo de la semana',
-          price_label: `₡${Number(comboWeek.base_price).toLocaleString('es-CR')}`,
-          source_type: 'combo',
-          combo_week_id: comboWeek.id_combo_week,
-        },
+      const nextValue = await togglePublished(supabase, {
+        table: 'combo_weeks',
+        idColumn: 'id_combo_week',
+        idValue: comboWeek.id_combo_week,
+        current: comboWeek.is_published,
       });
-      setPromotion(updated);
-      sileo.success(updated.is_active ? 'Combo publicado en Promociones' : 'Combo quitado de Promociones');
+      setComboWeek((prev) => ({ ...prev, is_published: nextValue }));
+      sileo.success(nextValue ? 'Combo publicado en Promociones' : 'Combo quitado de Promociones');
     } catch (error) {
-      sileo.error(promotion ? 'No se pudo actualizar la publicación' : 'No se pudo publicar el combo');
+      sileo.error('No se pudo actualizar la publicación');
       console.error(error);
     } finally {
       setPublishing(false);
@@ -278,7 +249,7 @@ const ComboOrdersTab = () => {
               <div className="min-w-0">
                 <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold flex items-center gap-2">
                   Combo de la semana
-                  {promotion?.is_active && (
+                  {comboWeek.is_published && (
                     <span className="text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full normal-case font-medium">
                       Publicado
                     </span>
@@ -296,13 +267,13 @@ const ComboOrdersTab = () => {
                 onClick={togglePublish}
                 disabled={publishing}
                 className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition disabled:opacity-50 ${
-                  promotion?.is_active
+                  comboWeek.is_published
                     ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-red-300 hover:text-red-600'
                     : 'bg-green-800 dark:bg-green-600 text-white hover:bg-green-700 dark:hover:bg-green-500'
                 }`}
               >
-                {promotion?.is_active ? <EyeOff size={13} /> : <Megaphone size={13} />}
-                {promotion?.is_active ? 'Quitar de Promociones' : 'Publicar'}
+                {comboWeek.is_published ? <EyeOff size={13} /> : <Megaphone size={13} />}
+                {comboWeek.is_published ? 'Quitar de Promociones' : 'Publicar'}
               </button>
               <button
                 onClick={() => setShowBuilder(true)}
