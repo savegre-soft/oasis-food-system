@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Calendar, History, ListChecks } from 'lucide-react';
+import { Calendar, History, ListChecks, Inbox } from 'lucide-react';
 // eslint-disable-next-line no-unused-vars -- motion renders as <motion.xxx> below; no-unused-vars doesn't see JSX member-expression usage
 import { AnimatePresence, motion } from 'framer-motion';
 
 import ComboOrdersTab from '../components/combos/ComboOrdersTab';
 import ComboHistoryView from '../components/combos/ComboHistoryView';
 import ComboWeekConfigHistory from '../components/combos/ComboWeekConfigHistory';
+import PromotionRequestsPanel from '../components/PromotionRequestsPanel';
 
 const TABS = [
   { id: 'week', label: 'Semana', Icon: Calendar },
+  { id: 'requests', label: 'Solicitudes', Icon: Inbox },
   { id: 'history', label: 'Historico', Icon: History },
 ];
 
@@ -72,6 +74,18 @@ const Combos = () => {
             transition={{ duration: 0.18 }}
           >
             <ComboOrdersTab />
+          </motion.div>
+        )}
+
+        {activeTab === 'requests' && (
+          <motion.div
+            key="requests"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+          >
+            <PromotionRequestsPanel sourceTypeFilter="combo" />
           </motion.div>
         )}
 

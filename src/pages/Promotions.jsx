@@ -7,7 +7,6 @@ import SectionBadge from '../components/public/SectionBadge';
 import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
-import { buildWhatsAppLink } from '../lib/siteContent';
 
 // Precio en vivo desde el combo/plato vinculado (si corresponde) — ver misma
 // lógica en PromotionsAdmin.jsx.
@@ -116,14 +115,12 @@ const Promotions = () => {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <a
-                  href={buildWhatsAppLink(`Hola! Quiero pedir la promo "${featured.title}" 🙂`)}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  to={`/pedir-promo/${featured.id_promotion}`}
                   className="bg-white text-oasis-olive-700 px-6 py-2.5 rounded-full font-semibold hover:bg-oasis-cream hover:-translate-y-0.5 active:translate-y-0 transition-all"
                 >
                   Pedir esta promo
-                </a>
+                </Link>
                 <Link
                   to="/contacto"
                   className="border-2 border-white/60 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-white/10 hover:-translate-y-0.5 active:translate-y-0 transition-all"
@@ -194,14 +191,12 @@ const Promotions = () => {
                   {getDisplayPrice(promo) && (
                     <span className="font-semibold text-oasis-ink">{getDisplayPrice(promo)}</span>
                   )}
-                  <a
-                    href={buildWhatsAppLink(`Hola! Quiero pedir la promo "${promo.title}" 🙂`)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <Link
+                    to={`/pedir-promo/${promo.id_promotion}`}
                     className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
                   >
                     Pedir
-                  </a>
+                  </Link>
                 </div>
               </div>
             </StaggerItem>
