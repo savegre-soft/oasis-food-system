@@ -110,7 +110,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/contacto" element={<Contact />} />
               <Route path="/promociones" element={<Promotions />} />
-              <Route path="/pedir-promo/:promotionId" element={<RequestPromotion />} />
+              <Route path="/pedir-promo/:offerType/:offerId" element={<RequestPromotion />} />
               <Route path="/ordenar" element={<Order />} />
               <Route path="/well-shot" element={<WellShot />} />
               <Route path="/catering" element={<Catering />} />

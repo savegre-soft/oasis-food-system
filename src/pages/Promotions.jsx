@@ -8,19 +8,60 @@ import PlaceholderImage from '../components/public/PlaceholderImage';
 import Seo from '../components/public/Seo';
 import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 
-// Precio en vivo desde el combo/plato vinculado (si corresponde) — ver misma
-// lógica en PromotionsAdmin.jsx.
-const getDisplayPrice = (promo) => {
-  if (promo.source_type === 'combo' && promo.combo_weeks?.base_price != null) {
-    return `₡${Number(promo.combo_weeks.base_price).toLocaleString('es-CR')}`;
-  }
-  if (promo.source_type === 'bulk_dish' && promo.bulk_dishes?.suggested_price != null) {
-    return `₡${Number(promo.bulk_dishes.suggested_price).toLocaleString('es-CR')}`;
-  }
-  return promo.price_label;
-};
+const fmtPrice = (n) => (n != null ? `₡${Number(n).toLocaleString('es-CR')}` : null);
 
 const TONES = ['sage', 'butter', 'rose', 'sand'];
+
+// Un combo o una venta publicados acá no son "una promoción" — cada uno
+// vive en su propia tabla con su propio flag `is_published` (ver
+// supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql).
+// Esta página los normaliza a una forma común solo para mostrarlos juntos,
+// agrupados por tipo, en la sección pública "Promociones".
+const SECTION_LABEL = { manual: 'Promociones', combo: 'Combos', bulk_dish: 'Ventas' };
+const SECTION_ORDER = ['manual', 'combo', 'bulk_dish'];
+
+const PromoCard = ({ promo, index }) => (
+  <StaggerItem
+    whileHover={{ y: -6 }}
+    className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden hover:shadow-xl hover:border-oasis-olive-200 transition"
+  >
+    <div className="overflow-hidden h-40">
+      {promo.image_url ? (
+        <img
+          src={promo.image_url}
+          alt={promo.title}
+          className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      ) : (
+        <PlaceholderImage
+          tone={TONES[index % TONES.length]}
+          rounded="rounded-none"
+          className="h-40 transition-transform duration-500 group-hover:scale-105"
+        />
+      )}
+    </div>
+
+    <div className="p-6">
+      {promo.badge && (
+        <span className="text-xs font-semibold text-oasis-terracotta-dark uppercase tracking-wide">
+          {promo.badge}
+        </span>
+      )}
+      <h3 className="font-semibold text-oasis-ink mt-1">{promo.title}</h3>
+      {promo.description && <p className="text-oasis-ink/60 text-sm mt-2">{promo.description}</p>}
+
+      <div className="flex items-center justify-between mt-5">
+        {promo.price_label && <span className="font-semibold text-oasis-ink">{promo.price_label}</span>}
+        <Link
+          to={`/pedir-promo/${promo.offer_type}/${promo.offer_id}`}
+          className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
+        >
+          Pedir
+        </Link>
+      </div>
+    </div>
+  </StaggerItem>
+);
 
 const Promotions = () => {
   const { supabase } = useApp();
@@ -31,27 +72,82 @@ const Promotions = () => {
   useEffect(() => {
     const loadPromotions = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('promotions')
-        .select('*, combo_weeks(base_price), bulk_dishes(suggested_price)')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      const [{ data: manual, error: manualError }, { data: combos, error: comboError }, { data: bulk, error: bulkError }] =
+        await Promise.all([
+          supabase
+            .schema('operations')
+            .from('promotions')
+            .select('*')
+            .eq('is_active', true)
+            .order('display_order', { ascending: true }),
+          supabase
+            .schema('operations')
+            .from('combo_weeks')
+            .select('id_combo_week, base_price, image_url')
+            .eq('is_published', true)
+            .order('id_combo_week', { ascending: false }),
+          supabase
+            .schema('operations')
+            .from('bulk_dishes')
+            .select('id_bulk_dish, name, suggested_price')
+            .eq('is_published', true)
+            .order('name'),
+        ]);
 
-      if (error) {
-        console.error(error);
+      if (manualError || comboError || bulkError) {
+        console.error(manualError || comboError || bulkError);
         setLoading(false);
         return;
       }
 
-      setPromos(data ?? []);
+      const normalized = [
+        ...(manual ?? []).map((p) => ({
+          offer_type: 'manual',
+          offer_id: p.id_promotion,
+          title: p.title,
+          description: p.description,
+          price_label: p.price_label,
+          badge: p.badge,
+          image_url: p.image_url,
+        })),
+        ...(combos ?? []).map((cw) => ({
+          offer_type: 'combo',
+          offer_id: cw.id_combo_week,
+          title: 'Combo de la semana',
+          description: null,
+          price_label: fmtPrice(cw.base_price),
+          badge: null,
+          image_url: cw.image_url,
+        })),
+        ...(bulk ?? []).map((bd) => ({
+          offer_type: 'bulk_dish',
+          offer_id: bd.id_bulk_dish,
+          title: bd.name,
+          description: null,
+          price_label: fmtPrice(bd.suggested_price),
+          badge: null,
+          image_url: null,
+        })),
+      ];
+
+      setPromos(normalized);
       setLoading(false);
     };
 
     loadPromotions();
   }, [supabase]);
 
-  const [featured, ...rest] = promos;
+  // Solo una promoción manual puede ser la destacada — combos/ventas no son
+  // "la promo de la semana", son su propia sección siempre.
+  const featuredIndex = promos.findIndex((p) => p.offer_type === 'manual');
+  const featured = featuredIndex >= 0 ? promos[featuredIndex] : null;
+  const rest = featured ? promos.filter((_, i) => i !== featuredIndex) : promos;
+
+  const sections = SECTION_ORDER.map((type) => ({
+    type,
+    label: SECTION_LABEL[type],
+    items: rest.filter((p) => p.offer_type === type),
+  })).filter((section) => section.items.length > 0);
 
   return (
     <div>
@@ -89,7 +185,7 @@ const Promotions = () => {
           </div>
         )}
 
-        {/* Promo destacada */}
+        {/* Promo destacada (solo manual) */}
         {featured && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -109,14 +205,14 @@ const Promotions = () => {
               )}
 
               <div className="mt-6 flex items-center gap-3">
-                {getDisplayPrice(featured) && (
-                  <span className="text-2xl font-bold">{getDisplayPrice(featured)}</span>
+                {featured.price_label && (
+                  <span className="text-2xl font-bold">{featured.price_label}</span>
                 )}
               </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  to={`/pedir-promo/${featured.id_promotion}`}
+                  to={`/pedir-promo/${featured.offer_type}/${featured.offer_id}`}
                   className="bg-white text-oasis-olive-700 px-6 py-2.5 rounded-full font-semibold hover:bg-oasis-cream hover:-translate-y-0.5 active:translate-y-0 transition-all"
                 >
                   Pedir esta promo
@@ -147,61 +243,17 @@ const Promotions = () => {
           </motion.div>
         )}
 
-        {/* Resto de promos */}
-        <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" stagger={0.1}>
-          {rest.map((promo, index) => (
-            <StaggerItem
-              key={promo.id_promotion}
-              whileHover={{ y: -6 }}
-              className="group bg-white rounded-2xl border border-oasis-olive-100 overflow-hidden hover:shadow-xl hover:border-oasis-olive-200 transition"
-            >
-              <div className="overflow-hidden h-40">
-                {promo.image_url ? (
-                  <img
-                    src={promo.image_url}
-                    alt={promo.title}
-                    className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <PlaceholderImage
-                    tone={TONES[index % TONES.length]}
-                    rounded="rounded-none"
-                    className="h-40 transition-transform duration-500 group-hover:scale-105"
-                  />
-                )}
-              </div>
-
-              <div className="p-6">
-                {promo.badge && (
-                  <span className="text-xs font-semibold text-oasis-terracotta-dark uppercase tracking-wide">
-                    {promo.badge}
-                  </span>
-                )}
-                <h3 className="font-semibold text-oasis-ink mt-1">{promo.title}</h3>
-                {promo.description && (
-                  <p className="text-oasis-ink/60 text-sm mt-2">{promo.description}</p>
-                )}
-                {promo.validity && (
-                  <p className="text-xs text-oasis-terracotta-dark mt-3">
-                    ● Válida: {promo.validity}
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between mt-5">
-                  {getDisplayPrice(promo) && (
-                    <span className="font-semibold text-oasis-ink">{getDisplayPrice(promo)}</span>
-                  )}
-                  <Link
-                    to={`/pedir-promo/${promo.id_promotion}`}
-                    className="bg-oasis-olive-100 text-oasis-olive-700 px-4 py-2 rounded-full text-sm font-semibold hover:bg-oasis-olive-600 hover:text-white hover:-translate-y-0.5 active:translate-y-0 transition-all"
-                  >
-                    Pedir
-                  </Link>
-                </div>
-              </div>
-            </StaggerItem>
-          ))}
-        </Stagger>
+        {/* Resto de ofertas, agrupadas por tipo (Promociones/Combos/Ventas) */}
+        {sections.map((section) => (
+          <div key={section.type} className="mb-12 last:mb-0">
+            <h2 className="font-display text-2xl font-semibold text-oasis-ink mb-6">{section.label}</h2>
+            <Stagger className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" stagger={0.1}>
+              {section.items.map((promo, index) => (
+                <PromoCard key={`${promo.offer_type}-${promo.offer_id}`} promo={promo} index={index} />
+              ))}
+            </Stagger>
+          </div>
+        ))}
 
         {/* Condiciones */}
         <div className="mt-10 bg-oasis-olive-50 rounded-2xl p-6 text-sm text-oasis-ink/60">

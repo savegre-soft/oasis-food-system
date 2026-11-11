@@ -22,18 +22,25 @@ const STATUS_CLASS = {
 
 const REQUEST_SELECT = `
   id_promotion_request, client_name, email, phone, delivery_address, quantity, selections, price,
-  status, whatsapp_sent_at, created_at,
-  promotions (
-    id_promotion, title, source_type, combo_week_id, bulk_dish_id,
-    combo_weeks ( id_combo_week, base_price ),
-    bulk_dishes ( id_bulk_dish, name, suggested_price )
-  )
+  status, whatsapp_sent_at, created_at, offer_type, promotion_id, combo_week_id, bulk_dish_id,
+  promotions ( id_promotion, title ),
+  combo_weeks ( id_combo_week, base_price ),
+  bulk_dishes ( id_bulk_dish, name, suggested_price )
 `;
 
-// Bandeja de solicitudes públicas de promociones (combo / venta masiva /
-// manual). Reutilizada sin filtro en PromotionsAdmin.jsx (todas) y filtrada
-// por `sourceTypeFilter="combo"` en Combos.jsx (solo las de combo, para que
-// el staff no tenga que salir de esa pantalla).
+// Título a mostrar según el tipo de oferta — un combo/venta no tiene un
+// título propio editable (no son una promoción, ver
+// supabase/migrations/20261112_decouple_combo_bulk_from_promotions.sql).
+const requestTitle = (req) => {
+  if (req.offer_type === 'combo') return 'Combo de la semana';
+  if (req.offer_type === 'bulk_dish') return req.bulk_dishes?.name ?? 'Venta';
+  return req.promotions?.title ?? 'Promoción';
+};
+
+// Bandeja de solicitudes públicas de promociones (combo / venta / manual).
+// Reutilizada sin filtro en PromotionsAdmin.jsx (todas) y filtrada por
+// `sourceTypeFilter="combo"` en Combos.jsx (solo las de combo, para que el
+// staff no tenga que salir de esa pantalla).
 const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
   const { supabase } = useApp();
 
@@ -85,7 +92,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
 
   const filteredRequests = useMemo(() => {
     if (!sourceTypeFilter) return requests;
-    return requests.filter((r) => r.promotions?.source_type === sourceTypeFilter);
+    return requests.filter((r) => r.offer_type === sourceTypeFilter);
   }, [requests, sourceTypeFilter]);
 
   const groupedSelections = useCallback(
@@ -101,7 +108,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
   );
 
   const sendWhatsApp = async (req) => {
-    const message = `Hola ${req.client_name}, somos Oasis. Vimos tu solicitud de "${req.promotions?.title ?? 'promoción'}" y queremos confirmarla contigo antes de prepararla. ¿Nos confirmas que fuiste tú quien la hizo?`;
+    const message = `Hola ${req.client_name}, somos Oasis. Vimos tu solicitud de "${requestTitle(req)}" y queremos confirmarla contigo antes de prepararla. ¿Nos confirmas que fuiste tú quien la hizo?`;
     const phone = req.phone?.trim();
     if (!phone) {
       sileo.error('La solicitud no tiene teléfono');
@@ -141,7 +148,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
   // Para venta masiva: carga los lotes de ese plato con sobrante > 0, para
   // que el staff elija contra cuál se registra la venta al confirmar.
   const loadBatchOptions = async (req) => {
-    const bulkDishId = req.promotions?.bulk_dish_id;
+    const bulkDishId = req.bulk_dish_id;
     if (!bulkDishId) return;
     const { data, error } = await supabase
       .schema('operations')
@@ -208,7 +215,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       .select(
         'id_combo_week_category, category, max_selections, combo_week_category_items(combo_item_id, combo_items(price))'
       )
-      .eq('combo_week_id', req.promotions.combo_week_id);
+      .eq('combo_week_id', req.combo_week_id);
     if (error) throw error;
 
     const validItemIds = new Set();
@@ -270,7 +277,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       });
     }
 
-    return { selections: rows, price: computeComboPrice(req.promotions.combo_weeks?.base_price, rows) };
+    return { selections: rows, price: computeComboPrice(req.combo_weeks?.base_price, rows) };
   };
 
   const confirmCombo = async (req) => {
@@ -300,7 +307,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       .from('combo_orders')
       .insert([
         {
-          combo_week_id: req.promotions.combo_week_id,
+          combo_week_id: req.combo_week_id,
           client_id: clientId,
           price,
           status: 'PENDING',
@@ -365,7 +372,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
     const clientId = await resolveClient(req);
     // Igual que en combos: el monto se recalcula desde el precio real del
     // catálogo (suggested_price), nunca desde el `price` que mandó el cliente.
-    const amount = quantity * (Number(req.promotions?.bulk_dishes?.suggested_price) || 0);
+    const amount = quantity * (Number(req.bulk_dishes?.suggested_price) || 0);
 
     const { data: payment, error: paymentError } = await supabase
       .schema('operations')
@@ -378,7 +385,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
           currency: 'CRC',
           payment_date: new Date().toISOString().split('T')[0],
           status: 'pending',
-          notes: `Venta masiva desde el portal público: ${req.promotions?.title ?? ''}`,
+          notes: `Venta desde el portal público: ${requestTitle(req)}`,
         },
       ])
       .select('id_payment')
@@ -424,9 +431,8 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
   const confirm = async (req) => {
     setProcessingId(req.id_promotion_request);
     try {
-      const sourceType = req.promotions?.source_type;
-      if (sourceType === 'combo') await confirmCombo(req);
-      else if (sourceType === 'bulk_dish') await confirmBulk(req);
+      if (req.offer_type === 'combo') await confirmCombo(req);
+      else if (req.offer_type === 'bulk_dish') await confirmBulk(req);
       else await confirmManual(req);
       sileo.success('Solicitud confirmada');
       await fetchRequests();
@@ -454,7 +460,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
   return (
     <div className="space-y-3">
       {filteredRequests.map((req) => {
-        const sourceType = req.promotions?.source_type;
+        const sourceType = req.offer_type;
         const isDone = req.status === 'confirmed' || req.status === 'rejected';
         const grouped = groupedSelections(req);
         return (
@@ -466,7 +472,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
               <div>
                 <p className="font-semibold text-slate-800 dark:text-slate-100">{req.client_name}</p>
                 <p className="text-xs text-slate-400 dark:text-slate-500">
-                  {req.promotions?.title} ·{' '}
+                  {requestTitle(req)} ·{' '}
                   <span className="text-indigo-600 dark:text-indigo-400">
                     {SOURCE_TYPE_LABEL[sourceType] ?? sourceType}
                   </span>
