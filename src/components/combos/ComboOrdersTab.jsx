@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings2, Plus, Package, Sparkles } from 'lucide-react';
+import { Settings2, Plus, Package, Sparkles, Megaphone, EyeOff } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { sileo } from 'sileo';
 import { useApp } from '../../context/AppContext';
@@ -34,6 +34,8 @@ const ComboOrdersTab = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [deletingOrder, setDeletingOrder] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [promotion, setPromotion] = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   const getComboWeek = useCallback(async () => {
     setLoading(true);
@@ -49,6 +51,25 @@ const ComboOrdersTab = () => {
     setComboWeek(data ?? null);
     setLoading(false);
   }, [supabase]);
+
+  const getPromotion = useCallback(
+    async (weekId) => {
+      if (!weekId) {
+        setPromotion(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('promotions')
+        .select('id_promotion, is_active')
+        .eq('source_type', 'combo')
+        .eq('combo_week_id', weekId)
+        .maybeSingle();
+      if (error) console.error(error);
+      setPromotion(data ?? null);
+    },
+    [supabase]
+  );
 
   const getOrders = useCallback(
     async (weekId) => {
@@ -92,9 +113,57 @@ const ComboOrdersTab = () => {
   useEffect(() => {
     const run = async () => {
       await getOrders(comboWeek?.id_combo_week);
+      await getPromotion(comboWeek?.id_combo_week);
     };
     run();
-  }, [comboWeek, getOrders]);
+  }, [comboWeek, getOrders, getPromotion]);
+
+  // "Publicar" crea (si no existe) la promoción vinculada a esta semana y la
+  // activa; "Quitar de Promociones" solo la desactiva — no se borra, para no
+  // perder título/descripción/imagen si el staff ya la había personalizado
+  // desde PromotionsAdmin.jsx.
+  const togglePublish = async () => {
+    if (!comboWeek) return;
+    setPublishing(true);
+    if (!promotion) {
+      const { data, error } = await supabase
+        .schema('operations')
+        .from('promotions')
+        .insert([
+          {
+            title: 'Combo de la semana',
+            source_type: 'combo',
+            combo_week_id: comboWeek.id_combo_week,
+            is_active: true,
+          },
+        ])
+        .select('id_promotion, is_active')
+        .single();
+      setPublishing(false);
+      if (error) {
+        sileo.error('No se pudo publicar el combo');
+        console.error(error);
+        return;
+      }
+      setPromotion(data);
+      sileo.success('Combo publicado en Promociones');
+      return;
+    }
+
+    const { error } = await supabase
+      .schema('operations')
+      .from('promotions')
+      .update({ is_active: !promotion.is_active })
+      .eq('id_promotion', promotion.id_promotion);
+    setPublishing(false);
+    if (error) {
+      sileo.error('No se pudo actualizar la publicación');
+      console.error(error);
+      return;
+    }
+    setPromotion((prev) => ({ ...prev, is_active: !prev.is_active }));
+    sileo.success(promotion.is_active ? 'Combo quitado de Promociones' : 'Combo publicado en Promociones');
+  };
 
   const closeBuilder = () => {
     setShowBuilder(false);
@@ -225,8 +294,13 @@ const ComboOrdersTab = () => {
                 />
               )}
               <div className="min-w-0">
-                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">
+                <p className="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold flex items-center gap-2">
                   Combo de la semana
+                  {promotion?.is_active && (
+                    <span className="text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full normal-case font-medium">
+                      Publicado
+                    </span>
+                  )}
                 </p>
                 <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
                   Precio base: <span className="font-semibold">₡{Number(comboWeek.base_price).toLocaleString('es-CR')}</span>
@@ -236,6 +310,18 @@ const ComboOrdersTab = () => {
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={togglePublish}
+                disabled={publishing}
+                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl transition disabled:opacity-50 ${
+                  promotion?.is_active
+                    ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-red-300 hover:text-red-600'
+                    : 'bg-green-800 dark:bg-green-600 text-white hover:bg-green-700 dark:hover:bg-green-500'
+                }`}
+              >
+                {promotion?.is_active ? <EyeOff size={13} /> : <Megaphone size={13} />}
+                {promotion?.is_active ? 'Quitar de Promociones' : 'Publicar'}
+              </button>
               <button
                 onClick={() => setShowBuilder(true)}
                 className="flex items-center gap-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl hover:border-slate-400 transition"

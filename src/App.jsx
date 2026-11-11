@@ -20,6 +20,7 @@ const Catering = lazy(() => import('./pages/Catering'));
 const PublicAbout = lazy(() => import('./pages/PublicAbout'));
 const PoliticaPrivacidad = lazy(() => import('./pages/PoliticaPrivacidad'));
 const Order = lazy(() => import('./pages/Order'));
+const RequestPromotion = lazy(() => import('./pages/RequestPromotion'));
 
 // Auth y portal
 const Login = lazy(() => import('./pages/Login'));
@@ -109,6 +110,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/contacto" element={<Contact />} />
               <Route path="/promociones" element={<Promotions />} />
+              <Route path="/pedir-promo/:promotionId" element={<RequestPromotion />} />
               <Route path="/ordenar" element={<Order />} />
               <Route path="/well-shot" element={<WellShot />} />
               <Route path="/catering" element={<Catering />} />
