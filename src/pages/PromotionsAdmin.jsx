@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { sileo } from 'sileo';
-import { Plus, Pencil, EyeOff, Eye, Megaphone, Inbox } from 'lucide-react';
+import { Plus, Pencil, EyeOff, Eye, Megaphone, Inbox, Tag, Package, ShoppingBag } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import PromotionFormModal from '../components/PromotionFormModal';
 import PromotionRequestsPanel from '../components/PromotionRequestsPanel';
 import Tooltip from '../components/Tooltip';
 
-const SOURCE_LABEL = { manual: 'Manual', combo: 'Combo semanal', bulk_dish: 'Venta masiva' };
+// Sub-pestañas dentro de "Promociones" — los 3 tipos de pedido que puede
+// mostrar el sitio público (manual = promoción propiamente dicha, combo y
+// bulk_dish = publicadas desde Combos.jsx/BulkSales.jsx).
+const TYPE_TABS = [
+  { id: 'manual', label: 'Promociones', Icon: Tag },
+  { id: 'combo', label: 'Combos', Icon: Package },
+  { id: 'bulk_dish', label: 'Ventas', Icon: ShoppingBag },
+];
 
 // Precio a mostrar: si la promoción está vinculada a un combo/plato, se
 // muestra el precio en vivo (join) — si cambia el original, se refleja acá
@@ -32,13 +39,15 @@ const PromotionsAdmin = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState(null);
   const [activeTab, setActiveTab] = useState('promotions');
+  const [typeTab, setTypeTab] = useState('manual');
 
-  const fetchPromotions = async () => {
+  const fetchPromotions = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .schema('operations')
       .from('promotions')
       .select('*, combo_weeks(base_price, week_start_date, week_end_date), bulk_dishes(name, suggested_price)')
+      .eq('source_type', typeTab)
       .order('display_order', { ascending: true });
 
     if (error) {
@@ -48,12 +57,12 @@ const PromotionsAdmin = () => {
     }
     setPromotions(data ?? []);
     setLoading(false);
-  };
+  }, [supabase, typeTab]);
 
   useEffect(() => {
     const timer = setTimeout(() => fetchPromotions(), 0);
     return () => clearTimeout(timer);
-  }, [supabase]);
+  }, [fetchPromotions]);
 
   const toggleActive = async (promo) => {
     const { error } = await supabase
@@ -99,7 +108,7 @@ const PromotionsAdmin = () => {
             Administrá las promociones que se muestran en el sitio público.
           </p>
         </div>
-        {activeTab === 'promotions' && (
+        {activeTab === 'promotions' && typeTab === 'manual' && (
           <button
             onClick={openCreate}
             className="flex items-center gap-2 bg-slate-800 dark:bg-slate-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-700 dark:hover:bg-slate-600 transition shrink-0"
@@ -132,13 +141,35 @@ const PromotionsAdmin = () => {
         )}
       </div>
 
+      {activeTab === 'promotions' && (
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-1 w-fit shadow-sm mb-6">
+          {TYPE_TABS.map(
+            // eslint-disable-next-line no-unused-vars -- Icon renders as <Icon/> below; no-unused-vars doesn't see JSX tag usage of a destructured var
+            ({ id, label, Icon }) => {
+              const active = typeTab === id;
+              const cls =
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ' +
+                (active
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200');
+              return (
+                <button key={id} onClick={() => setTypeTab(id)} className={cls}>
+                  <Icon size={15} />
+                  {label}
+                </button>
+              );
+            }
+          )}
+        </div>
+      )}
+
       {activeTab === 'requests' ? (
         <PromotionRequestsPanel />
       ) : loading ? (
         <p className="text-slate-500 dark:text-slate-400 text-sm">Cargando...</p>
       ) : promotions.length === 0 ? (
         <div className="text-center py-16 text-slate-400 dark:text-slate-600">
-          No hay promociones creadas todavía.
+          No hay {TYPE_TABS.find((t) => t.id === typeTab)?.label.toLowerCase()} creadas todavía.
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -161,11 +192,6 @@ const PromotionsAdmin = () => {
                     </span>
                   )}
                 </div>
-                {promo.source_type !== 'manual' && (
-                  <span className="inline-block text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full mb-2">
-                    {SOURCE_LABEL[promo.source_type] ?? promo.source_type}
-                  </span>
-                )}
                 {promo.description && (
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{promo.description}</p>
                 )}

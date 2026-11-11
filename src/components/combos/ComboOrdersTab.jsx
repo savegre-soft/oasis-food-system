@@ -3,6 +3,7 @@ import { Settings2, Plus, Package, Sparkles, Megaphone, EyeOff } from 'lucide-re
 import { AnimatePresence } from 'framer-motion';
 import { sileo } from 'sileo';
 import { useApp } from '../../context/AppContext';
+import { fetchPromotionBy, togglePromotionPublish } from '../../lib/promotionPublish';
 
 import Modal from '../Modal';
 import ConfirmDialog from '../ConfirmDialog';
@@ -58,15 +59,16 @@ const ComboOrdersTab = () => {
         setPromotion(null);
         return;
       }
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('promotions')
-        .select('id_promotion, is_active')
-        .eq('source_type', 'combo')
-        .eq('combo_week_id', weekId)
-        .maybeSingle();
-      if (error) console.error(error);
-      setPromotion(data ?? null);
+      try {
+        const data = await fetchPromotionBy(supabase, {
+          sourceType: 'combo',
+          column: 'combo_week_id',
+          value: weekId,
+        });
+        setPromotion(data);
+      } catch (error) {
+        console.error(error);
+      }
     },
     [supabase]
   );
@@ -125,44 +127,24 @@ const ComboOrdersTab = () => {
   const togglePublish = async () => {
     if (!comboWeek) return;
     setPublishing(true);
-    if (!promotion) {
-      const { data, error } = await supabase
-        .schema('operations')
-        .from('promotions')
-        .insert([
-          {
-            title: 'Combo de la semana',
-            source_type: 'combo',
-            combo_week_id: comboWeek.id_combo_week,
-            is_active: true,
-          },
-        ])
-        .select('id_promotion, is_active')
-        .single();
-      setPublishing(false);
-      if (error) {
-        sileo.error('No se pudo publicar el combo');
-        console.error(error);
-        return;
-      }
-      setPromotion(data);
-      sileo.success('Combo publicado en Promociones');
-      return;
-    }
-
-    const { error } = await supabase
-      .schema('operations')
-      .from('promotions')
-      .update({ is_active: !promotion.is_active })
-      .eq('id_promotion', promotion.id_promotion);
-    setPublishing(false);
-    if (error) {
-      sileo.error('No se pudo actualizar la publicación');
+    try {
+      const updated = await togglePromotionPublish(supabase, {
+        promotion,
+        insertPayload: {
+          title: 'Combo de la semana',
+          price_label: `₡${Number(comboWeek.base_price).toLocaleString('es-CR')}`,
+          source_type: 'combo',
+          combo_week_id: comboWeek.id_combo_week,
+        },
+      });
+      setPromotion(updated);
+      sileo.success(updated.is_active ? 'Combo publicado en Promociones' : 'Combo quitado de Promociones');
+    } catch (error) {
+      sileo.error(promotion ? 'No se pudo actualizar la publicación' : 'No se pudo publicar el combo');
       console.error(error);
-      return;
+    } finally {
+      setPublishing(false);
     }
-    setPromotion((prev) => ({ ...prev, is_active: !prev.is_active }));
-    sileo.success(promotion.is_active ? 'Combo quitado de Promociones' : 'Combo publicado en Promociones');
   };
 
   const closeBuilder = () => {

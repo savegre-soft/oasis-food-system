@@ -3,25 +3,18 @@ import { sileo } from 'sileo';
 import { ImagePlus } from 'lucide-react';
 import Modal from './Modal';
 import { useApp } from '../context/AppContext';
-
-const fmtDate = (str, opts) => new Date(str + 'T00:00:00').toLocaleDateString('es-CR', opts);
-const fmtPrice = (n) => `₡${Number(n).toLocaleString('es-CR')}`;
-
-const comboWeekLabel = (week) =>
-  `${fmtDate(week.week_start_date, { day: '2-digit', month: 'short' })} – ${fmtDate(week.week_end_date, { day: '2-digit', month: 'short' })} (${fmtPrice(week.base_price)})`;
-
-const comboWeekTitle = (week) =>
-  `Combo semanal ${fmtDate(week.week_start_date, { day: '2-digit', month: 'short' })} – ${fmtDate(week.week_end_date, { day: '2-digit', month: 'short' })}`;
+import { SOURCE_TYPE_LABEL } from '../lib/promotionSourceLabels';
 
 // Alta/edición de promociones del sitio público (RF-PUB-02). Reusable para
 // crear (initialData=null) y editar (initialData=promoción real) — el modo
 // se decide por la presencia de id_promotion, no por initialData en sí, para
 // poder eventualmente prellenar el form sin forzar modo edición.
 //
-// Una promoción puede basarse en un Combo semanal o un plato de Venta Masiva
-// ya registrados (source_type), autocompletando título/precio al elegirlos.
-// `price_label` queda como respaldo — el precio en vivo se muestra en
-// PromotionsAdmin.jsx/Promotions.jsx vía join, no se recalcula acá.
+// Esta pasarela solo crea promociones de origen manual — las de Combo/Venta
+// se publican desde sus propias secciones (botón "Publicar" en Combos.jsx y
+// en Pedidos de Ventas) y solo quedan editables acá para su título,
+// descripción, precio visible, etiqueta e imagen; el vínculo (`source_type`,
+// `combo_week_id`, `bulk_dish_id`) no se toca desde este form.
 const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
   const { supabase } = useApp();
   const isEdit = !!initialData?.id_promotion;
@@ -36,11 +29,7 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [sourceType, setSourceType] = useState('manual'); // 'manual' | 'combo' | 'bulk_dish'
-  const [comboWeekId, setComboWeekId] = useState('');
-  const [bulkDishId, setBulkDishId] = useState('');
-  const [comboWeeks, setComboWeeks] = useState([]);
-  const [bulkDishes, setBulkDishes] = useState([]);
+  const sourceType = initialData?.source_type ?? 'manual';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,59 +41,7 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
     setIsActive(initialData?.is_active ?? true);
     setImageFile(null);
     setImagePreview(initialData?.image_url ?? null);
-    setSourceType(initialData?.source_type ?? 'manual');
-    setComboWeekId(initialData?.combo_week_id ? String(initialData.combo_week_id) : '');
-    setBulkDishId(initialData?.bulk_dish_id ? String(initialData.bulk_dish_id) : '');
   }, [isOpen, initialData]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const loadSources = async () => {
-      const [{ data: weeks }, { data: dishes }] = await Promise.all([
-        supabase
-          .schema('operations')
-          .from('combo_weeks')
-          .select('id_combo_week, week_start_date, week_end_date, base_price')
-          .order('id_combo_week', { ascending: false })
-          .limit(10),
-        supabase
-          .schema('operations')
-          .from('bulk_dishes')
-          .select('id_bulk_dish, name, suggested_price')
-          .eq('is_active', true)
-          .order('name'),
-      ]);
-      setComboWeeks(weeks ?? []);
-      setBulkDishes(dishes ?? []);
-    };
-
-    loadSources();
-  }, [isOpen, supabase]);
-
-  const handleSelectCombo = (id) => {
-    setComboWeekId(id);
-    const week = comboWeeks.find((w) => String(w.id_combo_week) === id);
-    if (week) {
-      setTitle(comboWeekTitle(week));
-      setPriceLabel(fmtPrice(week.base_price));
-    }
-  };
-
-  const handleSelectBulkDish = (id) => {
-    setBulkDishId(id);
-    const dish = bulkDishes.find((d) => String(d.id_bulk_dish) === id);
-    if (dish) {
-      setTitle(dish.name);
-      if (dish.suggested_price != null) setPriceLabel(fmtPrice(dish.suggested_price));
-    }
-  };
-
-  const handleSourceTypeChange = (type) => {
-    setSourceType(type);
-    if (type !== 'combo') setComboWeekId('');
-    if (type !== 'bulk_dish') setBulkDishId('');
-  };
 
   const canSubmit = title.trim() !== '';
 
@@ -146,10 +83,9 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
         display_order: Number(displayOrder) || 0,
         is_active: isActive,
         image_url: imageUrl,
-        source_type: sourceType,
-        combo_week_id: sourceType === 'combo' && comboWeekId ? Number(comboWeekId) : null,
-        bulk_dish_id: sourceType === 'bulk_dish' && bulkDishId ? Number(bulkDishId) : null,
       };
+
+      if (!isEdit) payload.source_type = 'manual';
 
       const { error } = isEdit
         ? await supabase
@@ -178,78 +114,20 @@ const PromotionFormModal = ({ isOpen, onClose, initialData, onSuccess }) => {
           {isEdit ? 'Editar promoción' : 'Nueva promoción'}
         </h2>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-            Origen
-          </label>
-          <div className="flex gap-2">
-            {[
-              ['manual', 'Manual'],
-              ['combo', 'Combo semanal'],
-              ['bulk_dish', 'Venta masiva'],
-            ].map(([val, lbl]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => handleSourceTypeChange(val)}
-                className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
-                  sourceType === val
-                    ? 'bg-slate-800 dark:bg-indigo-600 border-slate-800 dark:border-indigo-600 text-white'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
-                }`}
-              >
-                {lbl}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {sourceType === 'combo' && (
+        {isEdit && sourceType !== 'manual' ? (
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-              Combo semanal
+              Origen
             </label>
-            <select
-              value={comboWeekId}
-              onChange={(e) => handleSelectCombo(e.target.value)}
-              className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
-            >
-              <option value="">Elegí un combo semanal...</option>
-              {comboWeeks.map((week) => (
-                <option key={week.id_combo_week} value={week.id_combo_week}>
-                  {comboWeekLabel(week)}
-                </option>
-              ))}
-            </select>
-            {comboWeeks.length === 0 && (
-              <p className="text-xs text-slate-400">No hay combos semanales registrados todavía.</p>
-            )}
+            <span className="inline-block w-fit text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-xl">
+              {SOURCE_TYPE_LABEL[sourceType] ?? sourceType}
+            </span>
+            <p className="text-xs text-slate-400">
+              Esta promoción se publicó desde su sección de origen — acá solo se edita cómo se muestra
+              en el sitio público.
+            </p>
           </div>
-        )}
-
-        {sourceType === 'bulk_dish' && (
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-              Plato de venta masiva
-            </label>
-            <select
-              value={bulkDishId}
-              onChange={(e) => handleSelectBulkDish(e.target.value)}
-              className="border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600"
-            >
-              <option value="">Elegí un plato...</option>
-              {bulkDishes.map((dish) => (
-                <option key={dish.id_bulk_dish} value={dish.id_bulk_dish}>
-                  {dish.name}
-                  {dish.suggested_price != null ? ` (${fmtPrice(dish.suggested_price)})` : ''}
-                </option>
-              ))}
-            </select>
-            {bulkDishes.length === 0 && (
-              <p className="text-xs text-slate-400">No hay platos de venta masiva activos todavía.</p>
-            )}
-          </div>
-        )}
+        ) : null}
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
