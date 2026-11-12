@@ -10,6 +10,12 @@ import { Reveal, Stagger, StaggerItem } from '../components/public/Motion';
 
 const fmtPrice = (n) => (n != null ? `₡${Number(n).toLocaleString('es-CR')}` : null);
 
+const fmtWeekRange = (start, end) => {
+  const opts = { day: '2-digit', month: 'short' };
+  const fmt = (d) => new Date(d + 'T00:00:00').toLocaleDateString('es-CR', opts);
+  return `Semana del ${fmt(start)} al ${fmt(end)}`;
+};
+
 const TONES = ['sage', 'butter', 'rose', 'sand'];
 
 // Un combo o una venta publicados acá no son "una promoción" — cada uno
@@ -83,7 +89,7 @@ const Promotions = () => {
           supabase
             .schema('operations')
             .from('combo_weeks')
-            .select('id_combo_week, base_price, image_url')
+            .select('id_combo_week, base_price, image_url, week_start_date, week_end_date')
             .eq('is_published', true)
             .order('id_combo_week', { ascending: false }),
           supabase
@@ -114,7 +120,7 @@ const Promotions = () => {
           offer_type: 'combo',
           offer_id: cw.id_combo_week,
           title: 'Combo de la semana',
-          description: null,
+          description: fmtWeekRange(cw.week_start_date, cw.week_end_date),
           price_label: fmtPrice(cw.base_price),
           badge: null,
           image_url: cw.image_url,
