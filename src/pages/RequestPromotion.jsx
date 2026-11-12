@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, MessageCircle } from 'lucide-react';
 import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
@@ -8,6 +8,8 @@ import Seo from '../components/public/Seo';
 import ComboCategorySelector from '../components/combos/ComboCategorySelector';
 import { useComboSelections } from '../hooks/useComboSelections';
 import { computeComboPrice } from '../components/comboUtils';
+import { summarizeBatch } from '../components/bulkSalesUtils';
+import { buildWhatsAppLink } from '../lib/siteContent';
 
 const MANUAL_SELECT = 'id_promotion, title, description, is_active';
 
@@ -41,6 +43,7 @@ const RequestPromotion = () => {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [quantity, setQuantity] = useState(1);
+  const [availableQty, setAvailableQty] = useState(null); // solo bulk_dish; null = aún no se sabe
   const [clientName, setClientName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -93,6 +96,29 @@ const RequestPromotion = () => {
     };
     load();
   }, [supabase, offerType, offerId]);
+
+  // Sobrante real del plato (suma de cocinado - vendido de todos sus lotes,
+  // cada uno sin bajar de cero) — el pedido público nunca puede exceder esto,
+  // mismo criterio que ya protege la confirmación en PromotionRequestsPanel.
+  useEffect(() => {
+    if (offerType !== 'bulk_dish' || !offer?.id_bulk_dish) return;
+    const loadAvailability = async () => {
+      const { data, error: fetchError } = await supabase
+        .schema('operations')
+        .from('bulk_sale_batches')
+        .select('quantity_cooked, bulk_sale_entries(quantity)')
+        .eq('bulk_dish_id', offer.id_bulk_dish);
+      if (fetchError) {
+        console.error(fetchError);
+        setAvailableQty(0);
+        return;
+      }
+      const total = (data ?? []).reduce((sum, batch) => sum + Math.max(summarizeBatch(batch).leftover, 0), 0);
+      setAvailableQty(total);
+      setQuantity((q) => Math.min(Math.max(q, 1), Math.max(total, 1)));
+    };
+    loadAvailability();
+  }, [supabase, offerType, offer?.id_bulk_dish]);
 
   const categories = useMemo(() => offer?.combo_week_categories ?? [], [offer]);
 
@@ -223,6 +249,12 @@ const RequestPromotion = () => {
   }
 
   const needsSelectionStep = offerType === 'combo' || offerType === 'bulk_dish';
+  const isBulkDish = offerType === 'bulk_dish';
+  const soldOut = isBulkDish && availableQty === 0;
+  const atAvailableLimit = isBulkDish && availableQty != null && availableQty > 0 && quantity >= availableQty;
+  const whatsAppMoreLink = isBulkDish
+    ? buildWhatsAppLink(`Hola! Quiero pedir ${offer?.name ?? 'este plato'} — ¿tienen más disponible de lo que aparece en el sitio?`)
+    : null;
 
   return (
     <div>
@@ -256,7 +288,7 @@ const RequestPromotion = () => {
           </div>
         ) : (
           <>
-            {needsSelectionStep && (
+            {needsSelectionStep && !soldOut && (
               <div className="flex items-center gap-2 mb-8 text-sm font-medium text-oasis-ink/60">
                 <span className={step === 1 ? 'text-oasis-olive-700' : ''}>1. Elegí tu pedido</span>
                 <span>→</span>
@@ -264,7 +296,26 @@ const RequestPromotion = () => {
               </div>
             )}
 
-            {needsSelectionStep && step === 1 && (
+            {needsSelectionStep && step === 1 && soldOut && (
+              <div className="space-y-5">
+                <div className="text-center px-4 py-8 border border-oasis-olive-200 rounded-2xl bg-white">
+                  <p className="font-medium text-oasis-ink mb-1">{offer.name}</p>
+                  <p className="text-sm text-oasis-ink/60 mb-5">
+                    Por ahora no tenemos sobrante de este plato disponible para pedir en línea.
+                  </p>
+                  <a
+                    href={whatsAppMoreLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 bg-oasis-olive-700 text-white px-6 py-2.5 rounded-full font-semibold hover:bg-oasis-olive-800 transition"
+                  >
+                    <MessageCircle size={16} /> Consultar por WhatsApp
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {needsSelectionStep && step === 1 && !soldOut && (
               <div className="space-y-5">
                 {offerType === 'combo' && (
                   <ComboCategorySelector
@@ -279,26 +330,44 @@ const RequestPromotion = () => {
                   />
                 )}
 
-                {offerType === 'bulk_dish' && (
-                  <div className="flex items-center justify-between px-4 py-4 border border-oasis-olive-200 rounded-2xl bg-white">
-                    <span className="font-medium text-oasis-ink">{offer.name}</span>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-oasis-olive-200 text-oasis-ink/70 hover:bg-oasis-olive-50"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-6 text-center font-semibold">{quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((q) => q + 1)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-oasis-olive-200 text-oasis-ink/70 hover:bg-oasis-olive-50"
-                      >
-                        <Plus size={14} />
-                      </button>
+                {isBulkDish && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-4 py-4 border border-oasis-olive-200 rounded-2xl bg-white">
+                      <span className="font-medium text-oasis-ink">{offer.name}</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-oasis-olive-200 text-oasis-ink/70 hover:bg-oasis-olive-50"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-6 text-center font-semibold">{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity((q) => Math.min(availableQty ?? q + 1, q + 1))}
+                          disabled={atAvailableLimit || availableQty == null}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-oasis-olive-200 text-oasis-ink/70 hover:bg-oasis-olive-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
                     </div>
+                    {atAvailableLimit && (
+                      <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-amber-50 border border-amber-200">
+                        <span className="text-xs text-amber-700">
+                          Solo quedan {availableQty} disponibles por ahora.
+                        </span>
+                        <a
+                          href={whatsAppMoreLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 text-xs font-semibold text-amber-800 hover:underline shrink-0"
+                        >
+                          <MessageCircle size={12} /> Pedir más por WhatsApp
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
 
