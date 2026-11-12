@@ -213,7 +213,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       .schema('operations')
       .from('combo_week_categories')
       .select(
-        'id_combo_week_category, category, max_selections, combo_week_category_items(combo_item_id, combo_items(price))'
+        'id_combo_week_category, category, max_selections, combo_week_category_items(combo_item_id, combo_items(name, price))'
       )
       .eq('combo_week_id', req.combo_week_id);
     if (error) throw error;
@@ -221,10 +221,18 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
     const validItemIds = new Set();
     const maxByCategory = {};
     const priceByItem = {};
+    const nameByItem = {};
+    // Ítems con price=null en el catálogo (nunca se les puso precio) — si
+    // alguno termina usado como Plato Extra o como excedente del cupo, no se
+    // puede cobrar y se rechaza la confirmación en vez de cobrar ₡0 en
+    // silencio (ver handleIncrement en RequestPromotion.jsx, mismo criterio).
+    const itemsMissingPrice = new Set();
     for (const cat of categories ?? []) {
       maxByCategory[cat.category] = cat.max_selections;
       for (const cwci of cat.combo_week_category_items ?? []) {
         validItemIds.add(`${cat.category}:${cwci.combo_item_id}`);
+        nameByItem[cwci.combo_item_id] = cwci.combo_items?.name;
+        if (cwci.combo_items?.price == null) itemsMissingPrice.add(cwci.combo_item_id);
         priceByItem[cwci.combo_item_id] = Number(cwci.combo_items?.price) || 0;
       }
     }
@@ -258,6 +266,18 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       }
     }
     nonExtraUnits.sort((a, b) => (priceByItem[a.combo_item_id] ?? 0) - (priceByItem[b.combo_item_id] ?? 0));
+
+    const unpriced = new Set();
+    nonExtraUnits.forEach((unit, idx) => {
+      if (idx >= poolCapacity && itemsMissingPrice.has(unit.combo_item_id)) unpriced.add(unit.combo_item_id);
+    });
+    for (const unit of platoExtraUnits) {
+      if (itemsMissingPrice.has(unit.combo_item_id)) unpriced.add(unit.combo_item_id);
+    }
+    if (unpriced.size > 0) {
+      const names = [...unpriced].map((id) => nameByItem[id] ?? `#${id}`).join(', ');
+      throw new Error(`missing_item_price:${names}`);
+    }
 
     const rows = nonExtraUnits.map((unit, idx) => {
       const overflow = idx >= poolCapacity;
@@ -437,7 +457,10 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
       sileo.success('Solicitud confirmada');
       await fetchRequests();
     } catch (err) {
-      if (err?.message !== 'batch_not_selected' && err?.message !== 'insufficient_leftover') {
+      if (err?.message?.startsWith('missing_item_price:')) {
+        const names = err.message.slice('missing_item_price:'.length);
+        sileo.error(`No se puede cobrar: falta precio en el catálogo para ${names}. Ponele precio en "Ítems de Combo" y volvé a confirmar.`);
+      } else if (err?.message !== 'batch_not_selected' && err?.message !== 'insufficient_leftover') {
         console.error(err);
         sileo.error('No se pudo confirmar la solicitud');
       }

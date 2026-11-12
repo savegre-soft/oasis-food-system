@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Minus, Plus } from 'lucide-react';
+import { sileo } from 'sileo';
 import { useApp } from '../context/AppContext';
 import SectionBadge from '../components/public/SectionBadge';
 import Seo from '../components/public/Seo';
@@ -109,8 +110,19 @@ const RequestPromotion = () => {
     removeUnit,
   } = useComboSelections(categories);
 
+  // Un plato sin precio configurado en el catálogo (price=null, distinto de
+  // un ₡0 explícito) no se puede cobrar — ni como Plato Extra (siempre tiene
+  // costo aparte) ni como excedente del cupo normal. En vez de dejarlo pasar
+  // gratis, se bloquea acá para que el cliente no pueda pedir algo que el
+  // staff todavía no le puso precio.
   const handleIncrement = (category, itemId, maxSelections, itemName, itemPrice) => {
-    if (wouldExceedLimit(category, maxSelections)) {
+    const exceedsLimit = wouldExceedLimit(category, maxSelections);
+    const needsPrice = category === 'plato_extra' || exceedsLimit;
+    if (needsPrice && itemPrice == null) {
+      sileo.error(`"${itemName}" no tiene precio configurado todavía — contactanos por WhatsApp para pedirlo.`);
+      return;
+    }
+    if (exceedsLimit) {
       addExtraUnit(category, itemId, Number(itemPrice) || 0);
       return;
     }
