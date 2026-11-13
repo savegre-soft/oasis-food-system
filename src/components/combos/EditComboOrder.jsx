@@ -37,8 +37,11 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
   };
 
   const [status, setStatus] = useState(order.payments?.status ?? 'pending');
+  const [requestedAt, setRequestedAt] = useState(
+    order.requested_at ?? toDateString(new Date())
+  );
   const [paymentDate, setPaymentDate] = useState(
-    order.payments?.payment_date ?? toDateString(new Date())
+    order.payments?.payment_date ?? order.requested_at ?? toDateString(new Date())
   );
   const [notes, setNotes] = useState(order.notes ?? '');
   const [loading, setLoading] = useState(false);
@@ -135,7 +138,7 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
     const { error: orderError } = await supabase
       .schema('operations')
       .from('combo_orders')
-      .update({ price: totalPrice, notes: notes || null })
+      .update({ price: totalPrice, notes: notes || null, requested_at: requestedAt })
       .eq('id_combo_order', order.id_combo_order);
 
     if (orderError) {
@@ -222,6 +225,18 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
 
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+          Fecha de solicitud
+        </label>
+        <input
+          type="date"
+          value={requestedAt}
+          onChange={(e) => setRequestedAt(e.target.value)}
+          className="border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 dark:text-slate-200"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
           Estado
         </label>
         <div className="flex gap-2">
@@ -233,7 +248,10 @@ const EditComboOrder = ({ order, comboWeek, onSuccess }) => {
             <button
               key={val}
               type="button"
-              onClick={() => setStatus(val)}
+              onClick={() => {
+                setStatus(val);
+                if (val === 'paid' && !order.payments?.payment_date) setPaymentDate(requestedAt);
+              }}
               className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                 status === val
                   ? val === 'pending'

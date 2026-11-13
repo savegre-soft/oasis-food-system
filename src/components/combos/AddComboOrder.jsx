@@ -18,6 +18,7 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
   const [clientSearch, setClientSearch] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
   const [status, setStatus] = useState('pending');
+  const [requestedAt, setRequestedAt] = useState(toDateString(new Date()));
   const [paymentDate, setPaymentDate] = useState(toDateString(new Date()));
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -105,6 +106,7 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
     setSelectedClient(null);
     resetSelections();
     setStatus('pending');
+    setRequestedAt(toDateString(new Date()));
     setPaymentDate(toDateString(new Date()));
     setNotes('');
   };
@@ -151,6 +153,7 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
           price: totalPrice,
           status: 'PENDING',
           payment_id: paymentData.id_payment,
+          requested_at: requestedAt,
           notes: notes || null,
         },
       ])
@@ -304,6 +307,21 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
           <div className="space-y-5">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                Fecha de solicitud
+              </label>
+              <input
+                type="date"
+                value={requestedAt}
+                onChange={(e) => setRequestedAt(e.target.value)}
+                className="border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-900 dark:text-slate-200"
+              />
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                Cuándo lo pidió el cliente — si se registra el pedido días después, ajusta esta fecha. Se usa para contabilizar el ingreso en estadísticas en la fecha correcta cuando el pago se marque pagado más adelante.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                 Estado
               </label>
               <div className="flex gap-2">
@@ -315,7 +333,10 @@ const AddComboOrder = ({ comboWeek, clients, onSuccess }) => {
                   <button
                     key={val}
                     type="button"
-                    onClick={() => setStatus(val)}
+                    onClick={() => {
+                      setStatus(val);
+                      if (val === 'paid') setPaymentDate(requestedAt);
+                    }}
                     className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition ${
                       status === val
                         ? val === 'pending'
