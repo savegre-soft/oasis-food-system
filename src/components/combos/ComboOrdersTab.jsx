@@ -62,7 +62,7 @@ const ComboOrdersTab = () => {
         .schema('operations')
         .from('combo_orders')
         .select(
-          `id_combo_order, price, status, notes, payment_id,
+          `id_combo_order, price, status, notes, payment_id, requested_at,
          clients ( id_client, name ),
          payments ( status, payment_date ),
          combo_order_selections ( id_combo_order_selection, category, combo_item_id, is_extra, unit_price, extra_charge, combo_items ( name, portion_size_g ) )`

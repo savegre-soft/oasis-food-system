@@ -76,6 +76,7 @@ const Payments = () => {
         id_payment, client_id, payment_type, amount, currency,
         payment_date, period_start_date, period_end_date, closed_at, status, notes, created_at,
         clients(name),
+        combo_orders(requested_at),
         payment_orders(
           id_payment_order, order_id,
           orders(
@@ -230,15 +231,20 @@ const Payments = () => {
 
   // ── Status update ───────────────────────────────────────────────────────────
 
-  // Al marcar un pago mensual como 'paid', si todavía no tiene payment_date
-  // (se dejó pendiente al crearlo), se completa con la fecha de hoy — es el
-  // momento en que se está registrando el cobro real.
+  // Al marcar un pago como 'paid', si todavía no tiene payment_date (se dejó
+  // pendiente al crearlo), se completa con la fecha en que el pago se
+  // REGISTRÓ, no con la fecha de hoy — si el personal pone al día varios
+  // pagos atrasados en un mismo momento, cada uno debe seguir contabilizándose
+  // en estadísticas en su propia fecha original, no todos en la de hoy.
+  // Prioridad: la fecha de solicitud del pedido de combo (si el pago viene de
+  // uno) > la fecha de creación del pago > hoy como último recurso.
   const buildStatusPayload = (payment, newStatus) => {
     const payload = { status: newStatus };
-    // Aplica a cualquier tipo de pago: si todavía no tiene payment_date (se
-    // dejó pendiente al crearlo), se completa con la fecha de hoy al pasar a 'paid'.
     if (newStatus === 'paid' && !payment?.payment_date) {
-      payload.payment_date = new Date().toISOString().split('T')[0];
+      payload.payment_date =
+        payment?.combo_orders?.[0]?.requested_at ??
+        payment?.created_at?.split('T')[0] ??
+        new Date().toISOString().split('T')[0];
     }
     return payload;
   };

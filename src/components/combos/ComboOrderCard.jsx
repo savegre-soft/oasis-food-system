@@ -79,6 +79,11 @@ const ComboOrderCard = ({ order, onEdit, onDelete }) => {
           ))}
         </div>
       )}
+      {order.requested_at && (
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+          Solicitado: {new Date(order.requested_at + 'T00:00:00').toLocaleDateString('es-CR')}
+        </p>
+      )}
     </div>
   );
 };

@@ -332,6 +332,7 @@ const PromotionRequestsPanel = ({ sourceTypeFilter }) => {
           price,
           status: 'PENDING',
           payment_id: payment.id_payment,
+          requested_at: req.created_at?.split('T')[0],
           notes: 'Pedido desde el portal público de promociones',
         },
       ])
