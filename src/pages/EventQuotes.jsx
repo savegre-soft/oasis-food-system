@@ -13,11 +13,17 @@ import {
   Users,
   Wallet,
   UtensilsCrossed,
+  NotebookPen,
+  Receipt,
+  Settings2,
+  ListChecks,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import AuthRoles from '../components/auth/AuthRoles';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Tooltip from '../components/Tooltip';
+import EventQuotePricingCatalog from '../components/EventQuotePricingCatalog';
+import EventQuoteBuilder from '../components/EventQuoteBuilder';
 
 // Bandeja interna de cotizaciones de evento capturadas desde /contacto
 // (sección "Cotiza tu evento"). Modelada sobre Prospects.jsx (mismo patrón
@@ -32,13 +38,24 @@ const MEAL_TIME_LABEL = {
   Brunch: 'Brunch',
 };
 
-const STATUS_LABEL = { new: 'Nuevo', contacted: 'Atendido', discarded: 'Descartado', converted: 'Convertido' };
+const STATUS_LABEL = {
+  new: 'Nuevo',
+  contacted: 'Atendido',
+  accepted: 'Aceptada',
+  discarded: 'Descartado',
+  converted: 'Convertido',
+};
 const STATUS_COLOR = {
   new: 'bg-amber-100 text-amber-700',
   contacted: 'bg-blue-100 text-blue-700',
+  accepted: 'bg-violet-100 text-violet-700',
   discarded: 'bg-slate-200 text-slate-500',
   converted: 'bg-emerald-100 text-emerald-700',
 };
+
+// El staff anota observaciones y arma la cotización formal a partir de que
+// atendió o aceptó la propuesta.
+const OBSERVATIONS_STATUSES = ['contacted', 'accepted'];
 
 const formatDateTime = (value) => {
   if (!value) return '—';
@@ -69,6 +86,7 @@ const EventQuotes = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const focusId = searchParams.get('id');
 
+  const [view, setView] = useState('requests'); // 'requests' | 'catalog'
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -76,6 +94,9 @@ const EventQuotes = () => {
   const [editingStatus, setEditingStatus] = useState(null); // { id, status }
   const [expandedId, setExpandedId] = useState(focusId ? Number(focusId) : null);
   const [discardingQuote, setDiscardingQuote] = useState(null);
+  const [observationsDraft, setObservationsDraft] = useState(null); // { id, text }
+  const [savingObservations, setSavingObservations] = useState(false);
+  const [quoteBuilderFor, setQuoteBuilderFor] = useState(null);
 
   const rowRefs = useRef(new Map());
 
@@ -162,6 +183,25 @@ const EventQuotes = () => {
     await fetchQuotes();
   };
 
+  const handleSaveObservations = async () => {
+    if (!observationsDraft) return;
+    setSavingObservations(true);
+    const { error } = await supabase
+      .schema('operations')
+      .from('event_quotes')
+      .update({ observations: observationsDraft.text })
+      .eq('id_event_quote', observationsDraft.id);
+
+    setSavingObservations(false);
+    if (error) {
+      sileo.error('No se pudieron guardar las observaciones');
+      return;
+    }
+    sileo.success('Observaciones guardadas');
+    setObservationsDraft(null);
+    await fetchQuotes();
+  };
+
   return (
     <AuthRoles rolesNames={['Administrador', 'Clientes']}>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 transition-colors duration-300">
@@ -175,6 +215,10 @@ const EventQuotes = () => {
           onCancel={() => setDiscardingQuote(null)}
         />
 
+        {quoteBuilderFor && (
+          <EventQuoteBuilder quote={quoteBuilderFor} onClose={() => setQuoteBuilderFor(null)} />
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Cotizaciones</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -182,12 +226,40 @@ const EventQuotes = () => {
           </p>
         </div>
 
+        <div className="flex bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden w-fit mb-6">
+          <button
+            onClick={() => setView('requests')}
+            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition ${
+              view === 'requests'
+                ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <ListChecks size={13} /> Solicitudes
+          </button>
+          <button
+            onClick={() => setView('catalog')}
+            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition ${
+              view === 'catalog'
+                ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Settings2 size={13} /> Categorías y precios de cotización
+          </button>
+        </div>
+
+        {view === 'catalog' ? (
+          <EventQuotePricingCatalog />
+        ) : (
+          <>
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="flex bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
             {[
               ['all', 'Todos'],
               ['new', 'Nuevo'],
               ['contacted', 'Atendido'],
+              ['accepted', 'Aceptada'],
               ['discarded', 'Descartado'],
               ['converted', 'Convertido'],
             ].map(([val, lbl]) => (
@@ -271,6 +343,7 @@ const EventQuotes = () => {
                                   >
                                     <option value="new">Nuevo</option>
                                     <option value="contacted">Atendido</option>
+                                    <option value="accepted">Aceptada</option>
                                     <option value="discarded">Descartado</option>
                                     <option value="converted">Convertido</option>
                                   </select>
@@ -322,6 +395,14 @@ const EventQuotes = () => {
                                   </button>
                                 </Tooltip>
                               )}
+                              <Tooltip label="Armar cotización">
+                                <button
+                                  onClick={() => setQuoteBuilderFor(quote)}
+                                  className="p-1.5 text-slate-400 hover:text-oasis-olive-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                                >
+                                  <Receipt size={14} />
+                                </button>
+                              </Tooltip>
                               {quote.status !== 'discarded' && (
                                 <Tooltip label="Descartar">
                                   <button
@@ -388,6 +469,48 @@ const EventQuotes = () => {
                                   </div>
                                 </div>
                               </div>
+
+                              {OBSERVATIONS_STATUSES.includes(quote.status) && (
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <NotebookPen size={14} className="text-slate-400" />
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                      Observaciones del staff
+                                    </p>
+                                  </div>
+                                  <textarea
+                                    rows={3}
+                                    placeholder="Notas sobre la llamada, acuerdos, pendientes..."
+                                    value={
+                                      observationsDraft?.id === quote.id_event_quote
+                                        ? observationsDraft.text
+                                        : (quote.observations ?? '')
+                                    }
+                                    onChange={(e) =>
+                                      setObservationsDraft({ id: quote.id_event_quote, text: e.target.value })
+                                    }
+                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-indigo-600 transition"
+                                  />
+                                  {observationsDraft?.id === quote.id_event_quote &&
+                                    observationsDraft.text !== (quote.observations ?? '') && (
+                                      <div className="flex items-center gap-2 mt-2">
+                                        <button
+                                          onClick={handleSaveObservations}
+                                          disabled={savingObservations}
+                                          className="px-3 py-1.5 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs font-medium hover:bg-slate-700 transition disabled:opacity-50"
+                                        >
+                                          {savingObservations ? 'Guardando...' : 'Guardar observaciones'}
+                                        </button>
+                                        <button
+                                          onClick={() => setObservationsDraft(null)}
+                                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                                        >
+                                          Cancelar
+                                        </button>
+                                      </div>
+                                    )}
+                                </div>
+                              )}
                             </td>
                           </tr>
                         )}
@@ -398,6 +521,8 @@ const EventQuotes = () => {
               </table>
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </AuthRoles>
